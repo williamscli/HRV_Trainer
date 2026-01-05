@@ -8,9 +8,10 @@
   <meta name="theme-color" content="#0f172a">
   <title>GENYSYS (Private Beta)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- React 18.2.0 - pinned versions with crossorigin for security -->
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js" crossorigin="anonymous"></script>
   <style>
     body { background: #0f172a; }
     input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
@@ -20,8 +21,144 @@
   <div id="root"></div>
   
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
 
+    // ============================================
+    // ANALYTICS CONFIGURATION
+    // ============================================
+    // Replace with your Google Apps Script Web App URL
+    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyMbSI9_fsJLIArld5uqmb4NhlFww_Mn65y30FdD561wLP5nXcyV9AUlpFXNr03SMvvpQ/exec';
+    
+    // Allowed events (must match server allowlist)
+    const ALLOWED_EVENTS = [
+      'session_start', 'onboarding_complete', 'first_hrv_logged', 'hrv_logged',
+      'hrv_backfilled', 'command_generated', 'compliance_recorded', 'energy_recorded',
+      'day_3_active', 'day_7_active', 'day_14_active', 'day_30_active',
+      'feedback_submitted', 'feedback_dismissed', 'data_exported', 'results_sent',
+      'data_reset', 'legacy_user_migrated'
+    ];
+    
+    // Generate UUID v4
+    const generateUUID = () => {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+
+    // Get timezone (privacy-friendly region detection)
+    const getTimezone = () => {
+      try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone;
+      } catch (e) {
+        return 'Unknown';
+      }
+    };
+
+    // Analytics tracker
+    const Analytics = {
+      userId: null,
+      timezone: null,
+      device: null,
+      firstUseDate: null,
+
+      init() {
+        // Get or create user ID
+        let stored = localStorage.getItem('genysys_analytics');
+        if (stored) {
+          const data = JSON.parse(stored);
+          this.userId = data.userId;
+          this.timezone = data.timezone || getTimezone();
+          this.firstUseDate = data.firstUseDate;
+        } else {
+          this.userId = generateUUID();
+          this.timezone = getTimezone();
+          
+          // Check if they have existing app data (legacy user from before analytics)
+          const appData = localStorage.getItem('genysys_user_data');
+          if (appData) {
+            try {
+              const parsed = JSON.parse(appData);
+              this.firstUseDate = parsed.firstUseDate || new Date().toISOString().split('T')[0];
+              // Track that this is a migrated legacy user (delay to ensure init completes)
+              setTimeout(() => this.track('legacy_user_migrated', { 
+                device: parsed.hrvSource?.label || 'unknown',
+                daysLogged: parsed.hrvHistory?.length || 0
+              }), 100);
+            } catch (e) {
+              this.firstUseDate = new Date().toISOString().split('T')[0];
+            }
+          } else {
+            this.firstUseDate = new Date().toISOString().split('T')[0];
+          }
+          
+          this.save();
+        }
+      },
+
+      save() {
+        localStorage.setItem('genysys_analytics', JSON.stringify({
+          userId: this.userId,
+          timezone: this.timezone,
+          firstUseDate: this.firstUseDate
+        }));
+      },
+
+      setDevice(device) {
+        this.device = device;
+      },
+
+      getDaysActive() {
+        if (!this.firstUseDate) return 0;
+        const first = new Date(this.firstUseDate);
+        const now = new Date();
+        return Math.floor((now - first) / (1000 * 60 * 60 * 24));
+      },
+
+      track(eventName, properties = {}) {
+        // Client-side validation (matches server)
+        if (!ALLOWED_EVENTS.includes(eventName)) {
+          console.warn('[Analytics] Unknown event:', eventName);
+          return;
+        }
+        
+        if (!this.userId) {
+          console.warn('[Analytics] No userId, skipping');
+          return;
+        }
+        
+        const payload = {
+          timestamp: new Date().toISOString(),
+          userId: this.userId,
+          event: eventName,
+          device: this.device || properties.device || 'unknown',
+          daysActive: this.getDaysActive(),
+          region: this.timezone,
+          ...properties
+        };
+
+        // Log to console in development
+        console.log('[Analytics]', eventName, payload);
+
+        // Send to Google Sheets (fire and forget)
+        if (ANALYTICS_ENDPOINT && ANALYTICS_ENDPOINT !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+          fetch(ANALYTICS_ENDPOINT, {
+            method: 'POST',
+            mode: 'no-cors', // Google Apps Script requires this
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).catch(err => console.log('Analytics error:', err));
+        }
+      }
+    };
+
+    // Initialize analytics
+    Analytics.init();
+
+    // ============================================
+    // APP CONFIGURATION
+    // ============================================
     const THRESHOLDS = { REST: -1.0, PERFORM: 0.5, MIN_DAYS: 7, MIN_PREVIEW_DAYS: 3, MAD_FLOOR: 3.0 };
 
     const PRESCRIPTIONS = {
@@ -131,6 +268,9 @@
       link.href = URL.createObjectURL(blob);
       link.download = `genysys_hrv_${userName || 'data'}_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
+      
+      // Track export
+      Analytics.track('data_exported', { daysLogged: hrvHistory.length });
     };
 
     const generateCSVContent = (hrvHistory, complianceLog, userName, hrvSource) => {
@@ -142,6 +282,72 @@
         return [date, hrv?.value || '', compliance?.command || '', compliance?.followed || '', compliance?.energy || '', hrvSource?.label || ''];
       });
       return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    };
+
+    const HRV_GUIDES = {
+      whoop: {
+        title: 'Finding HRV in WHOOP',
+        steps: [
+          'Open the WHOOP app',
+          'Tap on today\'s Recovery score',
+          'Look for "HRV" — it\'s in milliseconds (ms)',
+          'Use the number next to "HRV" (e.g., 45, 62, 78)'
+        ]
+      },
+      apple: {
+        title: 'Finding HRV on Apple Watch',
+        steps: [
+          'Open the Health app on your iPhone',
+          'Tap Browse → Heart → Heart Rate Variability',
+          'Look at your most recent morning reading',
+          'Use the number in milliseconds (ms)'
+        ]
+      },
+      oura: {
+        title: 'Finding HRV in Oura',
+        steps: [
+          'Open the Oura app',
+          'Tap on Readiness',
+          'Scroll to "HRV Balance"',
+          'Tap to see your average HRV in ms'
+        ]
+      },
+      garmin: {
+        title: 'Finding HRV in Garmin',
+        steps: [
+          'Open Garmin Connect app',
+          'Go to Health Stats → HRV Status',
+          'Look for your overnight HRV average',
+          'Use the number in milliseconds (ms)'
+        ]
+      },
+      fitbit: {
+        title: 'Finding HRV in Fitbit',
+        steps: [
+          'Open the Fitbit app',
+          'Tap the Health Metrics tile (or go to Discover → Health Metrics)',
+          'Look for "Heart Rate Variability"',
+          'Use the number in milliseconds (ms)'
+        ]
+      },
+      welltory: {
+        title: 'Taking HRV with Welltory',
+        steps: [
+          'Open Welltory each morning before getting up',
+          'Tap "Measure" and place finger on camera',
+          'Wait 1-2 minutes for the reading',
+          'Use the HRV number shown (in ms)'
+        ]
+      },
+      other: {
+        title: 'Finding Your HRV',
+        steps: [
+          'Open your health/fitness app',
+          'Look for "HRV" or "Heart Rate Variability"',
+          'Find the number in milliseconds (ms)',
+          'Usually shown as a number like 35-100'
+        ]
+      }
     };
 
     const FeedbackModal = ({ step, setStep, useful, setUseful, improvement, setImprovement, email, setEmail, onSend, onDismiss, getDaysSinceFirstUse }) => (
@@ -332,6 +538,9 @@
       const [hrvSource, setHrvSource] = useState(null); // {type: 'WHOOP'|etc, custom?: string}
       const [isLoading, setIsLoading] = useState(true);
       const [otherSourceText, setOtherSourceText] = useState('');
+      
+      // Track retention milestones
+      const trackedMilestones = useRef(new Set());
 
       const CONTACT_EMAIL = 'clinton.bill.williams@gmail.com';
 
@@ -344,72 +553,6 @@
         { id: 'welltory', label: 'Welltory (Phone Camera)' },
         { id: 'other', label: 'Other' },
       ];
-
-      const HRV_GUIDES = {
-        whoop: {
-          title: 'Finding HRV in WHOOP',
-          steps: [
-            'Open the WHOOP app',
-            'Tap on today\'s Recovery score',
-            'Look for "HRV" — it\'s in milliseconds (ms)',
-            'Use the number next to "HRV" (e.g., 45, 62, 78)'
-          ]
-        },
-        apple: {
-          title: 'Finding HRV on Apple Watch',
-          steps: [
-            'Open the Health app on your iPhone',
-            'Tap Browse → Heart → Heart Rate Variability',
-            'Look at your most recent morning reading',
-            'Use the number in milliseconds (ms)'
-          ]
-        },
-        oura: {
-          title: 'Finding HRV in Oura',
-          steps: [
-            'Open the Oura app',
-            'Tap on Readiness',
-            'Scroll to "HRV Balance"',
-            'Tap to see your average HRV in ms'
-          ]
-        },
-        garmin: {
-          title: 'Finding HRV in Garmin',
-          steps: [
-            'Open Garmin Connect app',
-            'Go to Health Stats → HRV Status',
-            'Look for your overnight HRV average',
-            'Use the number in milliseconds (ms)'
-          ]
-        },
-        fitbit: {
-          title: 'Finding HRV in Fitbit',
-          steps: [
-            'Open the Fitbit app',
-            'Tap the Health Metrics tile (or go to Discover → Health Metrics)',
-            'Look for "Heart Rate Variability"',
-            'Use the number in milliseconds (ms)'
-          ]
-        },
-        welltory: {
-          title: 'Taking HRV with Welltory',
-          steps: [
-            'Open Welltory each morning before getting up',
-            'Tap "Measure" and place finger on camera',
-            'Wait 1-2 minutes for the reading',
-            'Use the HRV number shown (in ms)'
-          ]
-        },
-        other: {
-          title: 'Finding Your HRV',
-          steps: [
-            'Open your health/fitness app',
-            'Look for "HRV" or "Heart Rate Variability"',
-            'Find the number in milliseconds (ms)',
-            'Usually shown as a number like 35-100'
-          ]
-        }
-      };
 
       // Load from localStorage
       useEffect(() => {
@@ -424,10 +567,22 @@
             setFirstUseDate(data.firstUseDate || null);
             setFeedbackDismissedAt(data.feedbackDismissedAt || null);
             setFeedbackSubmitted(data.feedbackSubmitted || false);
+            
+            // Set device for analytics
+            if (data.hrvSource) {
+              Analytics.setDevice(data.hrvSource.label);
+            }
+            
             // Skip onboarding for returning users
             if (data.hrvSource) {
               setShowOnboarding(false);
+              
+              // Track returning user session
+              Analytics.track('session_start', { returning: true });
             }
+          } else {
+            // Track new user session
+            Analytics.track('session_start', { returning: false });
           }
         } catch (e) { console.log('No saved data'); }
         setIsLoading(false);
@@ -457,6 +612,21 @@
         const diff = Math.floor((now - first) / (1000 * 60 * 60 * 24));
         return diff;
       };
+
+      // Track retention milestones
+      useEffect(() => {
+        if (!hrvSource || isLoading) return;
+        
+        const daysActive = getDaysSinceFirstUse();
+        const milestones = [3, 7, 14, 30];
+        
+        milestones.forEach(milestone => {
+          if (daysActive >= milestone && !trackedMilestones.current.has(milestone)) {
+            trackedMilestones.current.add(milestone);
+            Analytics.track(`day_${milestone}_active`, { daysLogged: hrvHistory.length });
+          }
+        });
+      }, [hrvSource, isLoading, hrvHistory.length]);
 
       // Check if we should show feedback prompt
       const shouldShowFeedback = () => {
@@ -506,6 +676,13 @@
         setFeedbackSubmitted(true);
         setShowFeedback(false);
         setFeedbackStep(1);
+        
+        // Track feedback submission
+        Analytics.track('feedback_submitted', { 
+          useful: feedbackUseful,
+          hasImprovement: !!feedbackImprovement,
+          hasEmail: !!feedbackEmail.trim()
+        });
       };
 
       const dismissFeedback = (dontAskAgain) => {
@@ -516,6 +693,9 @@
         }
         setShowFeedback(false);
         setFeedbackStep(1);
+        
+        // Track feedback dismissal
+        Analytics.track('feedback_dismissed', { dontAskAgain });
       };
 
       // Auto-calculate if today's data exists
@@ -551,6 +731,9 @@
         if (newHistory.length > 14) newHistory.shift();
         setHrvHistory(newHistory);
         setNewEntry('');
+        
+        // Track historical HRV entry
+        Analytics.track('hrv_backfilled', { daysLogged: newHistory.length });
       };
 
       const removeFromHistory = (displayIndex) => {
@@ -564,6 +747,8 @@
         
         const todayDate = new Date().toISOString().split('T')[0];
         const existingIndex = hrvHistory.findIndex(h => h.date === todayDate);
+        const isFirstHRV = hrvHistory.length === 0;
+        
         let updatedHistory = existingIndex >= 0
           ? hrvHistory.map((h, i) => i === existingIndex ? { value: today, date: todayDate } : h)
           : [...hrvHistory, { value: today, date: todayDate }];
@@ -595,6 +780,23 @@
         } else {
           setComplianceLog([...complianceLog, { date: todayDate, command: commandKey, followed: null, energy: null }]);
         }
+        
+        // Track HRV logging
+        if (isFirstHRV) {
+          Analytics.track('first_hrv_logged', { hrv: today });
+        } else {
+          Analytics.track('hrv_logged', { 
+            hrv: today, 
+            command: commandKey, 
+            daysLogged: updatedHistory.length,
+            isPreview
+          });
+        }
+        
+        // Track command generation (only for non-LEARNING)
+        if (commandKey !== 'LEARNING') {
+          Analytics.track('command_generated', { command: commandKey, isPreview });
+        }
       };
 
       // Yesterday compliance logic
@@ -609,20 +811,60 @@
 
       const recordYesterdayCompliance = (followed) => {
         setComplianceLog(complianceLog.map(c => c.date === yesterdayDate ? { ...c, followed } : c));
+        
+        // Track compliance
+        Analytics.track('compliance_recorded', { 
+          command: yesterdayData.command, 
+          followed 
+        });
       };
 
       const recordTodayEnergy = (energy) => {
         setComplianceLog(complianceLog.map(c => c.date === todayDate ? { ...c, energy } : c));
+        
+        // Track energy input
+        if (energy !== 'skipped') {
+          Analytics.track('energy_recorded', { energy });
+        }
       };
 
       const clearHistory = () => { setHrvHistory([]); setComplianceLog([]); setResult(null); };
-      const resetAll = () => { localStorage.removeItem('genysys_user_data'); setHrvHistory([]); setComplianceLog([]); setUserName(''); setHrvSource(null); setResult(null); setTodayHRV(''); setFirstUseDate(null); setFeedbackDismissedAt(null); setFeedbackSubmitted(false); setFeedbackStep(1); setFeedbackUseful(null); setFeedbackImprovement(''); setFeedbackEmail(''); };
+      const resetAll = () => { 
+        localStorage.removeItem('genysys_user_data'); 
+        setHrvHistory([]); 
+        setComplianceLog([]); 
+        setUserName(''); 
+        setHrvSource(null); 
+        setResult(null); 
+        setTodayHRV(''); 
+        setFirstUseDate(null); 
+        setFeedbackDismissedAt(null); 
+        setFeedbackSubmitted(false); 
+        setFeedbackStep(1); 
+        setFeedbackUseful(null); 
+        setFeedbackImprovement(''); 
+        setFeedbackEmail(''); 
+        
+        // Track reset (but don't reset analytics ID)
+        Analytics.track('data_reset');
+      };
       
       const sendResults = () => {
         const csv = generateCSVContent(hrvHistory, complianceLog, userName, hrvSource);
         const subject = encodeURIComponent(`GENYSYS Data - ${userName || 'User'} - ${new Date().toISOString().split('T')[0]}`);
         const body = encodeURIComponent(`Name: ${userName || 'Not provided'}\nSource: ${hrvSource?.label || 'Not provided'}\nDays logged: ${hrvHistory.length}\n\n--- DATA ---\n\n${csv}\n\n--- END ---`);
         window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+        
+        // Track results sent
+        Analytics.track('results_sent', { daysLogged: hrvHistory.length });
+      };
+
+      // Handle onboarding completion
+      const handleOnboardingComplete = (source) => {
+        setHrvSource(source);
+        Analytics.setDevice(source.label);
+        Analytics.track('onboarding_complete', { device: source.label });
+        setShowHrvGuide(true);
       };
 
       if (isLoading) return <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center"><div className="text-slate-400">Loading...</div></div>;
@@ -728,8 +970,7 @@
                     key={source.id}
                     onClick={() => {
                       if (source.id !== 'other') {
-                        setHrvSource({ type: source.id, label: source.label });
-                        setShowHrvGuide(true);
+                        handleOnboardingComplete({ type: source.id, label: source.label });
                       }
                     }}
                     className={`w-full text-left px-4 py-3 rounded-lg transition ${
@@ -755,8 +996,7 @@
                 <button
                   onClick={() => {
                     if (otherSourceText.trim()) {
-                      setHrvSource({ type: 'other', label: otherSourceText.trim() });
-                      setShowHrvGuide(true);
+                      handleOnboardingComplete({ type: 'other', label: otherSourceText.trim() });
                     }
                   }}
                   disabled={!otherSourceText.trim()}
