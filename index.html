@@ -144,52 +144,106 @@
       return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     };
 
-    const FeedbackModal = ({ rating, setRating, text, setText, onSend, onDismiss }) => (
+    const FeedbackModal = ({ step, setStep, useful, setUseful, improvement, setImprovement, email, setEmail, onSend, onDismiss, getDaysSinceFirstUse }) => (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-5" onClick={e => e.stopPropagation()}>
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-white">How's GENYSYS working for you?</h2>
-          </div>
           
-          {/* Star rating */}
-          <div className="flex justify-center gap-2">
-            {[1, 2, 3, 4, 5].map(star => (
-              <button
-                key={star}
-                onClick={() => setRating(star)}
-                className="text-3xl transition-transform hover:scale-110"
-              >
-                {star <= rating ? '⭐' : '☆'}
+          {/* Step 1: The real question */}
+          {step === 1 && (
+            <>
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-white">Has this changed how you train?</h2>
+              </div>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => { setUseful('yes'); setStep(2); }}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition text-left px-4"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => { setUseful('not_yet'); setStep(2); }}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition text-left px-4"
+                >
+                  Not yet
+                </button>
+              </div>
+
+              <button onClick={() => onDismiss(false)} className="w-full text-slate-500 hover:text-slate-300 text-sm transition pt-2">
+                Skip for now
               </button>
-            ))}
-          </div>
+            </>
+          )}
 
-          {/* Optional feedback */}
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Any thoughts? (optional)"
-            className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-24"
-          />
+          {/* Step 2: The improvement */}
+          {step === 2 && (
+            <>
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-white">One thing that would make it better?</h2>
+              </div>
+              
+              <textarea
+                value={improvement}
+                onChange={(e) => setImprovement(e.target.value)}
+                placeholder="Anything at all..."
+                className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-28"
+                autoFocus
+              />
 
-          {/* Send button */}
-          <button
-            onClick={onSend}
-            disabled={rating === 0}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-xl transition"
-          >
-            Send Feedback
-          </button>
+              <button
+                onClick={() => setStep(3)}
+                className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl transition hover:bg-slate-100"
+              >
+                Next
+              </button>
+            </>
+          )}
 
-          {/* Dismiss options */}
-          <div className="flex justify-center gap-4 text-sm">
-            <button onClick={() => onDismiss(false)} className="text-slate-500 hover:text-slate-300 transition">
-              Not now
-            </button>
-            <button onClick={() => onDismiss(true)} className="text-slate-600 hover:text-slate-400 transition">
-              Don't ask again
-            </button>
-          </div>
+          {/* Step 3: Early access */}
+          {step === 3 && (
+            <>
+              <div className="text-center space-y-2">
+                <h2 className="text-lg font-semibold text-white">
+                  {useful === 'yes' ? "Glad it's helping." : "Fair."} Here's what's next.
+                </h2>
+              </div>
+
+              <div className="space-y-4 text-sm">
+                <div className="space-y-1">
+                  <div className="text-white font-medium">Auto-sync</div>
+                  <div className="text-slate-400">No more typing. We pull from your wearable.</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-white font-medium">Push window</div>
+                  <div className="text-slate-400">Know when your next high-intensity day is coming.</div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <div className="text-slate-400 text-sm">Want early access?</div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <button
+                onClick={() => onSend(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
+              >
+                Sign me up
+              </button>
+
+              <button onClick={() => onSend(false)} className="w-full text-slate-500 hover:text-slate-300 text-sm transition">
+                No thanks, just send feedback
+              </button>
+            </>
+          )}
+
         </div>
       </div>
     );
@@ -270,15 +324,13 @@
       const [onboardingStep, setOnboardingStep] = useState(1);
       const [showHrvGuide, setShowHrvGuide] = useState(false);
       const [showFeedback, setShowFeedback] = useState(false);
-      const [feedbackRating, setFeedbackRating] = useState(0);
-      const [feedbackText, setFeedbackText] = useState('');
+      const [feedbackStep, setFeedbackStep] = useState(1);
+      const [feedbackUseful, setFeedbackUseful] = useState(null); // 'yes' or 'not_yet'
+      const [feedbackImprovement, setFeedbackImprovement] = useState('');
+      const [feedbackEmail, setFeedbackEmail] = useState('');
       const [firstUseDate, setFirstUseDate] = useState(null);
       const [feedbackDismissedAt, setFeedbackDismissedAt] = useState(null);
       const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
-      const [showFeedback, setShowFeedback] = useState(false);
-      const [feedbackRating, setFeedbackRating] = useState(0);
-      const [feedbackText, setFeedbackText] = useState('');
-      const [feedbackStatus, setFeedbackStatus] = useState(null); // null, 'dismissed', 'dismissed_forever', 'submitted'
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
       const [userName, setUserName] = useState('');
@@ -439,12 +491,14 @@
         }
       }, [result]);
 
-      const sendFeedback = () => {
-        const stars = '⭐'.repeat(feedbackRating);
-        const subject = encodeURIComponent(`GENYSYS Feedback - ${userName || 'User'} - ${stars}`);
+      const sendFeedback = (wantsEarlyAccess) => {
+        const usefulText = feedbackUseful === 'yes' ? '✅ Yes' : '⏳ Not yet';
+        const earlyAccessText = wantsEarlyAccess && feedbackEmail ? `YES - ${feedbackEmail}` : wantsEarlyAccess ? 'YES (no email)' : 'No';
+        const subject = encodeURIComponent(`GENYSYS Feedback - ${userName || 'User'} - ${usefulText}`);
         const body = encodeURIComponent(
-          `Rating: ${feedbackRating}/5 ${stars}\n\n` +
-          `Feedback: ${feedbackText || '(no comment)'}\n\n` +
+          `Changed how they train: ${usefulText}\n\n` +
+          `What would make it better:\n${feedbackImprovement || '(no response)'}\n\n` +
+          `Early access: ${earlyAccessText}\n\n` +
           `---\n` +
           `Name: ${userName || 'Not provided'}\n` +
           `Source: ${hrvSource?.label || 'Not provided'}\n` +
@@ -454,15 +508,17 @@
         window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
         setFeedbackSubmitted(true);
         setShowFeedback(false);
+        setFeedbackStep(1);
       };
 
       const dismissFeedback = (dontAskAgain) => {
         if (dontAskAgain) {
-          setFeedbackSubmitted(true); // Treat as submitted to never ask again
+          setFeedbackSubmitted(true);
         } else {
           setFeedbackDismissedAt(new Date().toISOString().split('T')[0]);
         }
         setShowFeedback(false);
+        setFeedbackStep(1);
       };
 
       // Auto-calculate if today's data exists
@@ -563,7 +619,7 @@
       };
 
       const clearHistory = () => { setHrvHistory([]); setComplianceLog([]); setResult(null); };
-      const resetAll = () => { localStorage.removeItem('genysys_user_data'); setHrvHistory([]); setComplianceLog([]); setUserName(''); setHrvSource(null); setResult(null); setTodayHRV(''); setFirstUseDate(null); setFeedbackDismissedAt(null); setFeedbackSubmitted(false); setFeedbackRating(0); setFeedbackText(''); };
+      const resetAll = () => { localStorage.removeItem('genysys_user_data'); setHrvHistory([]); setComplianceLog([]); setUserName(''); setHrvSource(null); setResult(null); setTodayHRV(''); setFirstUseDate(null); setFeedbackDismissedAt(null); setFeedbackSubmitted(false); setFeedbackStep(1); setFeedbackUseful(null); setFeedbackImprovement(''); setFeedbackEmail(''); };
       
       const sendResults = () => {
         const csv = generateCSVContent(hrvHistory, complianceLog, userName, hrvSource);
@@ -782,7 +838,7 @@
 
             {/* Info Modal */}
             {showInfo && <InfoModal onClose={() => setShowInfo(false)} hrvSource={hrvSource} />}
-            {showFeedback && <FeedbackModal rating={feedbackRating} setRating={setFeedbackRating} text={feedbackText} setText={setFeedbackText} onSend={sendFeedback} onDismiss={dismissFeedback} />}
+            {showFeedback && <FeedbackModal step={feedbackStep} setStep={setFeedbackStep} useful={feedbackUseful} setUseful={setFeedbackUseful} improvement={feedbackImprovement} setImprovement={setFeedbackImprovement} email={feedbackEmail} setEmail={setFeedbackEmail} onSend={sendFeedback} onDismiss={dismissFeedback} getDaysSinceFirstUse={getDaysSinceFirstUse} />}
 
             {/* Yesterday Compliance */}
             {needsYesterdayCompliance && (
