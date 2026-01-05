@@ -144,6 +144,56 @@
       return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     };
 
+    const FeedbackModal = ({ rating, setRating, text, setText, onSend, onDismiss }) => (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+        <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-5" onClick={e => e.stopPropagation()}>
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-white">How's GENYSYS working for you?</h2>
+          </div>
+          
+          {/* Star rating */}
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button
+                key={star}
+                onClick={() => setRating(star)}
+                className="text-3xl transition-transform hover:scale-110"
+              >
+                {star <= rating ? '⭐' : '☆'}
+              </button>
+            ))}
+          </div>
+
+          {/* Optional feedback */}
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Any thoughts? (optional)"
+            className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-24"
+          />
+
+          {/* Send button */}
+          <button
+            onClick={onSend}
+            disabled={rating === 0}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-xl transition"
+          >
+            Send Feedback
+          </button>
+
+          {/* Dismiss options */}
+          <div className="flex justify-center gap-4 text-sm">
+            <button onClick={() => onDismiss(false)} className="text-slate-500 hover:text-slate-300 transition">
+              Not now
+            </button>
+            <button onClick={() => onDismiss(true)} className="text-slate-600 hover:text-slate-400 transition">
+              Don't ask again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+
     const InfoModal = ({ onClose, hrvSource }) => {
       const guide = HRV_GUIDES[hrvSource?.type] || HRV_GUIDES.other;
       return (
@@ -219,6 +269,16 @@
       const [showOnboarding, setShowOnboarding] = useState(true);
       const [onboardingStep, setOnboardingStep] = useState(1);
       const [showHrvGuide, setShowHrvGuide] = useState(false);
+      const [showFeedback, setShowFeedback] = useState(false);
+      const [feedbackRating, setFeedbackRating] = useState(0);
+      const [feedbackText, setFeedbackText] = useState('');
+      const [firstUseDate, setFirstUseDate] = useState(null);
+      const [feedbackDismissedAt, setFeedbackDismissedAt] = useState(null);
+      const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+      const [showFeedback, setShowFeedback] = useState(false);
+      const [feedbackRating, setFeedbackRating] = useState(0);
+      const [feedbackText, setFeedbackText] = useState('');
+      const [feedbackStatus, setFeedbackStatus] = useState(null); // null, 'dismissed', 'dismissed_forever', 'submitted'
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
       const [userName, setUserName] = useState('');
@@ -226,7 +286,7 @@
       const [isLoading, setIsLoading] = useState(true);
       const [otherSourceText, setOtherSourceText] = useState('');
 
-      const CONTACT_EMAIL = 'clinton.bill.williams@gmail.com'; // UPDATE THIS
+      const CONTACT_EMAIL = 'clinton.bill.williams@gmail.com';
 
       const HRV_SOURCES = [
         { id: 'whoop', label: 'WHOOP' },
@@ -314,6 +374,9 @@
             setUserName(data.userName || '');
             setComplianceLog(data.complianceLog || []);
             setHrvSource(data.hrvSource || null);
+            setFirstUseDate(data.firstUseDate || null);
+            setFeedbackDismissedAt(data.feedbackDismissedAt || null);
+            setFeedbackSubmitted(data.feedbackSubmitted || false);
             // Skip onboarding for returning users
             if (data.hrvSource) {
               setShowOnboarding(false);
@@ -326,8 +389,81 @@
       // Save to localStorage
       useEffect(() => {
         if (isLoading) return;
-        localStorage.setItem('genysys_user_data', JSON.stringify({ hrvHistory, userName, complianceLog, hrvSource }));
-      }, [hrvHistory, userName, complianceLog, hrvSource, isLoading]);
+        localStorage.setItem('genysys_user_data', JSON.stringify({ 
+          hrvHistory, userName, complianceLog, hrvSource,
+          firstUseDate, feedbackDismissedAt, feedbackSubmitted 
+        }));
+      }, [hrvHistory, userName, complianceLog, hrvSource, firstUseDate, feedbackDismissedAt, feedbackSubmitted, isLoading]);
+
+      // Set firstUseDate when user first completes onboarding
+      useEffect(() => {
+        if (hrvSource && !firstUseDate) {
+          setFirstUseDate(new Date().toISOString().split('T')[0]);
+        }
+      }, [hrvSource, firstUseDate]);
+
+      // Calculate days since first use
+      const getDaysSinceFirstUse = () => {
+        if (!firstUseDate) return 0;
+        const first = new Date(firstUseDate);
+        const now = new Date();
+        const diff = Math.floor((now - first) / (1000 * 60 * 60 * 24));
+        return diff;
+      };
+
+      // Check if we should show feedback prompt
+      const shouldShowFeedback = () => {
+        if (feedbackSubmitted) return false;
+        const daysSinceFirstUse = getDaysSinceFirstUse();
+        
+        // First prompt at day 7
+        if (daysSinceFirstUse >= 7 && !feedbackDismissedAt) return true;
+        
+        // Second prompt at day 14 if dismissed before
+        if (daysSinceFirstUse >= 14 && feedbackDismissedAt) {
+          const dismissedDate = new Date(feedbackDismissedAt);
+          const daysSinceDismissed = Math.floor((new Date() - dismissedDate) / (1000 * 60 * 60 * 24));
+          // Only show again if at least 7 days since dismissal
+          if (daysSinceDismissed >= 7) return true;
+        }
+        
+        return false;
+      };
+
+      // Check for feedback prompt after calculating command
+      useEffect(() => {
+        if (result && result.commandKey && result.commandKey !== 'LEARNING' && shouldShowFeedback()) {
+          // Small delay so they see their command first
+          const timer = setTimeout(() => setShowFeedback(true), 1500);
+          return () => clearTimeout(timer);
+        }
+      }, [result]);
+
+      const sendFeedback = () => {
+        const stars = '⭐'.repeat(feedbackRating);
+        const subject = encodeURIComponent(`GENYSYS Feedback - ${userName || 'User'} - ${stars}`);
+        const body = encodeURIComponent(
+          `Rating: ${feedbackRating}/5 ${stars}\n\n` +
+          `Feedback: ${feedbackText || '(no comment)'}\n\n` +
+          `---\n` +
+          `Name: ${userName || 'Not provided'}\n` +
+          `Source: ${hrvSource?.label || 'Not provided'}\n` +
+          `Days using app: ${getDaysSinceFirstUse()}\n` +
+          `Days logged: ${hrvHistory.length}`
+        );
+        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+        setFeedbackSubmitted(true);
+        setShowFeedback(false);
+      };
+
+      const dismissFeedback = (dontAskAgain) => {
+        if (dontAskAgain) {
+          setFeedbackSubmitted(true); // Treat as submitted to never ask again
+        } else {
+          setFeedbackDismissedAt(new Date().toISOString().split('T')[0]);
+        }
+        setShowFeedback(false);
+      };
 
       // Auto-calculate if today's data exists
       useEffect(() => {
@@ -427,7 +563,7 @@
       };
 
       const clearHistory = () => { setHrvHistory([]); setComplianceLog([]); setResult(null); };
-      const resetAll = () => { localStorage.removeItem('genysys_user_data'); setHrvHistory([]); setComplianceLog([]); setUserName(''); setHrvSource(null); setResult(null); setTodayHRV(''); };
+      const resetAll = () => { localStorage.removeItem('genysys_user_data'); setHrvHistory([]); setComplianceLog([]); setUserName(''); setHrvSource(null); setResult(null); setTodayHRV(''); setFirstUseDate(null); setFeedbackDismissedAt(null); setFeedbackSubmitted(false); setFeedbackRating(0); setFeedbackText(''); };
       
       const sendResults = () => {
         const csv = generateCSVContent(hrvHistory, complianceLog, userName, hrvSource);
@@ -646,6 +782,7 @@
 
             {/* Info Modal */}
             {showInfo && <InfoModal onClose={() => setShowInfo(false)} hrvSource={hrvSource} />}
+            {showFeedback && <FeedbackModal rating={feedbackRating} setRating={setFeedbackRating} text={feedbackText} setText={setFeedbackText} onSend={sendFeedback} onDismiss={dismissFeedback} />}
 
             {/* Yesterday Compliance */}
             {needsYesterdayCompliance && (
