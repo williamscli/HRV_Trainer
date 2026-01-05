@@ -4,6 +4,12 @@
 
 ---
 
+## ⬇️ Download
+
+**[Click here to download genysys.html](./genysys.html)** → Open in any browser → Done.
+
+---
+
 ## What is this?
 
 Every morning, your body broadcasts a signal through your heart rate variability (HRV). This signal reveals whether your nervous system is recovered, stressed, or primed for performance.
@@ -69,29 +75,29 @@ Your baseline recalculates daily using your last 14 days of data.
 
 ### Option 1: Use Online (Easiest)
 
-Open `genysys.html` in any modern browser. That's it.
+1. Click on `genysys.html` in the file list above
+2. Click the **Download** button (or "Raw" then save the page)
+3. Open the downloaded file in any browser
 
-- Works on laptop, tablet, or phone
-- Data saves locally in your browser
-- No account needed
+That's it. Works on laptop, tablet, or phone. Data saves locally. No account needed.
 
 ### Option 2: Mobile Home Screen (Recommended for daily use)
 
 **iPhone:**
-1. Open `genysys.html` in Safari
-2. Tap the Share button (square with arrow)
-3. Tap "Add to Home Screen"
-4. Now it works like an app
+1. Download `genysys.html` to your phone (tap the file, then Download)
+2. Open the file in Safari (find it in Files app, tap to open)
+3. Tap the Share button (square with arrow)
+4. Tap "Add to Home Screen"
+5. Now it works like an app
 
 **Android:**
-1. Open `genysys.html` in Chrome
-2. Tap the menu (three dots)
-3. Tap "Add to Home Screen"
-4. Now it works like an app
+1. Download `genysys.html` to your phone
+2. Open the file in Chrome (find it in Downloads, tap to open)
+3. Tap the menu (three dots)
+4. Tap "Add to Home Screen"
+5. Now it works like an app
 
-### Option 3: Run Locally
-
-If you want to modify the code:
+### Option 3: Run Locally (for developers)
 
 ```bash
 # Clone the repo
