@@ -657,32 +657,20 @@
       }, [result]);
 
       const sendFeedback = () => {
-        const usefulText = feedbackUseful === 'yes' ? '✅ Yes' : '⏳ Not yet';
-        const earlyAccessText = feedbackEmail.trim() ? `YES - ${feedbackEmail.trim()}` : 'No (no email provided)';
-        const csvData = generateCSVContent(hrvHistory, complianceLog, userName, hrvSource);
-        const subject = encodeURIComponent(`GENYSYS Feedback - ${userName || 'User'} - ${usefulText}`);
-        const body = encodeURIComponent(
-          `Changed how they train: ${usefulText}\n\n` +
-          `What would make it better:\n${feedbackImprovement || '(no response)'}\n\n` +
-          `Early access: ${earlyAccessText}\n\n` +
-          `---\n` +
-          `Name: ${userName || 'Not provided'}\n` +
-          `Source: ${hrvSource?.label || 'Not provided'}\n` +
-          `Days using app: ${getDaysSinceFirstUse()}\n` +
-          `Days logged: ${hrvHistory.length}\n\n` +
-          `=== CSV DATA ===\n\n${csvData}\n\n=== END CSV ===`
-        );
-        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+        // Track feedback via analytics (no email needed)
+        Analytics.track('feedback_submitted', { 
+          useful: feedbackUseful,
+          improvementText: feedbackImprovement.substring(0, 500) || '',
+          userEmail: feedbackEmail.trim().substring(0, 100) || '',
+          daysLogged: hrvHistory.length
+        });
+        
         setFeedbackSubmitted(true);
         setShowFeedback(false);
         setFeedbackStep(1);
-        
-        // Track feedback submission
-        Analytics.track('feedback_submitted', { 
-          useful: feedbackUseful,
-          hasImprovement: !!feedbackImprovement,
-          hasEmail: !!feedbackEmail.trim()
-        });
+        setFeedbackUseful(null);
+        setFeedbackImprovement('');
+        setFeedbackEmail('');
       };
 
       const dismissFeedback = (dontAskAgain) => {
