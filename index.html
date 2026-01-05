@@ -133,18 +133,77 @@
       link.click();
     };
 
+    const generateCSVContent = (hrvHistory, complianceLog, userName, hrvSource) => {
+      const allDates = [...new Set([...hrvHistory.map(h => h.date), ...complianceLog.map(c => c.date)])].sort();
+      const headers = ['Date', 'HRV (ms)', 'Command', 'Followed', 'Energy', 'Source'];
+      const rows = allDates.map(date => {
+        const hrv = hrvHistory.find(h => h.date === date);
+        const compliance = complianceLog.find(c => c.date === date);
+        return [date, hrv?.value || '', compliance?.command || '', compliance?.followed || '', compliance?.energy || '', hrvSource?.label || ''];
+      });
+      return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    };
+
+    const InfoModal = ({ onClose }) => (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" onClick={onClose}>
+        <div className="bg-slate-800 rounded-2xl p-6 max-w-md max-h-[80vh] overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">How GENYSYS Works</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white text-2xl">&times;</button>
+          </div>
+          
+          <div className="space-y-4 text-sm text-slate-300">
+            <p>Your nervous system tells us how recovered you are. We read it. We tell you what to do.</p>
+            
+            <div className="bg-slate-700/50 rounded-lg p-3 space-y-2">
+              <div className="flex items-center gap-2"><span className="text-red-400 font-bold">REST</span> <span className="text-slate-400">→ Light movement only. System needs recovery.</span></div>
+              <div className="flex items-center gap-2"><span className="text-amber-400 font-bold">BUILD</span> <span className="text-slate-400">→ Standard training. Execute your program.</span></div>
+              <div className="flex items-center gap-2"><span className="text-green-400 font-bold">PERFORM</span> <span className="text-slate-400">→ System primed. Push hard. Chase PRs.</span></div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-white mb-1">The Process</h3>
+              <ol className="list-decimal list-inside space-y-1 text-slate-400">
+                <li>Log your morning HRV from any wearable</li>
+                <li>After 3 days: Preview commands begin</li>
+                <li>After 7 days: Full personalized baseline</li>
+              </ol>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-white mb-1">No Wearable?</h3>
+              <p className="text-slate-400">Download <a href="https://apps.apple.com/app/welltory/id1074367771" className="text-blue-400 underline">Welltory</a> (free). Take a 1-minute reading with your phone camera each morning.</p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-white mb-1">Your Data</h3>
+              <p className="text-slate-400">Everything stays on your device. Export anytime. Nothing sent to any server unless you tap "Send Results".</p>
+            </div>
+
+            <div className="pt-2 border-t border-slate-700">
+              <p className="text-slate-500 text-xs">GENYSYS Private Beta — Your feedback shapes what we build next.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
     const App = () => {
       const [hrvHistory, setHrvHistory] = useState([]);
       const [complianceLog, setComplianceLog] = useState([]);
       const [todayHRV, setTodayHRV] = useState('');
       const [result, setResult] = useState(null);
       const [showHistory, setShowHistory] = useState(false);
+      const [showInfo, setShowInfo] = useState(false);
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
       const [userName, setUserName] = useState('');
       const [hrvSource, setHrvSource] = useState(null); // {type: 'WHOOP'|etc, custom?: string}
       const [isLoading, setIsLoading] = useState(true);
       const [otherSourceText, setOtherSourceText] = useState('');
+
+      const CONTACT_EMAIL = 'YOUR_EMAIL@gmail.com'; // UPDATE THIS
+      const [showInfo, setShowInfo] = useState(false);
 
       const HRV_SOURCES = [
         { id: 'whoop', label: 'WHOOP' },
@@ -275,6 +334,13 @@
 
       const clearHistory = () => { setHrvHistory([]); setComplianceLog([]); setResult(null); };
       const resetAll = () => { localStorage.removeItem('genysys_user_data'); setHrvHistory([]); setComplianceLog([]); setUserName(''); setHrvSource(null); setResult(null); setTodayHRV(''); };
+      
+      const sendResults = () => {
+        const csv = generateCSVContent(hrvHistory, complianceLog, userName, hrvSource);
+        const subject = encodeURIComponent(`GENYSYS Data - ${userName || 'User'} - ${new Date().toISOString().split('T')[0]}`);
+        const body = encodeURIComponent(`Name: ${userName || 'Not provided'}\nSource: ${hrvSource?.label || 'Not provided'}\nDays logged: ${hrvHistory.length}\n\n--- DATA ---\n\n${csv}\n\n--- END ---`);
+        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+      };
 
       if (isLoading) return <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center"><div className="text-slate-400">Loading...</div></div>;
 
@@ -342,11 +408,17 @@
             
             {/* Header */}
             <div className="flex items-center justify-between pt-2 pb-1">
-              <div className="text-xs text-slate-600">{hrvSource?.label}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-slate-600">{hrvSource?.label}</div>
+                <button onClick={() => setShowInfo(true)} className="text-slate-500 hover:text-slate-300 text-sm">ⓘ</button>
+              </div>
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 {userName && <span>{userName}</span>}
               </div>
             </div>
+
+            {/* Info Modal */}
+            {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
 
             {/* Yesterday Compliance */}
             {needsYesterdayCompliance && (
@@ -495,9 +567,16 @@
             </div>
 
             {/* Export & Reset */}
-            <div className="flex gap-2">
-              {hrvHistory.length > 0 && <button onClick={() => exportToCSV(hrvHistory, complianceLog, userName, hrvSource)} className="flex-1 bg-slate-800 text-slate-400 text-xs py-2 rounded-lg hover:bg-slate-700 transition">Export CSV</button>}
-              <button onClick={resetAll} className="flex-1 text-slate-600 text-xs py-2 hover:text-red-400 transition">Reset All Data</button>
+            <div className="space-y-2">
+              {hrvHistory.length >= 7 && (
+                <button onClick={sendResults} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-3 rounded-lg font-medium transition">
+                  📤 Send Results
+                </button>
+              )}
+              <div className="flex gap-2">
+                {hrvHistory.length > 0 && <button onClick={() => exportToCSV(hrvHistory, complianceLog, userName, hrvSource)} className="flex-1 bg-slate-800 text-slate-400 text-xs py-2 rounded-lg hover:bg-slate-700 transition">Export CSV</button>}
+                <button onClick={resetAll} className="flex-1 text-slate-600 text-xs py-2 hover:text-red-400 transition">Reset All Data</button>
+              </div>
             </div>
           </div>
         </div>
