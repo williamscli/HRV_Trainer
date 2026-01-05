@@ -217,6 +217,7 @@
       const [showHistory, setShowHistory] = useState(false);
       const [showInfo, setShowInfo] = useState(false);
       const [showOnboarding, setShowOnboarding] = useState(true);
+      const [onboardingStep, setOnboardingStep] = useState(1);
       const [showHrvGuide, setShowHrvGuide] = useState(false);
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
@@ -225,7 +226,7 @@
       const [isLoading, setIsLoading] = useState(true);
       const [otherSourceText, setOtherSourceText] = useState('');
 
-      const CONTACT_EMAIL = 'clinton.bill.williams@gmail.com'; // UPDATE THIS
+      const CONTACT_EMAIL = 'YOUR_EMAIL@gmail.com'; // UPDATE THIS
 
       const HRV_SOURCES = [
         { id: 'whoop', label: 'WHOOP' },
@@ -443,43 +444,70 @@
           <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col justify-center overflow-x-hidden">
             <div className="max-w-md mx-auto space-y-8">
               
-              <div className="text-center space-y-3">
-                <p className="text-slate-500">Stop guessing if you should train hard or rest.</p>
-                <p className="text-white text-2xl font-semibold">Your body already knows. We translate.</p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-red-400 font-black text-xl">REST</span>
-                    <span className="text-slate-500">→</span>
-                    <span className="text-slate-300 text-sm">Take it easy. Walk, stretch, recover.</span>
+              {onboardingStep === 1 && (
+                <>
+                  <div className="space-y-6 text-center">
+                    <div className="space-y-4 text-slate-400">
+                      <p>Your Fitbit says 65.</p>
+                      <p>Your Apple Watch says "High Readiness."</p>
+                      <p>Your WHOOP says you're in the green.</p>
+                    </div>
+                    <p className="text-white text-2xl font-semibold">But should you push hard today or take it easy?</p>
+                    <p className="text-slate-500 text-lg">They won't tell you.</p>
                   </div>
-                </div>
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-amber-400 font-black text-xl">BUILD</span>
-                    <span className="text-slate-500">→</span>
-                    <span className="text-slate-300 text-sm">Normal day. Train as planned.</span>
-                  </div>
-                </div>
-                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-400 font-black text-xl">PERFORM</span>
-                    <span className="text-slate-500">→</span>
-                    <span className="text-slate-300 text-sm">Go all out. PRs, max effort, compete.</span>
-                  </div>
-                </div>
-              </div>
+                  <button 
+                    onClick={() => setOnboardingStep(2)}
+                    className="w-full bg-white text-slate-900 font-semibold py-4 rounded-xl text-lg hover:bg-slate-100 transition"
+                  >
+                    Next
+                  </button>
+                </>
+              )}
 
-              <p className="text-slate-600 text-sm text-center">We read your morning HRV and give you one word.</p>
+              {onboardingStep === 2 && (
+                <>
+                  <div className="space-y-6 text-center">
+                    <p className="text-white text-3xl font-bold">We will.</p>
+                    <p className="text-slate-400">One word. Every morning.</p>
+                    <div className="flex justify-center gap-6 py-4">
+                      <span className="text-red-400 font-black text-3xl">REST</span>
+                      <span className="text-amber-400 font-black text-3xl">BUILD</span>
+                      <span className="text-green-400 font-black text-3xl">PERFORM</span>
+                    </div>
+                    <div className="space-y-2 text-slate-500">
+                      <p>Not another score. Not "insights."</p>
+                      <p className="text-slate-300">A decision. Already made.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setOnboardingStep(3)}
+                    className="w-full bg-white text-slate-900 font-semibold py-4 rounded-xl text-lg hover:bg-slate-100 transition"
+                  >
+                    Next
+                  </button>
+                </>
+              )}
 
-              <button 
-                onClick={() => setShowOnboarding(false)}
-                className="w-full bg-white text-slate-900 font-semibold py-4 rounded-xl text-lg hover:bg-slate-100 transition"
-              >
-                Get Started
-              </button>
+              {onboardingStep === 3 && (
+                <>
+                  <div className="space-y-6 text-center">
+                    <p className="text-white text-2xl font-semibold">Validated on 2,249 days of real data.</p>
+                    <div className="space-y-3 text-slate-400">
+                      <p>When people follow the command, they crash <span className="text-white font-medium">2-4x less</span>.</p>
+                      <p>When they ignore it, they pay for it.</p>
+                    </div>
+                    <p className="text-slate-300 pt-4">Your wearable becomes a coach that tells you what to do — not a dashboard that makes you guess.</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowOnboarding(false)}
+                    className="w-full bg-white text-slate-900 font-semibold py-4 rounded-xl text-lg hover:bg-slate-100 transition"
+                  >
+                    Get Started
+                  </button>
+                  <p className="text-slate-600 text-xs text-center">No wearable? No problem. We'll show you a free app that uses just your phone camera.</p>
+                </>
+              )}
+
             </div>
           </div>
         );
