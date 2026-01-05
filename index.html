@@ -144,7 +144,9 @@
       return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     };
 
-    const InfoModal = ({ onClose }) => (
+    const InfoModal = ({ onClose, hrvSource }) => {
+      const guide = HRV_GUIDES[hrvSource?.type] || HRV_GUIDES.other;
+      return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" onClick={onClose}>
         <div className="bg-slate-800 rounded-2xl p-6 max-w-md max-h-[80vh] overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center">
@@ -162,9 +164,23 @@
             </div>
 
             <div>
+              <h3 className="font-semibold text-white mb-1">What is HRV?</h3>
+              <p className="text-slate-400">Heart Rate Variability — the time variation between heartbeats, measured in milliseconds (ms). Higher usually means more recovered. Most people range from 20-100ms.</p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-white mb-1">Where to find your HRV ({hrvSource?.label})</h3>
+              <ol className="list-decimal list-inside space-y-1 text-slate-400">
+                {guide.steps.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ol>
+            </div>
+
+            <div>
               <h3 className="font-semibold text-white mb-1">The Process</h3>
               <ol className="list-decimal list-inside space-y-1 text-slate-400">
-                <li>Log your morning HRV from any wearable</li>
+                <li>Log your morning HRV from your device</li>
                 <li>After 3 days: Preview commands begin</li>
                 <li>After 7 days: Full personalized baseline</li>
               </ol>
@@ -179,11 +195,6 @@
               </div>
             </div>
 
-            <div>
-              <h3 className="font-semibold text-white mb-1">Your Data</h3>
-              <p className="text-slate-400">Everything stays on your device. Export anytime. Nothing sent to any server unless you tap "Send Results".</p>
-            </div>
-
             <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3">
               <h3 className="font-semibold text-amber-400 mb-1">⚠️ Use the Same Device</h3>
               <p className="text-slate-400 text-xs">Your data is stored locally on this device only. It won't transfer to other phones or computers. Always log from the same device.</p>
@@ -196,6 +207,7 @@
         </div>
       </div>
     );
+    };
 
     const App = () => {
       const [hrvHistory, setHrvHistory] = useState([]);
@@ -205,6 +217,7 @@
       const [showHistory, setShowHistory] = useState(false);
       const [showInfo, setShowInfo] = useState(false);
       const [showOnboarding, setShowOnboarding] = useState(true);
+      const [showHrvGuide, setShowHrvGuide] = useState(false);
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
       const [userName, setUserName] = useState('');
@@ -212,16 +225,83 @@
       const [isLoading, setIsLoading] = useState(true);
       const [otherSourceText, setOtherSourceText] = useState('');
 
-      const CONTACT_EMAIL = 'YOUR_EMAIL@gmail.com'; // UPDATE THIS
+      const CONTACT_EMAIL = 'clinton.bill.williams@gmail.com'; // UPDATE THIS
 
       const HRV_SOURCES = [
         { id: 'whoop', label: 'WHOOP' },
         { id: 'apple', label: 'Apple Watch' },
         { id: 'oura', label: 'Oura' },
         { id: 'garmin', label: 'Garmin' },
+        { id: 'fitbit', label: 'Fitbit' },
         { id: 'welltory', label: 'Welltory (Phone Camera)' },
         { id: 'other', label: 'Other' },
       ];
+
+      const HRV_GUIDES = {
+        whoop: {
+          title: 'Finding HRV in WHOOP',
+          steps: [
+            'Open the WHOOP app',
+            'Tap on today\'s Recovery score',
+            'Look for "HRV" — it\'s in milliseconds (ms)',
+            'Use the number next to "HRV" (e.g., 45, 62, 78)'
+          ]
+        },
+        apple: {
+          title: 'Finding HRV on Apple Watch',
+          steps: [
+            'Open the Health app on your iPhone',
+            'Tap Browse → Heart → Heart Rate Variability',
+            'Look at your most recent morning reading',
+            'Use the number in milliseconds (ms)'
+          ]
+        },
+        oura: {
+          title: 'Finding HRV in Oura',
+          steps: [
+            'Open the Oura app',
+            'Tap on Readiness',
+            'Scroll to "HRV Balance"',
+            'Tap to see your average HRV in ms'
+          ]
+        },
+        garmin: {
+          title: 'Finding HRV in Garmin',
+          steps: [
+            'Open Garmin Connect app',
+            'Go to Health Stats → HRV Status',
+            'Look for your overnight HRV average',
+            'Use the number in milliseconds (ms)'
+          ]
+        },
+        fitbit: {
+          title: 'Finding HRV in Fitbit',
+          steps: [
+            'Open the Fitbit app',
+            'Tap the Health Metrics tile (or go to Discover → Health Metrics)',
+            'Look for "Heart Rate Variability"',
+            'Use the number in milliseconds (ms)'
+          ]
+        },
+        welltory: {
+          title: 'Taking HRV with Welltory',
+          steps: [
+            'Open Welltory each morning before getting up',
+            'Tap "Measure" and place finger on camera',
+            'Wait 1-2 minutes for the reading',
+            'Use the HRV number shown (in ms)'
+          ]
+        },
+        other: {
+          title: 'Finding Your HRV',
+          steps: [
+            'Open your health/fitness app',
+            'Look for "HRV" or "Heart Rate Variability"',
+            'Find the number in milliseconds (ms)',
+            'Usually shown as a number like 35-100'
+          ]
+        }
+      };
 
       // Load from localStorage
       useEffect(() => {
@@ -233,6 +313,10 @@
             setUserName(data.userName || '');
             setComplianceLog(data.complianceLog || []);
             setHrvSource(data.hrvSource || null);
+            // Skip onboarding for returning users
+            if (data.hrvSource) {
+              setShowOnboarding(false);
+            }
           }
         } catch (e) { console.log('No saved data'); }
         setIsLoading(false);
@@ -406,52 +490,110 @@
         return (
           <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
             <div className="max-w-md mx-auto space-y-6 pt-8">
-              <div className="text-center space-y-4">
-                <h1 className="text-3xl font-bold">Welcome</h1>
-                <p className="text-slate-400">Your nervous system tells us how recovered you are.</p>
-                <p className="text-slate-400">We read it. We tell you what to do.</p>
+              <div className="text-center space-y-2">
+                <h1 className="text-2xl font-bold">Where do you get your HRV?</h1>
+                <p className="text-slate-500 text-sm">We'll show you exactly where to find it</p>
               </div>
               
-              <div className="pt-4">
-                <div className="text-sm text-slate-500 uppercase tracking-wide mb-3">Where do you get your HRV?</div>
-                <div className="space-y-2">
-                  {HRV_SOURCES.map(source => (
-                    <button
-                      key={source.id}
-                      onClick={() => source.id !== 'other' && setHrvSource({ type: source.id, label: source.label })}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition ${
-                        source.id === 'other' 
-                          ? 'bg-slate-800/50 text-slate-400' 
-                          : 'bg-slate-800 hover:bg-slate-700 text-white'
-                      }`}
-                    >
-                      {source.label}
-                    </button>
-                  ))}
-                </div>
-                
-                {/* Other input */}
-                <div className="mt-3 flex gap-2">
-                  <input
-                    type="text"
-                    value={otherSourceText}
-                    onChange={(e) => setOtherSourceText(e.target.value)}
-                    placeholder="Other source..."
-                    className="flex-1 min-w-0 bg-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+              <div className="space-y-2">
+                {HRV_SOURCES.map(source => (
                   <button
-                    onClick={() => otherSourceText.trim() && setHrvSource({ type: 'other', label: otherSourceText.trim() })}
-                    disabled={!otherSourceText.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 rounded-lg px-4 py-3 font-medium transition shrink-0"
+                    key={source.id}
+                    onClick={() => {
+                      if (source.id !== 'other') {
+                        setHrvSource({ type: source.id, label: source.label });
+                        setShowHrvGuide(true);
+                      }
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition ${
+                      source.id === 'other' 
+                        ? 'bg-slate-800/50 text-slate-400' 
+                        : 'bg-slate-800 hover:bg-slate-700 text-white'
+                    }`}
                   >
-                    Go
+                    {source.label}
                   </button>
-                </div>
+                ))}
+              </div>
+              
+              {/* Other input */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={otherSourceText}
+                  onChange={(e) => setOtherSourceText(e.target.value)}
+                  placeholder="Other source..."
+                  className="flex-1 min-w-0 bg-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={() => {
+                    if (otherSourceText.trim()) {
+                      setHrvSource({ type: 'other', label: otherSourceText.trim() });
+                      setShowHrvGuide(true);
+                    }
+                  }}
+                  disabled={!otherSourceText.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 rounded-lg px-4 py-3 font-medium transition shrink-0"
+                >
+                  Go
+                </button>
               </div>
 
-              <div className="text-center text-slate-600 text-xs pt-8">
-                Don't have a wearable? Use <span className="text-slate-400">Welltory</span> (free) with your phone camera.
+              <div className="text-center text-slate-600 text-xs pt-4">
+                Don't have a wearable? Select <span className="text-slate-400">Welltory</span> — it's free and uses your phone camera.
               </div>
+            </div>
+          </div>
+        );
+      }
+
+      // HRV Guide screen (shows after device selection)
+      if (showHrvGuide) {
+        const guide = HRV_GUIDES[hrvSource.type] || HRV_GUIDES.other;
+        return (
+          <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
+            <div className="max-w-md mx-auto space-y-6 pt-8">
+              
+              <div className="text-center space-y-2">
+                <h1 className="text-2xl font-bold">{guide.title}</h1>
+              </div>
+
+              {/* What is HRV */}
+              <div className="bg-slate-800/50 rounded-xl p-4 space-y-2">
+                <h3 className="text-slate-400 text-xs uppercase tracking-wide">What is HRV?</h3>
+                <p className="text-slate-300 text-sm">Heart Rate Variability — the variation in time between heartbeats. Higher usually means more recovered. It's measured in milliseconds (ms).</p>
+                <p className="text-slate-500 text-xs">Most people range from 20-100ms. Yours will vary day to day.</p>
+              </div>
+
+              {/* Steps */}
+              <div className="bg-slate-800 rounded-xl p-4 space-y-3">
+                <h3 className="text-slate-400 text-xs uppercase tracking-wide">How to find it</h3>
+                <ol className="space-y-3">
+                  {guide.steps.map((step, i) => (
+                    <li key={i} className="flex gap-3 text-sm">
+                      <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold">{i + 1}</span>
+                      <span className="text-slate-300">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <button 
+                onClick={() => setShowHrvGuide(false)}
+                className="w-full bg-white text-slate-900 font-semibold py-4 rounded-xl text-lg hover:bg-slate-100 transition"
+              >
+                Got it — Let's Start
+              </button>
+
+              <button 
+                onClick={() => {
+                  setHrvSource(null);
+                  setShowHrvGuide(false);
+                }}
+                className="w-full text-slate-600 text-sm py-2 hover:text-slate-400 transition"
+              >
+                ← Choose different device
+              </button>
             </div>
           </div>
         );
@@ -475,7 +617,7 @@
             </div>
 
             {/* Info Modal */}
-            {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
+            {showInfo && <InfoModal onClose={() => setShowInfo(false)} hrvSource={hrvSource} />}
 
             {/* Yesterday Compliance */}
             {needsYesterdayCompliance && (
@@ -567,7 +709,10 @@
             {/* Input */}
             <div className="bg-slate-800 rounded-xl p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-slate-500 uppercase tracking-wide">Today's HRV (ms)</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-slate-500 uppercase tracking-wide">Today's HRV (ms)</label>
+                  <button onClick={() => setShowInfo(true)} className="text-xs text-blue-400 underline">What is HRV?</button>
+                </div>
                 <span className="text-xs text-slate-600">{new Date().toLocaleDateString()}</span>
               </div>
               <div className="flex gap-2">
