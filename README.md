@@ -8,16 +8,25 @@ You're early. This is a lightweight tool to test whether HRV-based training comm
 
 ## ⬇️ Get Started
 
-### Step 1: Download
-Click **[genysys.html](./genysys.html)** above, then click the **Download** button.
+### Open the app
 
-### Step 2: Find the file
-Open your **Downloads** folder on your computer.
+**👉 [https://williamscli.github.io/HRV_Trainer](https://williamscli.github.io/HRV_Trainer)**
 
-### Step 3: Open it
-Double-click `genysys.html` — it will open in your default browser (Chrome, Safari, Firefox, etc.)
+Works on any device — phone, tablet, or computer.
 
-That's it. No install. No account. Your data saves locally on your device.
+### Add to your phone's home screen (recommended)
+
+**iPhone:**
+1. Open the link above in Safari
+2. Tap the **Share** button (square with arrow)
+3. Tap **"Add to Home Screen"**
+4. Now it's on your home screen like an app
+
+**Android:**
+1. Open the link above in Chrome
+2. Tap the **menu** (three dots)
+3. Tap **"Add to Home Screen"**
+4. Now it's on your home screen like an app
 
 ---
 
@@ -82,31 +91,6 @@ Your baseline recalculates daily using your last 14 days of data.
 
 ---
 
-## Quick Start
-
-### On a Computer (Easiest)
-1. Download `genysys.html` (click the file above → Download)
-2. Go to your **Downloads** folder
-3. **Double-click** the file to open in your browser
-4. Bookmark it for easy access tomorrow
-
-### On iPhone
-1. Download `genysys.html` (tap the file above → Download)
-2. Open the **Files** app on your phone
-3. Go to **Downloads** and tap `genysys.html`
-4. It opens in a browser preview
-5. Tap the **Share** button (square with arrow) → **"Add to Home Screen"**
-6. Now it's on your home screen like an app
-
-### On Android
-1. Download `genysys.html` (tap the file above → Download)
-2. Open your **Downloads** folder (or check notifications)
-3. Tap the file to open in Chrome
-4. Tap the **menu** (three dots) → **"Add to Home Screen"**
-5. Now it's on your home screen like an app
-
----
-
 ## Daily Workflow
 
 **Morning (2 minutes):**
@@ -150,9 +134,9 @@ Your data stays on your device. Only share the export if you're comfortable.
 ## File Structure
 
 ```
-genysys-beta/
+HRV_Trainer/
 ├── README.md           # This file
-├── genysys.html        # The app (download this)
+├── index.html          # The app (GitHub Pages serves this)
 ├── genysys.jsx         # React component source (for developers)
 └── genysys_calculator.xlsx  # Excel version (backup option)
 ```
