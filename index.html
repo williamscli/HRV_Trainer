@@ -200,12 +200,12 @@
             </>
           )}
 
-          {/* Step 3: Early access */}
+          {/* Step 3: Early access - single button, email signals interest */}
           {step === 3 && (
             <>
               <div className="text-center space-y-2">
                 <h2 className="text-lg font-semibold text-white">
-                  {useful === 'yes' ? "Glad it's helping." : "Fair."} Here's what's next.
+                  {useful === 'yes' ? "Glad it's helping." : "Fair."} Here's what we're building.
                 </h2>
               </div>
 
@@ -221,25 +221,20 @@
               </div>
 
               <div className="space-y-2 pt-2">
-                <div className="text-slate-400 text-sm">Want early access?</div>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
+                  placeholder="Email for early access"
                   className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <button
-                onClick={() => onSend(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
+                onClick={() => onSend()}
+                className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl transition hover:bg-slate-100"
               >
-                Sign me up
-              </button>
-
-              <button onClick={() => onSend(false)} className="w-full text-slate-500 hover:text-slate-300 text-sm transition">
-                No thanks, just send feedback
+                Send feedback
               </button>
             </>
           )}
@@ -491,9 +486,10 @@
         }
       }, [result]);
 
-      const sendFeedback = (wantsEarlyAccess) => {
+      const sendFeedback = () => {
         const usefulText = feedbackUseful === 'yes' ? '✅ Yes' : '⏳ Not yet';
-        const earlyAccessText = wantsEarlyAccess && feedbackEmail ? `YES - ${feedbackEmail}` : wantsEarlyAccess ? 'YES (no email)' : 'No';
+        const earlyAccessText = feedbackEmail.trim() ? `YES - ${feedbackEmail.trim()}` : 'No (no email provided)';
+        const csvData = generateCSVContent(hrvHistory, complianceLog, userName, hrvSource);
         const subject = encodeURIComponent(`GENYSYS Feedback - ${userName || 'User'} - ${usefulText}`);
         const body = encodeURIComponent(
           `Changed how they train: ${usefulText}\n\n` +
@@ -503,7 +499,8 @@
           `Name: ${userName || 'Not provided'}\n` +
           `Source: ${hrvSource?.label || 'Not provided'}\n` +
           `Days using app: ${getDaysSinceFirstUse()}\n` +
-          `Days logged: ${hrvHistory.length}`
+          `Days logged: ${hrvHistory.length}\n\n` +
+          `=== CSV DATA ===\n\n${csvData}\n\n=== END CSV ===`
         );
         window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
         setFeedbackSubmitted(true);
@@ -636,16 +633,13 @@
           <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col justify-center overflow-x-hidden">
             <div className="max-w-md mx-auto space-y-8">
               
+              {/* Screen 1: The crash */}
               {onboardingStep === 1 && (
                 <>
                   <div className="space-y-6 text-center">
-                    <div className="space-y-4 text-slate-400">
-                      <p>Your Fitbit says 65.</p>
-                      <p>Your Apple Watch says "High Readiness."</p>
-                      <p>Your WHOOP says you're in the green.</p>
-                    </div>
-                    <p className="text-white text-2xl font-semibold">But should you push hard today or take it easy?</p>
-                    <p className="text-slate-500 text-lg">They won't tell you.</p>
+                    <p className="text-slate-400 text-lg">Some days your body says stop.</p>
+                    <p className="text-white text-xl font-medium">You push anyway.</p>
+                    <p className="text-slate-500 text-lg">The next day, you pay for it.</p>
                   </div>
                   <button 
                     onClick={() => setOnboardingStep(2)}
@@ -656,20 +650,13 @@
                 </>
               )}
 
+              {/* Screen 2: The missed opportunity */}
               {onboardingStep === 2 && (
                 <>
                   <div className="space-y-6 text-center">
-                    <p className="text-white text-3xl font-bold">We will.</p>
-                    <p className="text-slate-400">One word. Every morning.</p>
-                    <div className="flex justify-center gap-6 py-4">
-                      <span className="text-red-400 font-black text-3xl">REST</span>
-                      <span className="text-amber-400 font-black text-3xl">BUILD</span>
-                      <span className="text-green-400 font-black text-3xl">PERFORM</span>
-                    </div>
-                    <div className="space-y-2 text-slate-500">
-                      <p>Not another score. Not "insights."</p>
-                      <p className="text-slate-300">A decision. Already made.</p>
-                    </div>
+                    <p className="text-slate-400 text-lg">Some days you're ready to PR.</p>
+                    <p className="text-white text-xl font-medium">But you don't know it. So you hold back.</p>
+                    <p className="text-slate-500 text-lg">That day is gone.</p>
                   </div>
                   <button 
                     onClick={() => setOnboardingStep(3)}
@@ -680,15 +667,35 @@
                 </>
               )}
 
+              {/* Screen 3: The pivot */}
               {onboardingStep === 3 && (
                 <>
+                  <div className="text-center">
+                    <p className="text-white text-2xl font-semibold">What if you knew which day was which?</p>
+                  </div>
+                  <button 
+                    onClick={() => setOnboardingStep(4)}
+                    className="w-full bg-white text-slate-900 font-semibold py-4 rounded-xl text-lg hover:bg-slate-100 transition"
+                  >
+                    Next
+                  </button>
+                </>
+              )}
+
+              {/* Screen 4: The product */}
+              {onboardingStep === 4 && (
+                <>
                   <div className="space-y-6 text-center">
-                    <p className="text-white text-2xl font-semibold">Validated on 2,249 days of real data.</p>
-                    <div className="space-y-3 text-slate-400">
-                      <p>When people follow the command, they crash <span className="text-white font-medium">2-4x less</span>.</p>
-                      <p>When they ignore it, they pay for it.</p>
+                    <p className="text-slate-400">One command. Every morning.</p>
+                    <div className="flex justify-center gap-6 py-2">
+                      <span className="text-red-400 font-black text-3xl">REST</span>
+                      <span className="text-amber-400 font-black text-3xl">BUILD</span>
+                      <span className="text-green-400 font-black text-3xl">PERFORM</span>
                     </div>
-                    <p className="text-slate-300 pt-4">Your wearable becomes a coach that tells you what to do — not a dashboard that makes you guess.</p>
+                    <div className="space-y-2 text-slate-500 text-sm">
+                      <p>Validated on 2,249 days of real data.</p>
+                      <p>When people follow the command, they crash <span className="text-white">2-4x less</span>.</p>
+                    </div>
                   </div>
                   <button 
                     onClick={() => setShowOnboarding(false)}
@@ -696,7 +703,7 @@
                   >
                     Get Started
                   </button>
-                  <p className="text-slate-600 text-xs text-center">No wearable? No problem. We'll show you a free app that uses just your phone camera.</p>
+                  <p className="text-slate-600 text-xs text-center">No wearable? No problem — we'll show you a free option.</p>
                 </>
               )}
 
