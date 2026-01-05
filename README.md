@@ -1,12 +1,23 @@
-# GENYSYS Pre-MVP
+# GENYSYS (Private Beta)
 
 **Your nervous system tells us how recovered you are. We read it. We tell you what to do.**
 
+You're early. This is a lightweight tool to test whether HRV-based training commands actually change behavior. Your feedback shapes what we build next.
+
 ---
 
-## ⬇️ Download
+## ⬇️ Get Started
 
-**[Click here to download genysys.html](./genysys.html)** → Open in any browser → Done.
+### Step 1: Download
+Click **[genysys.html](./genysys.html)** above, then click the **Download** button.
+
+### Step 2: Find the file
+Open your **Downloads** folder on your computer.
+
+### Step 3: Open it
+Double-click `genysys.html` — it will open in your default browser (Chrome, Safari, Firefox, etc.)
+
+That's it. No install. No account. Your data saves locally on your device.
 
 ---
 
@@ -73,43 +84,26 @@ Your baseline recalculates daily using your last 14 days of data.
 
 ## Quick Start
 
-### Option 1: Use Online (Easiest)
+### On a Computer (Easiest)
+1. Download `genysys.html` (click the file above → Download)
+2. Go to your **Downloads** folder
+3. **Double-click** the file to open in your browser
+4. Bookmark it for easy access tomorrow
 
-1. Click on `genysys.html` in the file list above
-2. Click the **Download** button (or "Raw" then save the page)
-3. Open the downloaded file in any browser
+### On iPhone
+1. Download `genysys.html` (tap the file above → Download)
+2. Open the **Files** app on your phone
+3. Go to **Downloads** and tap `genysys.html`
+4. It opens in a browser preview
+5. Tap the **Share** button (square with arrow) → **"Add to Home Screen"**
+6. Now it's on your home screen like an app
 
-That's it. Works on laptop, tablet, or phone. Data saves locally. No account needed.
-
-### Option 2: Mobile Home Screen (Recommended for daily use)
-
-**iPhone:**
-1. Download `genysys.html` to your phone (tap the file, then Download)
-2. Open the file in Safari (find it in Files app, tap to open)
-3. Tap the Share button (square with arrow)
-4. Tap "Add to Home Screen"
-5. Now it works like an app
-
-**Android:**
-1. Download `genysys.html` to your phone
-2. Open the file in Chrome (find it in Downloads, tap to open)
-3. Tap the menu (three dots)
-4. Tap "Add to Home Screen"
-5. Now it works like an app
-
-### Option 3: Run Locally (for developers)
-
-```bash
-# Clone the repo
-git clone https://github.com/[your-username]/genysys-premvp.git
-cd genysys-premvp
-
-# Open directly (no build needed)
-open genysys.html
-
-# Or serve locally
-npx serve .
-```
+### On Android
+1. Download `genysys.html` (tap the file above → Download)
+2. Open your **Downloads** folder (or check notifications)
+3. Tap the file to open in Chrome
+4. Tap the **menu** (three dots) → **"Add to Home Screen"**
+5. Now it's on your home screen like an app
 
 ---
 
@@ -135,30 +129,32 @@ npx serve .
 
 ---
 
-## For Testers
+## For Beta Testers
 
-We're validating whether following these commands improves training outcomes.
+You're helping validate whether this approach actually works.
 
 **What we're measuring:**
-- Do you follow the commands? (Compliance)
-- How do you feel each day? (Energy)
-- Does following REST commands reduce crashes?
+- Do people follow the commands? (Compliance)
+- How do they feel each day? (Energy)
+- Does the system surface useful guidance?
 
 **What we need from you:**
-- Log HRV daily for 2 weeks
+- Log your HRV daily for 2 weeks
 - Answer the compliance prompt honestly
-- Export and share your CSV at the end
+- Export and share your CSV when done
+
+Your data stays on your device. Only share the export if you're comfortable.
 
 ---
 
 ## File Structure
 
 ```
-genysys-premvp/
+genysys-beta/
 ├── README.md           # This file
-├── genysys.html        # Standalone app (open in browser)
-├── genysys_premvp.jsx  # React component source
-└── genysys_calculator.xlsx  # Excel version for manual testing
+├── genysys.html        # The app (download this)
+├── genysys.jsx         # React component source (for developers)
+└── genysys_calculator.xlsx  # Excel version (backup option)
 ```
 
 ---
@@ -197,8 +193,8 @@ MIT — Use it, modify it, share it.
 
 ---
 
-## Contact
+## Feedback
 
-Building this in public. Feedback welcome.
+Building this in public. Questions, bugs, or ideas — reach out:
 
-[Your contact info here]
+[Your email or Twitter here]
