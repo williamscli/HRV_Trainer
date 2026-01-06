@@ -29,7 +29,7 @@
     // ANALYTICS CONFIGURATION
     // ============================================
     // Replace with your Google Apps Script Web App URL
-    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxp_XAHJDYn8gRpbqaHrDjC1u1Dgyy3-i_JU6WS9R62XiFm26tJdhZP1EOi3ID8mgtg/exec';
+    const ANALYTICS_ENDPOINT = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
     
     // Allowed events (must match server allowlist)
     const ALLOWED_EVENTS = [
@@ -556,7 +556,57 @@
       </div>
     );
 
-    const InfoModal = ({ onClose, hrvSource }) => {
+    // THE MIRROR - Full-screen consequence reflection
+    const MirrorMoment = ({ type, onContinue }) => {
+      const mirrors = {
+        knew: {
+          text: "REST was right.",
+          subtext: null,
+          button: "Continue",
+          bg: "bg-slate-900",
+          textColor: "text-white"
+        },
+        earned: {
+          text: "You earned this.",
+          subtext: null,
+          button: "Let's go",
+          bg: "bg-slate-900",
+          textColor: "text-white"
+        },
+        built: {
+          text: "You built this.",
+          subtext: null,
+          button: "Send it",
+          bg: "bg-slate-900", 
+          textColor: "text-emerald-400"
+        }
+      };
+      
+      const mirror = mirrors[type] || mirrors.earned;
+      
+      return (
+        <div className={`fixed inset-0 ${mirror.bg} flex flex-col items-center justify-center z-50 p-8`}>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <h1 className={`text-4xl md:text-5xl font-bold ${mirror.textColor} tracking-tight`}>
+                {mirror.text}
+              </h1>
+              {mirror.subtext && (
+                <p className="text-slate-500 mt-4 text-lg">{mirror.subtext}</p>
+              )}
+            </div>
+          </div>
+          <button 
+            onClick={onContinue}
+            className="w-full max-w-xs bg-white text-slate-900 font-semibold py-4 rounded-xl text-lg hover:bg-slate-100 transition mb-8"
+          >
+            {mirror.button}
+          </button>
+        </div>
+      );
+    };
+
+        const InfoModal = ({ onClose, hrvSource }) => {
       const guide = HRV_GUIDES[hrvSource?.type] || HRV_GUIDES.other;
       return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" onClick={onClose}>
@@ -644,6 +694,8 @@
       const [feedbackRound1DismissedAt, setFeedbackRound1DismissedAt] = useState(null);
       const [feedbackRound2Complete, setFeedbackRound2Complete] = useState(false);
       const [isSecondPrompt, setIsSecondPrompt] = useState(false);
+      const [showMirror, setShowMirror] = useState(false);
+      const [mirrorData, setMirrorData] = useState(null); // { type: 'knew' | 'earned' }
       const [firstUseDate, setFirstUseDate] = useState(null);
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(getTodayLocal());
@@ -925,6 +977,36 @@
         // Track command generation (only for non-LEARNING)
         if (commandKey !== 'LEARNING') {
           Analytics.track('command_generated', { command: commandKey, isPreview });
+        }
+        
+        // ============================================
+        // MIRROR MOMENT CHECK
+        // ============================================
+        // Check if yesterday's loop closed cleanly and we should show a mirror
+        const yesterdayDateForMirror = getYesterdayLocal();
+        const yesterdayDataForMirror = complianceLog.find(c => c.date === yesterdayDateForMirror);
+        
+        if (yesterdayDataForMirror && 
+            yesterdayDataForMirror.command === 'REST' && 
+            yesterdayDataForMirror.followed !== null &&
+            values.length >= THRESHOLDS.MIN_PREVIEW_DAYS) {
+          
+          const median = calculateMedian(values);
+          const mad = calculateMAD(values, median);
+          const zScore = (today - median) / mad;
+          
+          // REST + Ignored + Crashed → "You knew."
+          if (yesterdayDataForMirror.followed === 'no' && zScore < -0.5) {
+            setMirrorData({ type: 'knew' });
+            setShowMirror(true);
+            Analytics.track('mirror_shown', { type: 'knew', zScore: zScore.toFixed(2) });
+          }
+          // REST + Complied + Recovered → "You earned this."
+          else if (yesterdayDataForMirror.followed === 'yes' && zScore > 0) {
+            setMirrorData({ type: 'earned' });
+            setShowMirror(true);
+            Analytics.track('mirror_shown', { type: 'earned', zScore: zScore.toFixed(2) });
+          }
         }
       };
 
@@ -1264,21 +1346,41 @@
       if (!hrvSource && showOnboarding) {
         return (
           <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col justify-center overflow-x-hidden">
-          {/* TEST MODE: Floating Reset Button */}
-          <button 
-            onClick={() => {
-              if (confirm('Reset ALL data and restart onboarding?')) {
-                resetAll();
-                setShowOnboarding(true);
-                setOnboardingStep(1);
-                setShowHrvGuide(false);
-                setShowInitialSetup(false);
-              }
-            }}
-            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
-          >
-            🔄 RESET TEST
-          </button>
+          {/* TEST MODE: Floating Test Buttons */}
+          <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'knew' });
+                setShowMirror(true);
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "REST was right"
+            </button>
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'earned' });
+                setShowMirror(true);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "You earned"
+            </button>
+            <button 
+              onClick={() => {
+                if (confirm('Reset ALL data and restart onboarding?')) {
+                  resetAll();
+                  setShowOnboarding(true);
+                  setOnboardingStep(1);
+                  setShowHrvGuide(false);
+                  setShowInitialSetup(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🔄 RESET TEST
+            </button>
+          </div>
             <div className="max-w-md mx-auto space-y-8">
               
               {/* Screen 1: The crash */}
@@ -1364,21 +1466,41 @@
       if (!hrvSource) {
         return (
           <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
-          {/* TEST MODE: Floating Reset Button */}
-          <button 
-            onClick={() => {
-              if (confirm('Reset ALL data and restart onboarding?')) {
-                resetAll();
-                setShowOnboarding(true);
-                setOnboardingStep(1);
-                setShowHrvGuide(false);
-                setShowInitialSetup(false);
-              }
-            }}
-            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
-          >
-            🔄 RESET TEST
-          </button>
+          {/* TEST MODE: Floating Test Buttons */}
+          <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'knew' });
+                setShowMirror(true);
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "REST was right"
+            </button>
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'earned' });
+                setShowMirror(true);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "You earned"
+            </button>
+            <button 
+              onClick={() => {
+                if (confirm('Reset ALL data and restart onboarding?')) {
+                  resetAll();
+                  setShowOnboarding(true);
+                  setOnboardingStep(1);
+                  setShowHrvGuide(false);
+                  setShowInitialSetup(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🔄 RESET TEST
+            </button>
+          </div>
             <div className="max-w-md mx-auto space-y-6 pt-8">
               <div className="text-center space-y-2">
                 <h1 className="text-2xl font-bold">Where do you get your HRV?</h1>
@@ -1440,21 +1562,41 @@
         const guide = HRV_GUIDES[hrvSource.type] || HRV_GUIDES.other;
         return (
           <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
-          {/* TEST MODE: Floating Reset Button */}
-          <button 
-            onClick={() => {
-              if (confirm('Reset ALL data and restart onboarding?')) {
-                resetAll();
-                setShowOnboarding(true);
-                setOnboardingStep(1);
-                setShowHrvGuide(false);
-                setShowInitialSetup(false);
-              }
-            }}
-            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
-          >
-            🔄 RESET TEST
-          </button>
+          {/* TEST MODE: Floating Test Buttons */}
+          <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'knew' });
+                setShowMirror(true);
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "REST was right"
+            </button>
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'earned' });
+                setShowMirror(true);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "You earned"
+            </button>
+            <button 
+              onClick={() => {
+                if (confirm('Reset ALL data and restart onboarding?')) {
+                  resetAll();
+                  setShowOnboarding(true);
+                  setOnboardingStep(1);
+                  setShowHrvGuide(false);
+                  setShowInitialSetup(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🔄 RESET TEST
+            </button>
+          </div>
             <div className="max-w-md mx-auto space-y-6 pt-8">
               
               <div className="text-center space-y-2">
@@ -1506,21 +1648,41 @@
       if (showInitialSetup) {
         return (
           <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
-          {/* TEST MODE: Floating Reset Button */}
-          <button 
-            onClick={() => {
-              if (confirm('Reset ALL data and restart onboarding?')) {
-                resetAll();
-                setShowOnboarding(true);
-                setOnboardingStep(1);
-                setShowHrvGuide(false);
-                setShowInitialSetup(false);
-              }
-            }}
-            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
-          >
-            🔄 RESET TEST
-          </button>
+          {/* TEST MODE: Floating Test Buttons */}
+          <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'knew' });
+                setShowMirror(true);
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "REST was right"
+            </button>
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'earned' });
+                setShowMirror(true);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "You earned"
+            </button>
+            <button 
+              onClick={() => {
+                if (confirm('Reset ALL data and restart onboarding?')) {
+                  resetAll();
+                  setShowOnboarding(true);
+                  setOnboardingStep(1);
+                  setShowHrvGuide(false);
+                  setShowInitialSetup(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🔄 RESET TEST
+            </button>
+          </div>
             <div className="max-w-md mx-auto space-y-6 pt-8">
               
               <div className="text-center space-y-2">
@@ -1620,21 +1782,41 @@
 
       return (
         <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
-          {/* TEST MODE: Floating Reset Button */}
-          <button 
-            onClick={() => {
-              if (confirm('Reset ALL data and restart onboarding?')) {
-                resetAll();
-                setShowOnboarding(true);
-                setOnboardingStep(1);
-                setShowHrvGuide(false);
-                setShowInitialSetup(false);
-              }
-            }}
-            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
-          >
-            🔄 RESET TEST
-          </button>
+          {/* TEST MODE: Floating Test Buttons */}
+          <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'knew' });
+                setShowMirror(true);
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "REST was right"
+            </button>
+            <button 
+              onClick={() => {
+                setMirrorData({ type: 'earned' });
+                setShowMirror(true);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🪞 TEST "You earned"
+            </button>
+            <button 
+              onClick={() => {
+                if (confirm('Reset ALL data and restart onboarding?')) {
+                  resetAll();
+                  setShowOnboarding(true);
+                  setOnboardingStep(1);
+                  setShowHrvGuide(false);
+                  setShowInitialSetup(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg"
+            >
+              🔄 RESET TEST
+            </button>
+          </div>
           
           <div className="max-w-md mx-auto space-y-4">
             
@@ -1682,6 +1864,18 @@
               onSend={sendFeedback} 
               onDismiss={dismissFeedback} 
             />}
+            
+            {/* THE MIRROR - Shows after HRV entry when loop closes cleanly */}
+            {showMirror && mirrorData && (
+              <MirrorMoment 
+                type={mirrorData.type} 
+                onContinue={() => {
+                  setShowMirror(false);
+                  setMirrorData(null);
+                  Analytics.track('mirror_acknowledged', { type: mirrorData.type });
+                }} 
+              />
+            )}
 
             {/* Missed Yesterday Alert */}
             {missedYesterdayHRV() && !hasTodayHRV && (
@@ -1699,20 +1893,36 @@
               </div>
             )}
 
-            {/* Yesterday - Simple one-tap log */}
+            {/* Yesterday - The confession */}
             {needsYesterdayCompliance && (
-              <div className="bg-slate-800/80 rounded-xl p-4">
-                <div className="text-center mb-3">
-                  <span className="text-slate-500 text-sm">Yesterday: </span>
-                  <span className="text-lg font-semibold" style={{ color: PRESCRIPTIONS[yesterdayData.command]?.color || '#6B7280' }}>{yesterdayData.command}</span>
+              <div className="bg-slate-800/80 rounded-xl p-5">
+                <div className="text-center mb-4">
+                  <div className="text-slate-500 text-sm mb-1">Yesterday</div>
+                  <div className="text-xl">
+                    <span className="text-slate-300">The call was </span>
+                    <span className="font-semibold" style={{ color: PRESCRIPTIONS[yesterdayData.command]?.color || '#6B7280' }}>{yesterdayData.command}</span>
+                  </div>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => recordYesterdayCompliance('yes')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
-                    {yesterdayData.command === 'REST' ? 'Rested' : 'Trained'}
-                  </button>
-                  <button onClick={() => recordYesterdayCompliance('no')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
-                    {yesterdayData.command === 'REST' ? 'Trained' : 'Rested'}
-                  </button>
+                  {yesterdayData.command === 'REST' ? (
+                    <>
+                      <button onClick={() => recordYesterdayCompliance('yes')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
+                        I held back
+                      </button>
+                      <button onClick={() => recordYesterdayCompliance('no')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
+                        I trained anyway
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => recordYesterdayCompliance('yes')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
+                        I trained
+                      </button>
+                      <button onClick={() => recordYesterdayCompliance('no')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
+                        I held back
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
