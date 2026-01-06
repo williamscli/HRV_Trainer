@@ -1,6 +1,6 @@
 # GENYSYS (Private Beta)
 
-**Your nervous system tells us how recovered you are. We read it. We tell you what to do.**
+**Your HRV tells us how recovered you are. We read it. We tell you what to do.**
 
 You're early. This is a lightweight tool to test whether HRV-based training commands actually change behavior. Your feedback shapes what we build next.
 
