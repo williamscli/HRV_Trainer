@@ -721,7 +721,7 @@
         setNewEntry('');
         
         // Track historical HRV entry
-        Analytics.track('hrv_backfilled', { daysLogged: newHistory.length });
+        Analytics.track('hrv_backfilled', { hrv: val, hrvDate: newEntryDate, daysLogged: newHistory.length });
       };
 
       const removeFromHistory = (displayIndex) => {
@@ -771,10 +771,11 @@
         
         // Track HRV logging
         if (isFirstHRV) {
-          Analytics.track('first_hrv_logged', { hrv: today });
+          Analytics.track('first_hrv_logged', { hrv: today, hrvDate: todayDate });
         } else {
           Analytics.track('hrv_logged', { 
-            hrv: today, 
+            hrv: today,
+            hrvDate: todayDate,
             command: commandKey, 
             daysLogged: updatedHistory.length,
             isPreview
@@ -802,6 +803,7 @@
         
         // Track compliance
         Analytics.track('compliance_recorded', { 
+          complianceDate: yesterdayDate,
           command: yesterdayData.command, 
           followed 
         });
