@@ -3,7 +3,8 @@
 **One question:** Does telling someone what to do actually change outcomes?
 
 ---
-
+Click here to use the app:
+**👉 [https://williamscli.github.io/HRV_Trainer](https://williamscli.github.io/HRV_Trainer)**
 ## The Problem
 
 Every wearable gives you data. Recovery scores. Readiness percentages. Colored rings.
