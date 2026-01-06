@@ -944,62 +944,151 @@
       // ============================================
       // COMMAND CONTEXT - The feedback loop
       // Shows consequence history WITH the command
+      // 
+      // Window logic:
+      // - Minimum: 3 REST decisions before showing stats
+      // - Sample: last 5 REST decisions (however long that takes)
+      // - Maximum: 60 days cap for relevance
+      // - Streak: consecutive from today, no window
+      // 
+      // Core loop: Command → Comply/Override → Outcome → Evidence → Trust
+      // 
+      // Recovery = next day HRV z-score >= -1.0 (above crash threshold)
+      // Crash = next day HRV z-score < -1.0 (in crash zone)
       // ============================================
       const getCommandContext = () => {
         if (!result || !result.commandKey || result.commandKey === 'LEARNING') return null;
-        if (!evidence) return null;
         
-        const { restFollowed, restIgnored, wastedSessions, protectedDays } = evidence;
+        // Get baseline for crash detection
+        const values = hrvHistory.map(h => h.value).sort((a,b) => a - b);
+        if (values.length < 5) return null;
+        const median = values[Math.floor(values.length / 2)];
+        const deviations = values.map(v => Math.abs(v - median));
+        const mad = Math.max(deviations.sort((a,b) => a - b)[Math.floor(deviations.length / 2)] * 1.4826, THRESHOLDS.MAD_FLOOR);
+        
+        // 60-day cap for relevance
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+        
+        // Get all REST logs within 60 days, sorted newest first
+        const restLogs = complianceLog
+          .filter(log => {
+            const logDate = new Date(log.date);
+            return logDate >= sixtyDaysAgo && log.command === 'REST' && log.followed;
+          })
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Take last 5 REST decisions (or fewer if not enough)
+        const recentRestLogs = restLogs.slice(0, 5);
+        
+        // Calculate streak (consecutive REST followed from most recent)
+        let currentRestStreak = 0;
+        for (const log of restLogs) {
+          if (log.followed === 'yes') {
+            currentRestStreak++;
+          } else {
+            break;
+          }
+        }
+        
+        // Calculate outcomes for REST commands
+        let recentRestIgnored = [];
+        let recentRestFollowed = [];
+        
+        recentRestLogs.forEach(log => {
+          // Find next day's HRV
+          const logDate = new Date(log.date);
+          const nextDate = new Date(logDate);
+          nextDate.setDate(nextDate.getDate() + 1);
+          const nextDateStr = getLocalDateString(nextDate);
+          const nextDayHRV = hrvHistory.find(h => h.date === nextDateStr);
+          
+          if (!nextDayHRV) return;
+          
+          // Crash = next day z-score below REST threshold (-1.0)
+          const zScore = (nextDayHRV.value - median) / mad;
+          const crashed = zScore < THRESHOLDS.REST;
+          
+          if (log.followed === 'yes') {
+            recentRestFollowed.push({ crashed });
+          } else if (log.followed === 'no') {
+            recentRestIgnored.push({ crashed });
+          }
+        });
+        
+        const totalRestDecisions = recentRestFollowed.length + recentRestIgnored.length;
         
         if (result.commandKey === 'REST') {
-          // For REST: show what happened when they ignored before
-          if (restIgnored.total === 0 && restFollowed.total === 0) {
-            return null; // No REST history yet
+          // Need at least 3 REST decisions before showing stats
+          if (totalRestDecisions < 3) return null;
+          
+          const ignoredCount = recentRestIgnored.length;
+          const crashedAfterIgnore = recentRestIgnored.filter(r => r.crashed).length;
+          const followedCount = recentRestFollowed.length;
+          const recoveredAfterFollow = recentRestFollowed.filter(r => !r.crashed).length;
+          
+          // Priority: show ignore consequences if they exist
+          if (ignoredCount > 0 && crashedAfterIgnore > 0) {
+            return {
+              type: 'warning',
+              text: `You trained through ${ignoredCount} REST day${ignoredCount > 1 ? 's' : ''}. ${crashedAfterIgnore} time${crashedAfterIgnore > 1 ? 's' : ''} you weren't ready the next morning.`
+            };
           }
           
-          if (restIgnored.total > 0 && restIgnored.crashed > 0) {
-            // They've ignored REST and crashed before
-            const crashRate = Math.round((restIgnored.crashed / restIgnored.total) * 100);
-            if (restIgnored.crashed === restIgnored.total) {
-              return {
-                type: 'warning',
-                text: `You've ignored REST ${restIgnored.total} time${restIgnored.total > 1 ? 's' : ''}. Crashed every time.`
-              };
-            } else {
-              return {
-                type: 'warning', 
-                text: `${restIgnored.crashed} crash${restIgnored.crashed > 1 ? 'es' : ''} after ignoring REST. ${crashRate}% of the time.`
-              };
-            }
-          } else if (restIgnored.total > 0 && restIgnored.crashed === 0) {
-            // They've ignored REST but gotten lucky so far
-            return {
-              type: 'caution',
-              text: `You've ignored REST ${restIgnored.total} time${restIgnored.total > 1 ? 's' : ''} without crashing. Luck runs out.`
-            };
-          } else if (restFollowed.total > 0) {
-            // They follow REST — affirm the pattern
-            const recoveryRate = Math.round(((restFollowed.total - restFollowed.crashed) / restFollowed.total) * 100);
+          // Otherwise show follow outcomes
+          if (followedCount > 0 && recoveredAfterFollow > 0) {
             return {
               type: 'affirm',
-              text: `${recoveryRate}% recovery rate when you follow REST.`
+              text: `You followed REST ${followedCount} time${followedCount > 1 ? 's' : ''}. ${recoveredAfterFollow} morning${recoveredAfterFollow > 1 ? 's' : ''} you woke up ready to train.`
             };
           }
         }
         
-        if (result.commandKey === 'BUILD' || result.commandKey === 'PERFORM') {
-          // For BUILD/PERFORM: show they've earned this
-          if (protectedDays > 0) {
+        // PERFORM only — HRV earned this, streak rewards the pattern
+        if (result.commandKey === 'PERFORM' && currentRestStreak >= 1) {
+          if (currentRestStreak >= 3) {
             return {
               type: 'earned',
-              text: `${protectedDays} REST day${protectedDays > 1 ? 's' : ''} followed. You earned this.`
+              text: `${currentRestStreak} REST days banked. You earned this.`
             };
-          } else if (restFollowed.total > 0) {
+          } else {
             return {
               type: 'earned',
-              text: `Recovery banked. Window open.`
+              text: `Recovery banked. Go.`
             };
           }
+        }
+        
+        // BUILD — the goal state. Show functional ratio (last 10 days).
+        if (result.commandKey === 'BUILD') {
+          // Calculate functional days in last 10
+          const sortedHRV = [...hrvHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+          const lastTen = sortedHRV.slice(0, 10);
+          
+          if (lastTen.length < 5) return null; // Not enough data
+          
+          let functionalCount = 0;
+          for (const entry of lastTen) {
+            const zScore = (entry.value - median) / mad;
+            if (zScore >= THRESHOLDS.REST) {
+              functionalCount++;
+            }
+          }
+          
+          const totalDays = lastTen.length;
+          
+          if (functionalCount >= 8) {
+            return {
+              type: 'affirm',
+              text: `${functionalCount} of your last ${totalDays} mornings ready to train.`
+            };
+          } else if (functionalCount >= 6) {
+            return {
+              type: 'affirm',
+              text: `${functionalCount} of ${totalDays} mornings ready. System is working.`
+            };
+          }
+          // < 6: no message, don't rub it in
         }
         
         return null;
@@ -1252,9 +1341,9 @@
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => recordYesterdayCompliance('rested')} className="flex-1 bg-slate-600/20 hover:bg-slate-600/30 text-slate-400 rounded-lg py-2 text-sm font-medium transition">😴 Rested</button>
-                    <button onClick={() => recordYesterdayCompliance('light')} className="flex-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg py-2 text-sm font-medium transition">🚶 Light</button>
-                    <button onClick={() => recordYesterdayCompliance('pushed')} className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg py-2 text-sm font-medium transition">💪 Pushed</button>
+                    <button onClick={() => recordYesterdayCompliance('skipped')} className="flex-1 bg-slate-600/20 hover:bg-slate-600/30 text-slate-400 rounded-lg py-2 text-sm font-medium transition">Skipped</button>
+                    <button onClick={() => recordYesterdayCompliance('trained')} className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg py-2 text-sm font-medium transition">Trained</button>
+                    <button onClick={() => recordYesterdayCompliance('sent_it')} className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg py-2 text-sm font-medium transition">Sent It</button>
                   </div>
                 )}
               </div>
