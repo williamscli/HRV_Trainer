@@ -27,7 +27,7 @@
     // ANALYTICS CONFIGURATION
     // ============================================
     // Replace with your Google Apps Script Web App URL
-    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxp_XAHJDYn8gRpbqaHrDjC1u1Dgyy3-i_JU6WS9R62XiFm26tJdhZP1EOi3ID8mgtg/exec';
+    const ANALYTICS_ENDPOINT = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
     
     // Allowed events (must match server allowlist)
     const ALLOWED_EVENTS = [
@@ -80,17 +80,17 @@
           if (appData) {
             try {
               const parsed = JSON.parse(appData);
-              this.firstUseDate = parsed.firstUseDate || new Date().toISOString().split('T')[0];
+              this.firstUseDate = parsed.firstUseDate || getTodayLocal();
               // Track that this is a migrated legacy user (delay to ensure init completes)
               setTimeout(() => this.track('legacy_user_migrated', { 
                 device: parsed.hrvSource?.label || 'unknown',
                 daysLogged: parsed.hrvHistory?.length || 0
               }), 100);
             } catch (e) {
-              this.firstUseDate = new Date().toISOString().split('T')[0];
+              this.firstUseDate = getTodayLocal();
             }
           } else {
-            this.firstUseDate = new Date().toISOString().split('T')[0];
+            this.firstUseDate = getTodayLocal();
           }
           
           this.save();
@@ -155,6 +155,24 @@
 
     // Initialize analytics
     Analytics.init();
+
+    // ============================================
+    // DATE HELPERS (use local time, not UTC)
+    // ============================================
+    const getLocalDateString = (date = new Date()) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const getTodayLocal = () => getLocalDateString();
+    
+    const getYesterdayLocal = () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      return getLocalDateString(yesterday);
+    };
 
     // ============================================
     // APP CONFIGURATION
@@ -266,7 +284,7 @@
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `genysys_hrv_${userName || 'data'}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `genysys_hrv_${userName || 'data'}_${getTodayLocal()}.csv`;
       link.click();
       
       // Track export
@@ -533,7 +551,7 @@
       const [feedbackDismissedAt, setFeedbackDismissedAt] = useState(null);
       const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
       const [newEntry, setNewEntry] = useState('');
-      const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
+      const [newEntryDate, setNewEntryDate] = useState(getTodayLocal());
       const [userName, setUserName] = useState('');
       const [hrvSource, setHrvSource] = useState(null); // {type: 'WHOOP'|etc, custom?: string}
       const [isLoading, setIsLoading] = useState(true);
@@ -600,7 +618,7 @@
       // Set firstUseDate when user first completes onboarding
       useEffect(() => {
         if (hrvSource && !firstUseDate) {
-          setFirstUseDate(new Date().toISOString().split('T')[0]);
+          setFirstUseDate(getTodayLocal());
         }
       }, [hrvSource, firstUseDate]);
 
@@ -677,7 +695,7 @@
         if (dontAskAgain) {
           setFeedbackSubmitted(true);
         } else {
-          setFeedbackDismissedAt(new Date().toISOString().split('T')[0]);
+          setFeedbackDismissedAt(getTodayLocal());
         }
         setShowFeedback(false);
         setFeedbackStep(1);
@@ -689,7 +707,7 @@
       // Auto-calculate if today's data exists
       useEffect(() => {
         if (isLoading) return;
-        const todayDate = new Date().toISOString().split('T')[0];
+        const todayDate = getTodayLocal();
         const todayEntry = hrvHistory.find(h => h.date === todayDate);
         if (todayEntry) {
           setTodayHRV(todayEntry.value.toString());
@@ -733,7 +751,7 @@
         const today = parseFloat(todayHRV);
         if (isNaN(today) || today <= 0) { setResult({ error: 'Enter valid HRV' }); return; }
         
-        const todayDate = new Date().toISOString().split('T')[0];
+        const todayDate = getTodayLocal();
         const existingIndex = hrvHistory.findIndex(h => h.date === todayDate);
         const isFirstHRV = hrvHistory.length === 0;
         
@@ -789,12 +807,11 @@
       };
 
       // Yesterday compliance logic
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayDate = yesterday.toISOString().split('T')[0];
+      const yesterdayDate = getYesterdayLocal();
       const yesterdayData = complianceLog.find(c => c.date === yesterdayDate);
       const needsYesterdayCompliance = yesterdayData && yesterdayData.command && yesterdayData.command !== 'LEARNING' && yesterdayData.followed === null;
 
-      const todayDate = new Date().toISOString().split('T')[0];
+      const todayDate = getTodayLocal();
       const todayCompliance = complianceLog.find(c => c.date === todayDate);
       const needsEnergyInput = todayCompliance && todayCompliance.command && todayCompliance.energy === null;
 
@@ -841,7 +858,7 @@
       
       const sendResults = () => {
         const csv = generateCSVContent(hrvHistory, complianceLog, userName, hrvSource);
-        const subject = encodeURIComponent(`GENYSYS Data - ${userName || 'User'} - ${new Date().toISOString().split('T')[0]}`);
+        const subject = encodeURIComponent(`GENYSYS Data - ${userName || 'User'} - ${getTodayLocal()}`);
         const body = encodeURIComponent(`Name: ${userName || 'Not provided'}\nSource: ${hrvSource?.label || 'Not provided'}\nDays logged: ${hrvHistory.length}\n\n--- DATA ---\n\n${csv}\n\n--- END ---`);
         window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
         
@@ -1217,7 +1234,7 @@
                 <div className="space-y-1 pt-2 max-h-40 overflow-y-auto">
                   {[...hrvHistory].reverse().map((entry, i) => (
                     <div key={i} className="flex justify-between items-center text-xs text-slate-500 py-1 border-b border-slate-700/50">
-                      <span className="flex items-center gap-2">{entry.date}{entry.date === new Date().toISOString().split('T')[0] && <span className="text-blue-400 text-[10px]">today</span>}</span>
+                      <span className="flex items-center gap-2">{entry.date}{entry.date === getTodayLocal() && <span className="text-blue-400 text-[10px]">today</span>}</span>
                       <div className="flex items-center gap-3">
                         <span className="font-mono text-slate-400">{entry.value}</span>
                         <button onClick={() => removeFromHistory(i)} className="text-red-400/60 hover:text-red-400">✕</button>
