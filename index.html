@@ -877,7 +877,8 @@
         // Track overall outcomes
         let protectedDays = 0;     // REST followed → recovered
         let missedRecovery = 0;    // REST followed → still crashed
-        let wastedSessions = 0;    // REST ignored → crashed (training was pointless)
+        let overspent = 0;         // REST ignored → crashed (pushed when body said stop)
+        let missedWindows = 0;     // BUILD/PERFORM → skipped (had capacity, didn't use it)
         
         // Functional Days: days you START with capacity (HRV above crash threshold)
         let functionalDays = 0;
@@ -896,35 +897,40 @@
           const nextDateStr = getLocalDateString(nextDate);
           const nextDayHRV = hrvHistory.find(h => h.date === nextDateStr);
           
-          if (!nextDayHRV) return;
-          
-          // Calculate if next day was a "crash" (below -1 z-score)
-          const zScore = (nextDayHRV.value - median) / mad;
-          const crashed = zScore < THRESHOLDS.REST;
-          
           if (log.command === 'REST') {
             // User was told to rest - compliance is yes/no
             if (log.followed === 'yes') {
               // They rested as commanded
               restFollowed.total++;
-              if (crashed) {
-                restFollowed.crashed++;
-                missedRecovery++;
-              } else {
-                protectedDays++;
+              if (nextDayHRV) {
+                const zScore = (nextDayHRV.value - median) / mad;
+                const crashed = zScore < THRESHOLDS.REST;
+                if (crashed) {
+                  restFollowed.crashed++;
+                  missedRecovery++;
+                } else {
+                  protectedDays++;
+                }
               }
             } else if (log.followed === 'no') {
               // They pushed anyway (ignored REST)
               restIgnored.total++;
-              if (crashed) {
-                restIgnored.crashed++;
-                wastedSessions++;  // Training was wasted - they crashed anyway
+              if (nextDayHRV) {
+                const zScore = (nextDayHRV.value - median) / mad;
+                const crashed = zScore < THRESHOLDS.REST;
+                if (crashed) {
+                  restIgnored.crashed++;
+                  overspent++;  // Pushed when body said stop
+                }
               }
-              // If they pushed and didn't crash, they got lucky
+            }
+          } else if (log.command === 'BUILD' || log.command === 'PERFORM') {
+            // User was cleared to train
+            if (log.followed === 'skipped') {
+              // Had capacity but didn't use it
+              missedWindows++;
             }
           }
-          // For BUILD/PERFORM: crashing after hard training is expected/fine
-          // What matters is whether they follow REST when it comes
         });
         
         return {
@@ -934,7 +940,8 @@
           totalDays: hrvHistory.length,
           protectedDays,
           missedRecovery,
-          wastedSessions,
+          overspent,
+          missedWindows,
           hasEnoughData: restFollowed.total + restIgnored.total >= 2
         };
       };
@@ -1421,6 +1428,27 @@
 
             {/* Chart */}
             {result && !result.error && result.zScore !== null && <ZScoreChart zScore={result.zScore} baseline={result.baseline} mad={result.mad} />}
+
+            {/* Stats Bar — subtle summary, only when meaningful */}
+            {evidence && (evidence.totalDays >= 7 || evidence.overspent > 0 || evidence.missedWindows > 0) && (
+              <div className="text-center space-y-1 py-2">
+                {evidence.totalDays >= 7 && (
+                  <div className="text-slate-500 text-xs">
+                    {evidence.functionalDays} of {evidence.totalDays} days ready to train
+                  </div>
+                )}
+                {evidence.overspent > 0 && (
+                  <div className="text-red-400/70 text-xs">
+                    {evidence.overspent} day{evidence.overspent > 1 ? 's' : ''} you pushed when your body said REST
+                  </div>
+                )}
+                {evidence.missedWindows > 0 && (
+                  <div className="text-amber-400/70 text-xs">
+                    {evidence.missedWindows} training window{evidence.missedWindows > 1 ? 's' : ''} left on the table
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Empty state */}
             {!result && (
