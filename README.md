@@ -179,6 +179,4 @@ MIT — Use it, modify it, share it.
 
 ## Feedback
 
-Building this in public. Questions, bugs, or ideas — reach out:
-
-[Your email or Twitter here]
+Building this in public. Questions, bugs, or ideas — reach out.
