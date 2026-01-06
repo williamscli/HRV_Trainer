@@ -1312,6 +1312,86 @@
       
       const commandContext = getCommandContext();
       
+      // ============================================
+      // PERSONAL PATTERN - "Last time you ignored REST..."
+      // ============================================
+      const getPersonalPattern = () => {
+        if (!result || result.commandKey !== 'REST') return null;
+        if (hrvHistory.length < 5 || complianceLog.length < 3) return null;
+        
+        // Get baseline
+        const values = hrvHistory.map(h => h.value).sort((a,b) => a - b);
+        const median = values[Math.floor(values.length / 2)];
+        const deviations = values.map(v => Math.abs(v - median));
+        const mad = Math.max(deviations.sort((a,b) => a - b)[Math.floor(deviations.length / 2)] * 1.4826, THRESHOLDS.MAD_FLOOR);
+        
+        // Helper to get z-score for a date
+        const getZScore = (dateStr) => {
+          const hrvEntry = hrvHistory.find(h => h.date === dateStr);
+          if (!hrvEntry) return null;
+          return (hrvEntry.value - median) / mad;
+        };
+        
+        // Helper to get next day
+        const addDays = (dateStr, days) => {
+          const d = new Date(dateStr);
+          d.setDate(d.getDate() + days);
+          return getLocalDateString(d);
+        };
+        
+        // Find all REST ignores that led to crashes
+        const restIgnoreCrashes = complianceLog
+          .filter(log => log.command === 'REST' && log.followed === 'no')
+          .map(log => {
+            const ignoreDate = log.date;
+            const nextDay = addDays(ignoreDate, 1);
+            const nextDayZ = getZScore(nextDay);
+            
+            if (nextDayZ === null || nextDayZ >= THRESHOLDS.REST) return null;
+            
+            // Count consecutive crash days
+            let crashDays = 1;
+            let checkDate = addDays(ignoreDate, 2);
+            while (crashDays < 5) { // Cap at 5 to prevent infinite loop
+              const z = getZScore(checkDate);
+              if (z === null || z >= THRESHOLDS.REST) break;
+              crashDays++;
+              checkDate = addDays(checkDate, 1);
+            }
+            
+            return {
+              ignoreDate,
+              crashDays,
+              firstCrashDate: nextDay,
+              lastCrashDate: addDays(ignoreDate, crashDays)
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => new Date(b.ignoreDate) - new Date(a.ignoreDate));
+        
+        if (restIgnoreCrashes.length === 0) return null;
+        
+        // Get most recent
+        const last = restIgnoreCrashes[0];
+        
+        // Format dates nicely (e.g., "Dec 12")
+        const formatDate = (dateStr) => {
+          const d = new Date(dateStr);
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+        
+        return {
+          ignoreDate: formatDate(last.ignoreDate),
+          crashDays: last.crashDays,
+          crashRange: last.crashDays === 1 
+            ? formatDate(last.firstCrashDate)
+            : `${formatDate(last.firstCrashDate)}-${formatDate(last.lastCrashDate)}`,
+          totalInstances: restIgnoreCrashes.length
+        };
+      };
+      
+      const personalPattern = getPersonalPattern();
+      
       // Handle onboarding completion
       const handleOnboardingComplete = (source) => {
         setHrvSource(source);
@@ -1985,6 +2065,13 @@
                     'bg-slate-700/30 text-slate-400'
                   }`}>
                     {commandContext.text}
+                  </div>
+                )}
+                
+                {/* PERSONAL PATTERN - The bill from last time */}
+                {personalPattern && !commandContext && (
+                  <div className="text-sm py-3 px-4 rounded-xl bg-slate-700/30 text-slate-400">
+                    Last REST ignored: {personalPattern.ignoreDate}. You lost {personalPattern.crashDays} day{personalPattern.crashDays > 1 ? 's' : ''}.
                   </div>
                 )}
                 
