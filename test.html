@@ -29,7 +29,7 @@
     // ANALYTICS CONFIGURATION
     // ============================================
     // Replace with your Google Apps Script Web App URL
-    const ANALYTICS_ENDPOINT = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxp_XAHJDYn8gRpbqaHrDjC1u1Dgyy3-i_JU6WS9R62XiFm26tJdhZP1EOi3ID8mgtg/exec';
     
     // Allowed events (must match server allowlist)
     const ALLOWED_EVENTS = [
@@ -186,7 +186,7 @@
         color: '#EF4444',
         bg: 'rgba(239, 68, 68, 0.15)',
         headline: 'REST',
-        action: 'Technique. Easy cardio. Stretch. Family time.',
+        action: 'Technique work. Easy cardio. Stretch. Guilt-free.',
         promise: 'Tomorrow you\'ll have more.'
       },
       BUILD: {
@@ -969,6 +969,8 @@
       // ============================================
       // PROOF MESSAGES - The control loop feedback
       // Shows specific days for maximum emotional impact
+      // CRITICAL: All messages gated by ACTUAL app usage days
+      // Backfilled data does NOT count toward message thresholds
       // ============================================
       const getDayName = (dateStr) => {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -977,6 +979,9 @@
 
       const getCommandContext = () => {
         if (!result || !result.commandKey || result.commandKey === 'LEARNING') return null;
+        
+        // CRITICAL: Get actual days using the app (not backfilled data)
+        const daysOnApp = getDaysSinceFirstUse();
         
         // Get baseline for crash detection
         const values = hrvHistory.map(h => h.value).sort((a,b) => a - b);
@@ -1008,39 +1013,34 @@
           return getLocalDateString(d);
         };
         
-        // Look for most recent REST override that led to crash (within last 14 days)
-        const fourteenDaysAgo = new Date();
-        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+        // Only look at compliance logs AFTER firstUseDate (real app usage, not backfill)
+        const firstUseDateObj = firstUseDate ? new Date(firstUseDate) : null;
+        if (!firstUseDateObj) return null; // No first use date = no proof messages
         
         const recentLogs = complianceLog
-          .filter(log => new Date(log.date) >= fourteenDaysAgo && log.command && log.followed)
+          .filter(log => {
+            const logDate = new Date(log.date);
+            return logDate >= firstUseDateObj && log.command && log.followed;
+          })
           .sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        // Find most recent REST override that crashed
+        // Find most recent REST override that crashed (only from real usage)
         const restOverrideCrash = recentLogs.find(log => {
           if (log.command !== 'REST' || log.followed !== 'no') return false;
           const nextDay = getNextDay(log.date);
           return wasCrash(nextDay) === true;
         });
         
-        // Find most recent REST followed that recovered
+        // Find most recent REST followed that recovered (only from real usage)
         const restFollowedRecovered = recentLogs.find(log => {
           if (log.command !== 'REST' || log.followed !== 'yes') return false;
           const nextDay = getNextDay(log.date);
           return wasReady(nextDay) === true;
         });
         
-        // Calculate functional days streak (last 7 days)
-        const sortedHRV = [...hrvHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-        const lastSeven = sortedHRV.slice(0, 7);
-        let readyCount = 0;
-        for (const entry of lastSeven) {
-          const zScore = (entry.value - median) / mad;
-          if (zScore >= THRESHOLDS.REST) readyCount++;
-        }
-        
-        // Priority 1: If they just overrode REST and crashed, show that (warning)
-        if (restOverrideCrash) {
+        // Priority 1: Override warnings can show after 2+ days (they need real consequence data)
+        // This is legitimate - they actually used the app, got a command, ignored it, and crashed
+        if (daysOnApp >= 2 && restOverrideCrash) {
           const overrideDay = getDayName(restOverrideCrash.date);
           const crashDay = getDayName(getNextDay(restOverrideCrash.date));
           return {
@@ -1049,8 +1049,8 @@
           };
         }
         
-        // Priority 2: If REST command, show what happens when they listen
-        if (result.commandKey === 'REST' && restFollowedRecovered) {
+        // Priority 2: REST follow proof needs 3+ days (they followed, recovered, now seeing REST again)
+        if (daysOnApp >= 3 && result.commandKey === 'REST' && restFollowedRecovered) {
           const restDay = getDayName(restFollowedRecovered.date);
           const readyDay = getDayName(getNextDay(restFollowedRecovered.date));
           return {
@@ -1059,22 +1059,52 @@
           };
         }
         
-        // Priority 3: For BUILD/PERFORM, show streak if good
-        if ((result.commandKey === 'BUILD' || result.commandKey === 'PERFORM') && lastSeven.length >= 5) {
-          if (readyCount >= 5) {
-            return {
-              type: 'affirm',
-              text: `${readyCount} of your last ${lastSeven.length} mornings, you woke up ready. That's you.`
-            };
+        // Priority 3: Streak messages ONLY after 7+ days of actual app usage
+        // This prevents BS detection - backfilled data doesn't count
+        if (daysOnApp >= 7 && (result.commandKey === 'BUILD' || result.commandKey === 'PERFORM')) {
+          // Only count HRV entries AFTER firstUseDate for the streak
+          const sortedHRV = [...hrvHistory]
+            .filter(h => new Date(h.date) >= firstUseDateObj)
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          const lastSeven = sortedHRV.slice(0, 7);
+          if (lastSeven.length >= 5) {
+            let readyCount = 0;
+            for (const entry of lastSeven) {
+              const zScore = (entry.value - median) / mad;
+              if (zScore >= THRESHOLDS.REST) readyCount++;
+            }
+            
+            if (readyCount >= 5) {
+              return {
+                type: 'affirm',
+                text: `${readyCount} of your last ${lastSeven.length} mornings, you woke up ready. That's you.`
+              };
+            }
           }
         }
         
-        // Priority 4: For PERFORM specifically, acknowledge they earned it
-        if (result.commandKey === 'PERFORM') {
+        // Priority 4: PERFORM earned message after 5+ days
+        if (daysOnApp >= 5 && result.commandKey === 'PERFORM') {
           return {
             type: 'earned',
             text: `Your body is primed. This is your day.`
           };
+        }
+        
+        // Priority 5: Early encouragement (days 3-6) - BUILD only
+        if (result.commandKey === 'BUILD') {
+          if (daysOnApp >= 3 && daysOnApp <= 4) {
+            return {
+              type: 'affirm',
+              text: `Commands active. Let's see what you've got.`
+            };
+          } else if (daysOnApp >= 5 && daysOnApp <= 6) {
+            return {
+              type: 'affirm',
+              text: `${daysOnApp} days in. Your pattern is emerging.`
+            };
+          }
         }
         
         return null;
@@ -1564,11 +1594,11 @@
 
             {/* Add Historical Data Modal */}
             {showAddHrv && (
-              <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50" onClick={() => setShowAddHrv(false)}>
-                <div className="bg-slate-800 rounded-t-2xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50">
+                <div className="bg-slate-800 rounded-t-2xl p-6 w-full max-w-md space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-white">Add Historical HRV</h3>
-                    <button onClick={() => setShowAddHrv(false)} className="text-slate-400 hover:text-white text-xl">✕</button>
+                    <h3 className="text-lg font-semibold text-white">Add Past HRV</h3>
+                    <button onClick={() => setShowAddHrv(false)} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
                   </div>
                   
                   <div className="flex gap-2">
@@ -1576,7 +1606,7 @@
                       type="number" 
                       value={newEntry} 
                       onChange={(e) => setNewEntry(e.target.value)} 
-                      onKeyDown={(e) => e.key === 'Enter' && (addToHistory(), setShowAddHrv(false))} 
+                      onKeyDown={(e) => e.key === 'Enter' && addToHistory()} 
                       placeholder="HRV (ms)" 
                       className="w-28 bg-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
                       autoFocus
@@ -1588,7 +1618,7 @@
                       className="flex-1 min-w-0 bg-slate-700 rounded-lg px-3 py-3 text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500" 
                     />
                     <button 
-                      onClick={() => { addToHistory(); setShowAddHrv(false); }} 
+                      onClick={addToHistory} 
                       className="bg-blue-600 hover:bg-blue-700 rounded-lg px-5 py-3 font-semibold transition shrink-0"
                     >
                       Add
@@ -1597,19 +1627,30 @@
 
                   {/* Recent history */}
                   {hrvHistory.length > 0 && (
-                    <div className="space-y-1 max-h-40 overflow-y-auto">
-                      <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Recent entries</div>
-                      {[...hrvHistory].reverse().slice(0, 7).map((entry, i) => (
-                        <div key={i} className="flex justify-between items-center text-sm text-slate-400 py-1 border-b border-slate-700/50">
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Your entries</div>
+                      {[...hrvHistory].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 14).map((entry, i) => (
+                        <div key={entry.date} className="flex justify-between items-center text-sm text-slate-400 py-2 border-b border-slate-700/50">
                           <span>{entry.date}</span>
                           <div className="flex items-center gap-3">
                             <span className="font-mono">{entry.value} ms</span>
-                            <button onClick={() => removeFromHistory(i)} className="text-red-400/60 hover:text-red-400">✕</button>
+                            <button onClick={() => {
+                              const idx = hrvHistory.findIndex(h => h.date === entry.date);
+                              if (idx !== -1) removeFromHistory(idx);
+                            }} className="text-red-400/60 hover:text-red-400">×</button>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  {/* Done button */}
+                  <button 
+                    onClick={() => setShowAddHrv(false)} 
+                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 rounded-lg transition"
+                  >
+                    Done
+                  </button>
                 </div>
               </div>
             )}
