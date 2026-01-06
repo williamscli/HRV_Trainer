@@ -370,98 +370,185 @@
       }
     };
 
-    const FeedbackModal = ({ step, setStep, useful, setUseful, improvement, setImprovement, email, setEmail, onSend, onDismiss, getDaysSinceFirstUse }) => (
+    const FeedbackModal = ({ 
+      step, setStep, 
+      isSecondPrompt,
+      response, setResponse, 
+      text, setText, 
+      email, setEmail, 
+      onSend, onDismiss 
+    }) => (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-5" onClick={e => e.stopPropagation()}>
           
-          {/* Step 1: The real question */}
-          {step === 1 && (
+          {/* ===== ROUND 1 (Day 10-12): Would you miss it? ===== */}
+          {!isSecondPrompt && (
             <>
-              <div className="text-center">
-                <h2 className="text-xl font-semibold text-white">Has this changed how you train?</h2>
-              </div>
-              
-              <div className="space-y-3">
-                <button
-                  onClick={() => { setUseful('yes'); setStep(2); }}
-                  className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition text-left px-4"
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => { setUseful('not_yet'); setStep(2); }}
-                  className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition text-left px-4"
-                >
-                  Not yet
-                </button>
-              </div>
+              {/* Step 1: The value question */}
+              {step === 1 && (
+                <>
+                  <div className="text-center">
+                    <h2 className="text-xl font-semibold text-white">If this disappeared tomorrow, would you notice?</h2>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => { setResponse('yes'); setStep(2); }}
+                      className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => { setResponse('not_yet'); setStep(2); }}
+                      className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition"
+                    >
+                      Not yet
+                    </button>
+                  </div>
 
-              <button onClick={() => onDismiss(false)} className="w-full text-slate-500 hover:text-slate-300 text-sm transition pt-2">
-                Skip for now
-              </button>
+                  <button onClick={() => onDismiss(false)} className="w-full text-slate-500 hover:text-slate-300 text-sm transition pt-2">
+                    Ask me later
+                  </button>
+                </>
+              )}
+
+              {/* Step 2: Follow-up based on answer */}
+              {step === 2 && (
+                <>
+                  <div className="text-center">
+                    <h2 className="text-xl font-semibold text-white">
+                      {response === 'yes' 
+                        ? "What made you realize that?" 
+                        : "What would make you check it every morning?"}
+                    </h2>
+                  </div>
+                  
+                  <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={response === 'yes' 
+                      ? "The moment it clicked..." 
+                      : "What's missing..."}
+                    className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-28"
+                    autoFocus
+                  />
+
+                  <button
+                    onClick={() => setStep(3)}
+                    className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl transition hover:bg-slate-100"
+                  >
+                    Next
+                  </button>
+                  
+                  <button onClick={() => setStep(3)} className="w-full text-slate-500 hover:text-slate-300 text-sm transition">
+                    Skip
+                  </button>
+                </>
+              )}
+
+              {/* Step 3: Roadmap + email */}
+              {step === 3 && (
+                <>
+                  <div className="text-center space-y-2">
+                    <h2 className="text-lg font-semibold text-white">Thanks. Here's what's coming.</h2>
+                  </div>
+
+                  <div className="space-y-4 text-sm">
+                    <div className="space-y-1">
+                      <div className="text-white font-medium">Auto-sync</div>
+                      <div className="text-slate-400">No more typing. We pull from your wearable.</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-white font-medium">PERFORM predictions</div>
+                      <div className="text-slate-400">Know when your next high-output day is coming.</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Email for early access (optional)"
+                      className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => onSend()}
+                    className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl transition hover:bg-slate-100"
+                  >
+                    Done
+                  </button>
+                </>
+              )}
             </>
           )}
 
-          {/* Step 2: The improvement */}
-          {step === 2 && (
+          {/* ===== ROUND 2 (Day 21-28): Would you recommend? ===== */}
+          {isSecondPrompt && (
             <>
-              <div className="text-center">
-                <h2 className="text-xl font-semibold text-white">One thing that would make it better?</h2>
-              </div>
-              
-              <textarea
-                value={improvement}
-                onChange={(e) => setImprovement(e.target.value)}
-                placeholder="Anything at all..."
-                className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-28"
-                autoFocus
-              />
+              {/* Step 1: The recommend question */}
+              {step === 1 && (
+                <>
+                  <div className="text-center">
+                    <h2 className="text-xl font-semibold text-white">Would you recommend this to a training partner?</h2>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => { setResponse('yes'); setStep(2); }}
+                      className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => { setResponse('not_sure'); setStep(2); }}
+                      className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition"
+                    >
+                      Not sure
+                    </button>
+                  </div>
 
-              <button
-                onClick={() => setStep(3)}
-                className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl transition hover:bg-slate-100"
-              >
-                Next
-              </button>
-            </>
-          )}
+                  <button onClick={() => onDismiss(true)} className="w-full text-slate-500 hover:text-slate-300 text-sm transition pt-2">
+                    Don't ask again
+                  </button>
+                </>
+              )}
 
-          {/* Step 3: Early access - single button, email signals interest */}
-          {step === 3 && (
-            <>
-              <div className="text-center space-y-2">
-                <h2 className="text-lg font-semibold text-white">
-                  {useful === 'yes' ? "Glad it's helping." : "Fair."} Here's what we're building.
-                </h2>
-              </div>
+              {/* Step 2: Follow-up based on answer */}
+              {step === 2 && (
+                <>
+                  <div className="text-center">
+                    <h2 className="text-xl font-semibold text-white">
+                      {response === 'yes' 
+                        ? "What would you tell them?" 
+                        : "What's missing?"}
+                    </h2>
+                  </div>
+                  
+                  <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={response === 'yes' 
+                      ? "I'd tell them..." 
+                      : "It needs..."}
+                    className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-28"
+                    autoFocus
+                  />
 
-              <div className="space-y-4 text-sm">
-                <div className="space-y-1">
-                  <div className="text-white font-medium">Auto-sync</div>
-                  <div className="text-slate-400">No more typing. We pull from your wearable.</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-white font-medium">PERFORM window</div>
-                  <div className="text-slate-400">Know when your next high-intensity day is coming.</div>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email for early access"
-                  className="w-full bg-slate-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <button
-                onClick={() => onSend()}
-                className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl transition hover:bg-slate-100"
-              >
-                Send feedback
-              </button>
+                  <button
+                    onClick={() => onSend()}
+                    className="w-full bg-white text-slate-900 font-semibold py-3 rounded-xl transition hover:bg-slate-100"
+                  >
+                    Send
+                  </button>
+                  
+                  <button onClick={() => onSend()} className="w-full text-slate-500 hover:text-slate-300 text-sm transition">
+                    Skip
+                  </button>
+                </>
+              )}
             </>
           )}
 
@@ -549,12 +636,15 @@
       const [showAddHrv, setShowAddHrv] = useState(false);
       const [showFeedback, setShowFeedback] = useState(false);
       const [feedbackStep, setFeedbackStep] = useState(1);
-      const [feedbackUseful, setFeedbackUseful] = useState(null); // 'yes' or 'not_yet'
-      const [feedbackImprovement, setFeedbackImprovement] = useState('');
+      const [feedbackResponse, setFeedbackResponse] = useState(null); // 'yes', 'not_yet', 'not_sure'
+      const [feedbackText, setFeedbackText] = useState('');
       const [feedbackEmail, setFeedbackEmail] = useState('');
+      const [feedbackRound1Complete, setFeedbackRound1Complete] = useState(false);
+      const [feedbackRound1Response, setFeedbackRound1Response] = useState(null); // 'yes' or 'not_yet'
+      const [feedbackRound1DismissedAt, setFeedbackRound1DismissedAt] = useState(null);
+      const [feedbackRound2Complete, setFeedbackRound2Complete] = useState(false);
+      const [isSecondPrompt, setIsSecondPrompt] = useState(false);
       const [firstUseDate, setFirstUseDate] = useState(null);
-      const [feedbackDismissedAt, setFeedbackDismissedAt] = useState(null);
-      const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(getTodayLocal());
       const [userName, setUserName] = useState('');
@@ -588,8 +678,14 @@
             setComplianceLog(data.complianceLog || []);
             setHrvSource(data.hrvSource || null);
             setFirstUseDate(data.firstUseDate || null);
-            setFeedbackDismissedAt(data.feedbackDismissedAt || null);
-            setFeedbackSubmitted(data.feedbackSubmitted || false);
+            setFeedbackRound1Complete(data.feedbackRound1Complete || false);
+            setFeedbackRound1Response(data.feedbackRound1Response || null);
+            setFeedbackRound1DismissedAt(data.feedbackRound1DismissedAt || null);
+            setFeedbackRound2Complete(data.feedbackRound2Complete || false);
+            // Handle legacy data migration
+            if (data.feedbackSubmitted && !data.feedbackRound1Complete) {
+              setFeedbackRound1Complete(true);
+            }
             
             // Set device for analytics
             if (data.hrvSource) {
@@ -615,10 +711,10 @@
       useEffect(() => {
         if (isLoading) return;
         localStorage.setItem('genysys_user_data', JSON.stringify({ 
-          hrvHistory, userName, complianceLog, hrvSource,
-          firstUseDate, feedbackDismissedAt, feedbackSubmitted 
+          hrvHistory, userName, complianceLog, hrvSource, firstUseDate,
+          feedbackRound1Complete, feedbackRound1Response, feedbackRound1DismissedAt, feedbackRound2Complete
         }));
-      }, [hrvHistory, userName, complianceLog, hrvSource, firstUseDate, feedbackDismissedAt, feedbackSubmitted, isLoading]);
+      }, [hrvHistory, userName, complianceLog, hrvSource, firstUseDate, feedbackRound1Complete, feedbackRound1Response, feedbackRound1DismissedAt, feedbackRound2Complete, isLoading]);
 
       // Set firstUseDate when user first completes onboarding
       useEffect(() => {
@@ -653,18 +749,24 @@
 
       // Check if we should show feedback prompt
       // TEST VERSION: Shows immediately (>= 0) instead of waiting for day 7
+      // TEST MODE: Feedback shows immediately for testing both rounds
+      // Round 1: "If this disappeared, would you notice?"
+      // Round 2: "Would you recommend to a training partner?"
       const shouldShowFeedback = () => {
-        if (feedbackSubmitted) return false;
-        const daysSinceFirstUse = getDaysSinceFirstUse();
+        const days = getDaysSinceFirstUse();
         
-        // TEST: First prompt immediately
-        if (daysSinceFirstUse >= 0 && !feedbackDismissedAt) return true;
+        // TEST: Round 1 shows immediately
+        if (!feedbackRound1Complete && !feedbackRound1DismissedAt) {
+          setIsSecondPrompt(false);
+          return true;
+        }
         
-        // TEST: Second prompt immediately after dismissal
-        if (daysSinceFirstUse >= 0 && feedbackDismissedAt) {
-          const dismissedDate = new Date(feedbackDismissedAt);
-          const daysSinceDismissed = Math.floor((new Date() - dismissedDate) / (1000 * 60 * 60 * 24));
-          if (daysSinceDismissed >= 0) return true;
+        // TEST: Round 2 shows immediately after round 1 dismissed/completed with "not_yet"
+        if (!feedbackRound2Complete) {
+          if (feedbackRound1DismissedAt || feedbackRound1Response === 'not_yet') {
+            setIsSecondPrompt(true);
+            return true;
+          }
         }
         
         return false;
@@ -674,39 +776,54 @@
       useEffect(() => {
         if (result && result.commandKey && result.commandKey !== 'LEARNING' && shouldShowFeedback()) {
           // Small delay so they see their command first
-          const timer = setTimeout(() => setShowFeedback(true), 1500);
+          const timer = setTimeout(() => setShowFeedback(true), 2000);
           return () => clearTimeout(timer);
         }
       }, [result]);
 
       const sendFeedback = () => {
-        // Track feedback via analytics (no email needed)
+        const round = isSecondPrompt ? 2 : 1;
+        
         Analytics.track('feedback_submitted', { 
-          useful: feedbackUseful,
-          improvementText: feedbackImprovement.substring(0, 500) || '',
-          userEmail: feedbackEmail.trim().substring(0, 100) || '',
-          daysLogged: hrvHistory.length
+          round,
+          response: feedbackResponse,
+          text: feedbackText.substring(0, 500) || '',
+          email: feedbackEmail.trim().substring(0, 100) || '',
+          daysActive: getDaysSinceFirstUse()
         });
         
-        setFeedbackSubmitted(true);
+        if (isSecondPrompt) {
+          setFeedbackRound2Complete(true);
+        } else {
+          setFeedbackRound1Complete(true);
+          setFeedbackRound1Response(feedbackResponse);
+        }
+        
         setShowFeedback(false);
         setFeedbackStep(1);
-        setFeedbackUseful(null);
-        setFeedbackImprovement('');
+        setFeedbackResponse(null);
+        setFeedbackText('');
         setFeedbackEmail('');
       };
 
       const dismissFeedback = (dontAskAgain) => {
+        const round = isSecondPrompt ? 2 : 1;
+        
+        Analytics.track('feedback_dismissed', { round, dontAskAgain });
+        
         if (dontAskAgain) {
-          setFeedbackSubmitted(true);
+          setFeedbackRound1Complete(true);
+          setFeedbackRound2Complete(true);
+        } else if (isSecondPrompt) {
+          setFeedbackRound2Complete(true);
         } else {
-          setFeedbackDismissedAt(getTodayLocal());
+          setFeedbackRound1DismissedAt(getTodayLocal());
         }
+        
         setShowFeedback(false);
         setFeedbackStep(1);
-        
-        // Track feedback dismissal
-        Analytics.track('feedback_dismissed', { dontAskAgain });
+        setFeedbackResponse(null);
+        setFeedbackText('');
       };
 
       // Auto-calculate if today's data exists
@@ -1552,7 +1669,19 @@
 
             {/* Info Modal */}
             {showInfo && <InfoModal onClose={() => setShowInfo(false)} hrvSource={hrvSource} />}
-            {showFeedback && <FeedbackModal step={feedbackStep} setStep={setFeedbackStep} useful={feedbackUseful} setUseful={setFeedbackUseful} improvement={feedbackImprovement} setImprovement={setFeedbackImprovement} email={feedbackEmail} setEmail={setFeedbackEmail} onSend={sendFeedback} onDismiss={dismissFeedback} getDaysSinceFirstUse={getDaysSinceFirstUse} />}
+            {showFeedback && <FeedbackModal 
+              step={feedbackStep} 
+              setStep={setFeedbackStep} 
+              isSecondPrompt={isSecondPrompt}
+              response={feedbackResponse}
+              setResponse={setFeedbackResponse}
+              text={feedbackText}
+              setText={setFeedbackText}
+              email={feedbackEmail} 
+              setEmail={setFeedbackEmail} 
+              onSend={sendFeedback} 
+              onDismiss={dismissFeedback} 
+            />}
 
             {/* Missed Yesterday Alert */}
             {missedYesterdayHRV() && !hasTodayHRV && (
