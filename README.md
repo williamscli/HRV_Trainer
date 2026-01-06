@@ -1,182 +1,175 @@
-# GENYSYS (Private Beta)
+# GENYSYS Pre-MVP
 
-**Your HRV tells us how recovered you are. We read it. We tell you what to do.**
-
-You're early. This is a lightweight tool to test whether HRV-based training commands actually change behavior. Your feedback shapes what we build next.
+**One question:** Does telling someone what to do actually change outcomes?
 
 ---
 
-## ⬇️ Get Started
+## The Problem
 
-### Open the app
+Every wearable gives you data. Recovery scores. Readiness percentages. Colored rings.
 
-**👉 [https://williamscli.github.io/HRV_Trainer](https://williamscli.github.io/HRV_Trainer)**
+Then they leave you alone with that data to figure out what it means.
 
-Works on any device — phone, tablet, or computer.
+You wake up, see a yellow recovery score, and think: *Should I train today or not?*
 
-### Add to your phone's home screen (recommended)
-
-**iPhone:**
-1. Open the link above in Safari
-2. Tap the **Share** button (square with arrow)
-3. Tap **"Add to Home Screen"**
-4. Now it's on your home screen like an app
-
-**Android:**
-1. Open the link above in Chrome
-2. Tap the **menu** (three dots)
-3. Tap **"Add to Home Screen"**
-4. Now it's on your home screen like an app
+The apps won't tell you. They show you a number and let you decide.
 
 ---
 
-## What is this?
+## What This Tests
 
-Every morning, your body broadcasts a signal through your heart rate variability (HRV). This signal reveals whether your nervous system is recovered, stressed, or primed for performance.
-
-Most apps show you a number. We show you a **command**.
+This demo tests a closed loop:
 
 ```
-REST   →  Light movement only. Your system needs recovery.
-BUILD  →  Standard training. Execute your program.
-PERFORM →  System primed. Push hard. Chase PRs.
+Command → You Comply or Override → Outcome Measured → Evidence Shown
 ```
 
-No dashboards. No graphs to interpret. Just one word that tells you what to do today.
+**Command:** Based on your HRV, you get one of three instructions:
+- **REST** — Don't train today
+- **BUILD** — Normal training
+- **PERFORM** — Push hard, window is open
+
+**Comply or Override:** The next day, you tell us what you actually did.
+
+**Outcome Measured:** We check if you were ready to train the next morning (HRV above crash threshold).
+
+**Evidence Shown:** You see what happened when you followed vs ignored the command.
 
 ---
 
-## How it works
+## What You'll See
 
-**1. Log your morning HRV**  
-Get your HRV from any wearable (WHOOP, Apple Watch, Oura, Garmin, etc.)
+After enough data, the command card shows your own evidence:
 
-**2. Build your baseline**  
-- After 3 days: Preview commands begin (limited accuracy)
-- After 7 days: Full baseline established (personalized to YOU)
+**When REST appears:**
+> "You trained through 3 REST days. 2 times you weren't ready the next morning."
 
-**3. Get your command**  
-Each morning, we compare today's reading to your baseline and tell you exactly what to do
+or
 
----
+> "You followed REST 5 times. 4 mornings you woke up ready to train."
 
-## Don't have a wearable?
+**When BUILD appears:**
+> "8 of your last 10 mornings ready to train."
 
-No problem. Download **Welltory** (free tier) on your phone.
-
-1. Each morning after waking, open Welltory
-2. Take a 1-minute HRV reading using your phone camera
-3. Enter the HRV value you see into GENYSYS
-
-That's it. No expensive hardware required.
-
-[Download Welltory for iOS](https://apps.apple.com/app/welltory/id1074367771) | [Download Welltory for Android](https://play.google.com/store/apps/details?id=com.welltory.client.android)
+**When PERFORM appears:**
+> "3 REST days banked. You earned this."
 
 ---
 
-## The Science (simplified)
+## Why This Matters
 
-We calculate a Z-score: how far today's HRV deviates from your personal baseline.
+No other app does this. Here's why:
 
-| Z-Score | Command | What it means |
-|---------|---------|---------------|
-| < -1.0 | **REST** | Below your normal. Nervous system is stressed. |
-| -1.0 to 0.5 | **BUILD** | Within normal range. Train as planned. |
-| ≥ 0.5 | **PERFORM** | Above your normal. System is primed. |
+| App | What it does | What it doesn't do |
+|-----|--------------|-------------------|
+| WHOOP | Shows recovery score | Won't tell you what to do |
+| Garmin | Shows Body Battery | Won't tell you what to do |
+| Oura | Shows Readiness | Won't tell you what to do |
+| **This** | Tells you what to do | Then measures if it was right |
 
-Your baseline recalculates daily using your last 14 days of data.
+The difference isn't the algorithm. The difference is the **closed loop**.
 
-**Preview mode (3-6 days):** Commands are calculated but accuracy is limited. A disclaimer is shown.  
-**Full mode (7+ days):** Baseline is stable and personalized to your patterns.
+Commands without compliance tracking are just suggestions.
+Compliance without outcome measurement is just obedience.
+Outcome measurement without evidence display is just data hoarding.
 
----
-
-## Daily Workflow
-
-**Morning (2 minutes):**
-1. Check HRV on your wearable
-2. Open GENYSYS
-3. Enter today's HRV
-4. See your command
-5. (Optional) Log yesterday's compliance and today's energy
-
-**That's it.** Train accordingly.
+The loop is what builds trust.
 
 ---
 
-## Data & Privacy
+## How It Works
 
-- All data stays on your device (localStorage)
-- Nothing is sent to any server
-- Export anytime to CSV for your records
-- Reset all data with one button
+**The Algorithm:**
+1. You enter your morning HRV
+2. We calculate your z-score against your rolling baseline (median + MAD)
+3. Z-score determines command:
+   - Below -1.0 → REST
+   - Between -1.0 and +1.0 → BUILD  
+   - Above +1.0 → PERFORM
 
----
+**The Evidence:**
+- Last 5 REST decisions (up to 60 days back)
+- Minimum 3 REST decisions before showing stats
+- "Crashed" = next morning HRV z-score below -1.0
+- "Ready" = next morning HRV z-score at or above -1.0
 
-## For Beta Testers
-
-You're helping validate whether this approach actually works.
-
-**What we're measuring:**
-- Do people follow the commands? (Compliance)
-- How do they feel each day? (Energy)
-- Does the system surface useful guidance?
-
-**What we need from you:**
-- Log your HRV daily for 2 weeks
-- Answer the compliance prompt honestly
-- Export and share your CSV when done
-
-Your data stays on your device. Only share the export if you're comfortable.
+**All data stays in your browser.** Nothing is sent to a server except anonymous analytics events.
 
 ---
 
-## File Structure
+## What We're Testing
 
-```
-HRV_Trainer/
-├── README.md           # This file
-├── index.html          # The app (GitHub Pages serves this)
-├── genysys.jsx         # React component source (for developers)
-└── genysys_calculator.xlsx  # Excel version (backup option)
-```
+1. **Do people comply with REST commands?**  
+   If compliance is below 50%, the system fails regardless of accuracy.
 
----
+2. **Does compliance correlate with better outcomes?**  
+   If crash rate is the same whether you follow or ignore, the command has no value.
 
-## FAQ
-
-**What HRV value do I use?**  
-Use your wearable's morning HRV reading in milliseconds (ms). Most apps show this as "HRV" or "Heart Rate Variability."
-
-**What if my wearable shows RMSSD vs SDNN?**  
-Both work. Just be consistent — use the same metric every day.
-
-**Why 3 days minimum for preview?**  
-We need at least a few data points to compare against. Preview commands start at 3 days with a disclaimer. Full accuracy kicks in at 7 days when we have enough data to learn YOUR patterns.
-
-**Can I backfill data?**  
-Yes. Use the history section to add past HRV readings with their dates.
-
-**What if I miss a day?**  
-No problem. Just log when you can. The system uses whatever data you have.
+3. **Does showing evidence change behavior?**  
+   If people ignore REST even after seeing "3 of 3 times you crashed," the feedback loop doesn't work.
 
 ---
 
-## Built With
+## What Success Looks Like
 
-- React 18
-- Tailwind CSS
-- Local Storage API
-- No backend, no dependencies, no build step
-
----
-
-## License
-
-MIT — Use it, modify it, share it.
+The system works if:
+- REST compliance > 60%
+- Crash rate when ignoring REST > crash rate when following REST
+- Users who see evidence have higher compliance than users who don't
 
 ---
 
-## Feedback
+## How to Use
 
-Building this in public. Questions, bugs, or ideas — reach out.
+1. Open the app
+2. Enter your morning HRV (from WHOOP, Apple Watch, Oura, etc.)
+3. Get your command
+4. The next day, tell us if you followed it
+5. After 3+ REST decisions, see your evidence
+
+---
+
+## What This Is Not
+
+- Not a replacement for your wearable (you still need HRV data from somewhere)
+- Not medical advice
+- Not a training program
+- Not an AI that learns your patterns (it's a fixed algorithm with personal baseline)
+
+---
+
+## The Thesis
+
+Most wellness apps optimize for engagement. More dashboards, more metrics, more reasons to open the app.
+
+This optimizes for one thing: **Did you wake up ready to train?**
+
+If the answer is yes more often when you follow the commands, the system works.
+
+If not, it doesn't.
+
+That's what we're here to find out.
+
+---
+
+## Files
+
+- `index.html` — Production app (feedback prompt at day 7/14)
+- `index_TEST.html` — Test version (immediate feedback prompt)
+- `google_apps_script.js` — Analytics backend
+- `ANALYTICS_SETUP.md` — Setup instructions for Google Sheets analytics
+
+---
+
+## Privacy
+
+- All HRV data stored locally in your browser
+- Anonymous analytics track events (not your HRV values)
+- No account required
+- No data sold
+- You can export your data as CSV anytime
+- You can delete everything with one button
+
+---
+
+*Built to answer one question: Does the command actually help?*
