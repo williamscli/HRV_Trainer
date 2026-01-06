@@ -29,7 +29,7 @@
     // ANALYTICS CONFIGURATION
     // ============================================
     // Replace with your Google Apps Script Web App URL
-    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxP8OImAXDl8fwUG1ksGSTvlFID9wZQ90es4f4Ry1FWQAVqcDa27rXeeyd19JBH_eBG/exec';
+    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxp_XAHJDYn8gRpbqaHrDjC1u1Dgyy3-i_JU6WS9R62XiFm26tJdhZP1EOi3ID8mgtg/exec';
     
     // Allowed events (must match server allowlist)
     const ALLOWED_EVENTS = [
@@ -649,19 +649,19 @@
       }, [hrvSource, isLoading, hrvHistory.length]);
 
       // Check if we should show feedback prompt
+      // TEST VERSION: Shows immediately (>= 0) instead of waiting for day 7
       const shouldShowFeedback = () => {
         if (feedbackSubmitted) return false;
         const daysSinceFirstUse = getDaysSinceFirstUse();
         
-        // First prompt at day 7
-        if (daysSinceFirstUse >= 7 && !feedbackDismissedAt) return true;
+        // TEST: First prompt immediately
+        if (daysSinceFirstUse >= 0 && !feedbackDismissedAt) return true;
         
-        // Second prompt at day 14 if dismissed before
-        if (daysSinceFirstUse >= 14 && feedbackDismissedAt) {
+        // TEST: Second prompt immediately after dismissal
+        if (daysSinceFirstUse >= 0 && feedbackDismissedAt) {
           const dismissedDate = new Date(feedbackDismissedAt);
           const daysSinceDismissed = Math.floor((new Date() - dismissedDate) / (1000 * 60 * 60 * 24));
-          // Only show again if at least 7 days since dismissal
-          if (daysSinceDismissed >= 7) return true;
+          if (daysSinceDismissed >= 0) return true;
         }
         
         return false;
