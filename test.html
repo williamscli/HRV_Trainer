@@ -29,7 +29,7 @@
     // ANALYTICS CONFIGURATION
     // ============================================
     // Replace with your Google Apps Script Web App URL
-    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxp_XAHJDYn8gRpbqaHrDjC1u1Dgyy3-i_JU6WS9R62XiFm26tJdhZP1EOi3ID8mgtg/exec';
+    const ANALYTICS_ENDPOINT = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
     
     // Allowed events (must match server allowlist)
     const ALLOWED_EVENTS = [
@@ -186,29 +186,29 @@
         color: '#EF4444',
         bg: 'rgba(239, 68, 68, 0.15)',
         headline: 'REST',
-        prescription: 'Light movement only. Walk, stretch, or mobilize. No intense training today.',
-        guidance: ['Prioritize 8+ hours of sleep tonight', 'Keep heart rate under 120 bpm', 'Focus on nutrition and hydration']
+        action: 'Technique. Easy cardio. Stretch. Family time.',
+        promise: 'Tomorrow you\'ll have more.'
       },
       BUILD: {
         color: '#F59E0B',
         bg: 'rgba(245, 158, 11, 0.15)',
         headline: 'BUILD',
-        prescription: 'Standard training day. Follow your program as planned.',
-        guidance: ['Execute your scheduled workout', 'Train at normal intensity', 'Listen to your body for minor adjustments']
+        action: 'Execute your program. Standard effort.',
+        promise: 'You\'re building capacity.'
       },
       PERFORM: {
         color: '#10B981',
         bg: 'rgba(16, 185, 129, 0.15)',
         headline: 'PERFORM',
-        prescription: 'System primed. Push hard today — PRs, competition, max effort.',
-        guidance: ['Go for personal records', 'High intensity is welcomed', 'Your body can handle more today']
+        action: 'Push hard. Chase PRs. Go heavy.',
+        promise: 'You earned this.'
       },
       LEARNING: {
         color: '#6B7280',
         bg: 'rgba(107, 114, 128, 0.15)',
         headline: 'LEARNING',
-        prescription: 'Building your baseline. Keep logging HRV daily.',
-        guidance: ['Train normally while we learn your patterns', 'Log HRV at the same time each morning', 'Preview commands start after 3 days']
+        action: 'Train normally. Log HRV each morning.',
+        promise: 'Building your baseline.'
       }
     };
 
@@ -963,6 +963,15 @@
       // Recovery = next day HRV z-score >= -1.0 (above crash threshold)
       // Crash = next day HRV z-score < -1.0 (in crash zone)
       // ============================================
+      // ============================================
+      // PROOF MESSAGES - The control loop feedback
+      // Shows specific days for maximum emotional impact
+      // ============================================
+      const getDayName = (dateStr) => {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return days[new Date(dateStr).getDay()];
+      };
+
       const getCommandContext = () => {
         if (!result || !result.commandKey || result.commandKey === 'LEARNING') return null;
         
@@ -973,153 +982,101 @@
         const deviations = values.map(v => Math.abs(v - median));
         const mad = Math.max(deviations.sort((a,b) => a - b)[Math.floor(deviations.length / 2)] * 1.4826, THRESHOLDS.MAD_FLOOR);
         
-        // 60-day cap for relevance
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+        // Helper to check if a day was a crash
+        const wasCrash = (dateStr) => {
+          const hrvEntry = hrvHistory.find(h => h.date === dateStr);
+          if (!hrvEntry) return null;
+          const zScore = (hrvEntry.value - median) / mad;
+          return zScore < THRESHOLDS.REST;
+        };
         
-        // Get all REST logs within 60 days, sorted newest first
-        const restLogs = complianceLog
-          .filter(log => {
-            const logDate = new Date(log.date);
-            return logDate >= sixtyDaysAgo && log.command === 'REST' && log.followed;
-          })
+        // Helper to check if a day was ready (BUILD or PERFORM)
+        const wasReady = (dateStr) => {
+          const hrvEntry = hrvHistory.find(h => h.date === dateStr);
+          if (!hrvEntry) return null;
+          const zScore = (hrvEntry.value - median) / mad;
+          return zScore >= THRESHOLDS.REST;
+        };
+        
+        // Get next day from a date string
+        const getNextDay = (dateStr) => {
+          const d = new Date(dateStr);
+          d.setDate(d.getDate() + 1);
+          return getLocalDateString(d);
+        };
+        
+        // Look for most recent REST override that led to crash (within last 14 days)
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+        
+        const recentLogs = complianceLog
+          .filter(log => new Date(log.date) >= fourteenDaysAgo && log.command && log.followed)
           .sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        // Take last 5 REST decisions (or fewer if not enough)
-        const recentRestLogs = restLogs.slice(0, 5);
-        
-        // Calculate streak (consecutive REST followed from most recent)
-        let currentRestStreak = 0;
-        for (const log of restLogs) {
-          if (log.followed === 'yes') {
-            currentRestStreak++;
-          } else {
-            break;
-          }
-        }
-        
-        // Calculate outcomes for REST commands
-        let recentRestIgnored = [];
-        let recentRestFollowed = [];
-        
-        recentRestLogs.forEach(log => {
-          // Find next day's HRV
-          const logDate = new Date(log.date);
-          const nextDate = new Date(logDate);
-          nextDate.setDate(nextDate.getDate() + 1);
-          const nextDateStr = getLocalDateString(nextDate);
-          const nextDayHRV = hrvHistory.find(h => h.date === nextDateStr);
-          
-          if (!nextDayHRV) return;
-          
-          // Crash = next day z-score below REST threshold (-1.0)
-          const zScore = (nextDayHRV.value - median) / mad;
-          const crashed = zScore < THRESHOLDS.REST;
-          
-          if (log.followed === 'yes') {
-            recentRestFollowed.push({ crashed });
-          } else if (log.followed === 'no') {
-            recentRestIgnored.push({ crashed });
-          }
+        // Find most recent REST override that crashed
+        const restOverrideCrash = recentLogs.find(log => {
+          if (log.command !== 'REST' || log.followed !== 'no') return false;
+          const nextDay = getNextDay(log.date);
+          return wasCrash(nextDay) === true;
         });
         
-        const totalRestDecisions = recentRestFollowed.length + recentRestIgnored.length;
+        // Find most recent REST followed that recovered
+        const restFollowedRecovered = recentLogs.find(log => {
+          if (log.command !== 'REST' || log.followed !== 'yes') return false;
+          const nextDay = getNextDay(log.date);
+          return wasReady(nextDay) === true;
+        });
         
-        if (result.commandKey === 'REST') {
-          // Need at least 3 REST decisions before showing stats
-          if (totalRestDecisions < 3) return null;
-          
-          const ignoredCount = recentRestIgnored.length;
-          const crashedAfterIgnore = recentRestIgnored.filter(r => r.crashed).length;
-          const followedCount = recentRestFollowed.length;
-          const recoveredAfterFollow = recentRestFollowed.filter(r => !r.crashed).length;
-          
-          // Priority: show ignore consequences if they exist
-          if (ignoredCount > 0 && crashedAfterIgnore > 0) {
-            return {
-              type: 'warning',
-              text: `You trained through ${ignoredCount} REST day${ignoredCount > 1 ? 's' : ''}. ${crashedAfterIgnore} time${crashedAfterIgnore > 1 ? 's' : ''} you weren't ready the next morning.`
-            };
-          }
-          
-          // Otherwise show follow outcomes
-          if (followedCount > 0 && recoveredAfterFollow > 0) {
+        // Calculate functional days streak (last 7 days)
+        const sortedHRV = [...hrvHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const lastSeven = sortedHRV.slice(0, 7);
+        let readyCount = 0;
+        for (const entry of lastSeven) {
+          const zScore = (entry.value - median) / mad;
+          if (zScore >= THRESHOLDS.REST) readyCount++;
+        }
+        
+        // Priority 1: If they just overrode REST and crashed, show that (warning)
+        if (restOverrideCrash) {
+          const overrideDay = getDayName(restOverrideCrash.date);
+          const crashDay = getDayName(getNextDay(restOverrideCrash.date));
+          return {
+            type: 'warning',
+            text: `You pushed through REST on ${overrideDay}. ${crashDay} you crashed.`
+          };
+        }
+        
+        // Priority 2: If REST command, show what happens when they listen
+        if (result.commandKey === 'REST' && restFollowedRecovered) {
+          const restDay = getDayName(restFollowedRecovered.date);
+          const readyDay = getDayName(getNextDay(restFollowedRecovered.date));
+          return {
+            type: 'affirm',
+            text: `You committed to REST on ${restDay}. ${readyDay} you were ready.`
+          };
+        }
+        
+        // Priority 3: For BUILD/PERFORM, show streak if good
+        if ((result.commandKey === 'BUILD' || result.commandKey === 'PERFORM') && lastSeven.length >= 5) {
+          if (readyCount >= 5) {
             return {
               type: 'affirm',
-              text: `You followed REST ${followedCount} time${followedCount > 1 ? 's' : ''}. ${recoveredAfterFollow} morning${recoveredAfterFollow > 1 ? 's' : ''} you woke up ready to train.`
+              text: `${readyCount} of your last ${lastSeven.length} mornings, you woke up ready. That's you.`
             };
           }
         }
         
-        // PERFORM only — HRV earned this, streak rewards the pattern
-        if (result.commandKey === 'PERFORM' && currentRestStreak >= 1) {
-          if (currentRestStreak >= 3) {
-            return {
-              type: 'earned',
-              text: `${currentRestStreak} REST days banked. You earned this.`
-            };
-          } else {
-            return {
-              type: 'earned',
-              text: `Recovery banked. Go.`
-            };
-          }
-        }
-        
-        // BUILD — the goal state. Tiered feedback based on actual app usage time.
-        if (result.commandKey === 'BUILD') {
-          const daysOnApp = getDaysSinceFirstUse();
-          
-          // Short-term feedback for early days (before we have enough real usage data)
-          if (daysOnApp < 3) {
-            return null; // Too early for feedback
-          } else if (daysOnApp <= 4) {
-            return {
-              type: 'affirm',
-              text: `Commands active. Let's see what you've got.`
-            };
-          } else if (daysOnApp <= 6) {
-            return {
-              type: 'affirm',
-              text: `${daysOnApp} days in. Your pattern is emerging.`
-            };
-          }
-          
-          // Days 7+: Show full functional ratio (only count days since firstUseDate, not backfilled)
-          const firstUseDateObj = firstUseDate ? new Date(firstUseDate) : null;
-          const sortedHRV = [...hrvHistory]
-            .filter(h => firstUseDateObj && new Date(h.date) >= firstUseDateObj)
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
-          const lastTen = sortedHRV.slice(0, 10);
-          
-          if (lastTen.length < 5) return null; // Not enough real usage data yet
-          
-          let functionalCount = 0;
-          for (const entry of lastTen) {
-            const zScore = (entry.value - median) / mad;
-            if (zScore >= THRESHOLDS.REST) {
-              functionalCount++;
-            }
-          }
-          
-          const totalDays = lastTen.length;
-          
-          if (functionalCount >= 8) {
-            return {
-              type: 'affirm',
-              text: `${functionalCount} of your last ${totalDays} mornings, you woke up ready.`
-            };
-          } else if (functionalCount >= 6) {
-            return {
-              type: 'affirm',
-              text: `${functionalCount} of ${totalDays} days you had capacity. You're finding your rhythm.`
-            };
-          }
-          // < 6: no message, don't rub it in
+        // Priority 4: For PERFORM specifically, acknowledge they earned it
+        if (result.commandKey === 'PERFORM') {
+          return {
+            type: 'earned',
+            text: `Your body is primed. This is your day.`
+          };
         }
         
         return null;
       };
+
       
       const commandContext = getCommandContext();
       
@@ -1351,120 +1308,66 @@
             {showInfo && <InfoModal onClose={() => setShowInfo(false)} hrvSource={hrvSource} />}
             {showFeedback && <FeedbackModal step={feedbackStep} setStep={setFeedbackStep} useful={feedbackUseful} setUseful={setFeedbackUseful} improvement={feedbackImprovement} setImprovement={setFeedbackImprovement} email={feedbackEmail} setEmail={setFeedbackEmail} onSend={sendFeedback} onDismiss={dismissFeedback} getDaysSinceFirstUse={getDaysSinceFirstUse} />}
 
-            {/* Yesterday Compliance */}
+            {/* Yesterday - Simple one-tap log */}
             {needsYesterdayCompliance && (
-              <div className="bg-slate-800 rounded-xl p-4 space-y-3">
-                <div className="text-center">
-                  <div className="text-slate-400 text-sm">Yesterday was</div>
-                  <div className="text-2xl font-bold" style={{ color: PRESCRIPTIONS[yesterdayData.command]?.color || '#6B7280' }}>{yesterdayData.command}</div>
-                  <div className="text-slate-500 text-sm mt-2">
-                    {yesterdayData.command === 'REST' ? 'Did you rest?' : "How'd it go?"}
-                  </div>
+              <div className="bg-slate-800/80 rounded-xl p-4">
+                <div className="text-center mb-3">
+                  <span className="text-slate-500 text-sm">Yesterday: </span>
+                  <span className="text-lg font-semibold" style={{ color: PRESCRIPTIONS[yesterdayData.command]?.color || '#6B7280' }}>{yesterdayData.command}</span>
                 </div>
-                {yesterdayData.command === 'REST' ? (
-                  <div className="flex gap-2">
-                    <button onClick={() => recordYesterdayCompliance('yes')} className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg py-3 text-sm font-medium transition">Yes</button>
-                    <button onClick={() => recordYesterdayCompliance('no')} className="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg py-3 text-sm font-medium transition">No</button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button onClick={() => recordYesterdayCompliance('skipped')} className="flex-1 bg-slate-600/20 hover:bg-slate-600/30 text-slate-400 rounded-lg py-2 text-sm font-medium transition">Skipped</button>
-                    <button onClick={() => recordYesterdayCompliance('trained')} className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg py-2 text-sm font-medium transition">Trained</button>
-                    <button onClick={() => recordYesterdayCompliance('sent_it')} className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg py-2 text-sm font-medium transition">Sent It</button>
-                  </div>
-                )}
+                <div className="flex gap-3">
+                  <button onClick={() => recordYesterdayCompliance('yes')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
+                    {yesterdayData.command === 'REST' ? 'Rested' : 'Trained'}
+                  </button>
+                  <button onClick={() => recordYesterdayCompliance('no')} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg py-3 text-sm font-medium transition">
+                    {yesterdayData.command === 'REST' ? 'Trained' : 'Rested'}
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Energy */}
-            {needsEnergyInput && !needsYesterdayCompliance && (
-              <div className="bg-slate-800/50 rounded-xl p-4 space-y-3">
-                <div className="text-center text-slate-500 text-sm">How's your energy today?</div>
-                <div className="flex gap-2">
-                  <button onClick={() => recordTodayEnergy('low')} className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg py-2 text-sm transition">Low</button>
-                  <button onClick={() => recordTodayEnergy('normal')} className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg py-2 text-sm transition">Normal</button>
-                  <button onClick={() => recordTodayEnergy('high')} className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg py-2 text-sm transition">High</button>
-                </div>
-                <button onClick={() => recordTodayEnergy('skipped')} className="w-full text-slate-600 text-xs py-1 hover:text-slate-500">Skip</button>
-              </div>
-            )}
-
-            {/* HERO */}
+            {/* HERO - Command + Action + Promise + Proof */}
             {prescription && (
-              <div className="rounded-2xl p-6 space-y-4" style={{ backgroundColor: prescription.bg, border: `1px solid ${prescription.color}30` }}>
-                {/* Preview badge */}
-                {result.isPreview && (
-                  <div className="text-center">
-                    <span className="inline-block bg-slate-700 text-slate-300 text-xs px-3 py-1 rounded-full">
-                      Preview Mode
-                    </span>
-                  </div>
-                )}
-                <div className="text-center">
-                  <div className="text-6xl font-black tracking-tighter" style={{ color: prescription.color }}>{prescription.headline}</div>
-                  <div className="text-slate-300 text-lg mt-2 font-medium">{prescription.prescription}</div>
+              <div className="rounded-3xl p-8 text-center" style={{ backgroundColor: prescription.bg, border: `1px solid ${prescription.color}40` }}>
+                
+                {/* THE COMMAND */}
+                <div className="text-7xl font-black tracking-tight mb-4" style={{ color: prescription.color }}>
+                  {prescription.headline}
                 </div>
-                <div className="space-y-2 pt-2">
-                  {prescription.guidance.map((item, i) => (
-                    <div key={i} className="flex items-start gap-3 text-slate-400 text-sm">
-                      <span style={{ color: prescription.color }}>→</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
+                
+                {/* THE ACTION */}
+                <div className="text-xl text-slate-200 font-medium mb-3">
+                  {prescription.action}
                 </div>
-                {/* Command Context - The feedback loop */}
+                
+                {/* THE PROMISE */}
+                <div className="text-slate-400 text-base mb-6">
+                  {prescription.promise}
+                </div>
+                
+                {/* THE PROOF */}
                 {commandContext && (
-                  <div className={`text-center text-sm pt-3 mt-3 border-t border-slate-700/30 ${
-                    commandContext.type === 'warning' ? 'text-red-400/90' :
-                    commandContext.type === 'caution' ? 'text-amber-400/90' :
-                    commandContext.type === 'affirm' ? 'text-green-400/80' :
-                    commandContext.type === 'earned' ? 'text-emerald-400/80' :
-                    'text-slate-400'
+                  <div className={`text-sm py-3 px-4 rounded-xl ${
+                    commandContext.type === 'warning' ? 'bg-red-500/10 text-red-400' :
+                    commandContext.type === 'affirm' ? 'bg-green-500/10 text-green-400' :
+                    commandContext.type === 'earned' ? 'bg-emerald-500/10 text-emerald-400' :
+                    'bg-slate-700/30 text-slate-400'
                   }`}>
                     {commandContext.text}
                   </div>
                 )}
-                {/* Preview disclaimer */}
+                
+                {/* Learning state */}
+                {result.daysNeeded && (
+                  <div className="text-amber-400/80 text-sm mt-4">
+                    {result.daysNeeded} more day{result.daysNeeded > 1 ? 's' : ''} to calibrate
+                  </div>
+                )}
+                
+                {/* Preview indicator */}
                 {result.isPreview && (
-                  <div className="text-center text-slate-500 text-xs pt-2 border-t border-slate-700/50">
-                    Based on limited data — accuracy improves in {result.daysUntilFull} more day{result.daysUntilFull !== 1 ? 's' : ''}
-                  </div>
-                )}
-                {result.zScore !== null && !result.isPreview && (
-                  <div className="flex justify-center gap-8 pt-3 text-xs text-slate-500 border-t border-slate-700/50 mt-4">
-                    <div className="text-center"><div className="font-mono text-slate-400 text-lg">{Math.round(result.baseline)}</div><div>baseline</div></div>
-                    <div className="text-center"><div className="font-mono text-slate-400 text-lg">{Math.round(result.todayValue)}</div><div>today</div></div>
-                  </div>
-                )}
-                {result.zScore !== null && result.isPreview && (
-                  <div className="flex justify-center gap-8 pt-2 text-xs text-slate-600">
-                    <div className="text-center"><div className="font-mono text-slate-500">{Math.round(result.baseline)}</div><div>baseline</div></div>
-                    <div className="text-center"><div className="font-mono text-slate-500">{Math.round(result.todayValue)}</div><div>today</div></div>
-                  </div>
-                )}
-                {result.daysNeeded && <div className="text-center text-amber-400 text-sm pt-2">{result.daysNeeded} more day{result.daysNeeded > 1 ? 's' : ''} until commands start</div>}
-              </div>
-            )}
-
-            {/* Chart */}
-            {result && !result.error && result.zScore !== null && <ZScoreChart zScore={result.zScore} baseline={result.baseline} mad={result.mad} />}
-
-            {/* Stats Bar — subtle summary, only when meaningful */}
-            {evidence && (evidence.totalDays >= 7 || evidence.overspent > 0 || evidence.missedWindows > 0) && (
-              <div className="text-center space-y-1 py-2">
-                {evidence.totalDays >= 7 && (
-                  <div className="text-slate-500 text-xs">
-                    {evidence.functionalDays} of {evidence.totalDays} days ready to train
-                  </div>
-                )}
-                {evidence.overspent > 0 && (
-                  <div className="text-red-400/70 text-xs">
-                    {evidence.overspent} day{evidence.overspent > 1 ? 's' : ''} you pushed when your body said REST
-                  </div>
-                )}
-                {evidence.missedWindows > 0 && (
-                  <div className="text-amber-400/70 text-xs">
-                    {evidence.missedWindows} day{evidence.missedWindows > 1 ? 's' : ''} you skipped when you could have trained
+                  <div className="text-slate-500 text-xs mt-4">
+                    Preview — {result.daysUntilFull} more day{result.daysUntilFull !== 1 ? 's' : ''} for full accuracy
                   </div>
                 )}
               </div>
