@@ -29,7 +29,7 @@
     // ANALYTICS CONFIGURATION
     // ============================================
     // Replace with your Google Apps Script Web App URL
-    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxp_XAHJDYn8gRpbqaHrDjC1u1Dgyy3-i_JU6WS9R62XiFm26tJdhZP1EOi3ID8mgtg/exec';
+    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxP8OImAXDl8fwUG1ksGSTvlFID9wZQ90es4f4Ry1FWQAVqcDa27rXeeyd19JBH_eBG/exec';
     
     // Allowed events (must match server allowlist)
     const ALLOWED_EVENTS = [
@@ -649,19 +649,19 @@
       }, [hrvSource, isLoading, hrvHistory.length]);
 
       // Check if we should show feedback prompt
-      // TEST VERSION: Shows immediately (>= 0) instead of waiting for day 7
       const shouldShowFeedback = () => {
         if (feedbackSubmitted) return false;
         const daysSinceFirstUse = getDaysSinceFirstUse();
         
-        // TEST: First prompt immediately
-        if (daysSinceFirstUse >= 0 && !feedbackDismissedAt) return true;
+        // First prompt at day 7
+        if (daysSinceFirstUse >= 7 && !feedbackDismissedAt) return true;
         
-        // TEST: Second prompt immediately after dismissal
-        if (daysSinceFirstUse >= 0 && feedbackDismissedAt) {
+        // Second prompt at day 14 if dismissed before
+        if (daysSinceFirstUse >= 14 && feedbackDismissedAt) {
           const dismissedDate = new Date(feedbackDismissedAt);
           const daysSinceDismissed = Math.floor((new Date() - dismissedDate) / (1000 * 60 * 60 * 24));
-          if (daysSinceDismissed >= 0) return true;
+          // Only show again if at least 7 days since dismissal
+          if (daysSinceDismissed >= 7) return true;
         }
         
         return false;
@@ -857,6 +857,155 @@
         // Track reset (but don't reset analytics ID)
         Analytics.track('data_reset');
       };
+
+      // ============================================
+      // EVIDENCE LOOP CALCULATION
+      // ============================================
+      const calculateEvidence = () => {
+        if (hrvHistory.length < 5 || complianceLog.length < 3) return null;
+        
+        // Get baseline stats
+        const values = hrvHistory.map(h => h.value).sort((a,b) => a - b);
+        const median = values[Math.floor(values.length / 2)];
+        const deviations = values.map(v => Math.abs(v - median));
+        const mad = Math.max(deviations.sort((a,b) => a - b)[Math.floor(deviations.length / 2)] * 1.4826, THRESHOLDS.MAD_FLOOR);
+        
+        // Track REST command outcomes (the core validation)
+        let restFollowed = { total: 0, crashed: 0 };  // Rested when told to rest
+        let restIgnored = { total: 0, crashed: 0 };   // Pushed when told to rest
+        
+        // Track overall outcomes
+        let protectedDays = 0;     // REST followed → recovered
+        let missedRecovery = 0;    // REST followed → still crashed
+        let wastedSessions = 0;    // REST ignored → crashed (training was pointless)
+        
+        // Functional Days: days you START with capacity (HRV above crash threshold)
+        let functionalDays = 0;
+        hrvHistory.forEach(h => {
+          const zScore = (h.value - median) / mad;
+          if (zScore >= THRESHOLDS.REST) functionalDays++;
+        });
+        
+        complianceLog.forEach(log => {
+          if (!log.command || log.command === 'LEARNING' || !log.followed) return;
+          
+          // Find next day's HRV
+          const logDate = new Date(log.date);
+          const nextDate = new Date(logDate);
+          nextDate.setDate(nextDate.getDate() + 1);
+          const nextDateStr = getLocalDateString(nextDate);
+          const nextDayHRV = hrvHistory.find(h => h.date === nextDateStr);
+          
+          if (!nextDayHRV) return;
+          
+          // Calculate if next day was a "crash" (below -1 z-score)
+          const zScore = (nextDayHRV.value - median) / mad;
+          const crashed = zScore < THRESHOLDS.REST;
+          
+          if (log.command === 'REST') {
+            // User was told to rest - compliance is yes/no
+            if (log.followed === 'yes') {
+              // They rested as commanded
+              restFollowed.total++;
+              if (crashed) {
+                restFollowed.crashed++;
+                missedRecovery++;
+              } else {
+                protectedDays++;
+              }
+            } else if (log.followed === 'no') {
+              // They pushed anyway (ignored REST)
+              restIgnored.total++;
+              if (crashed) {
+                restIgnored.crashed++;
+                wastedSessions++;  // Training was wasted - they crashed anyway
+              }
+              // If they pushed and didn't crash, they got lucky
+            }
+          }
+          // For BUILD/PERFORM: crashing after hard training is expected/fine
+          // What matters is whether they follow REST when it comes
+        });
+        
+        return {
+          restFollowed,
+          restIgnored,
+          functionalDays,
+          totalDays: hrvHistory.length,
+          protectedDays,
+          missedRecovery,
+          wastedSessions,
+          hasEnoughData: restFollowed.total + restIgnored.total >= 2
+        };
+      };
+      
+      const evidence = calculateEvidence();
+      
+      // ============================================
+      // COMMAND CONTEXT - The feedback loop
+      // Shows consequence history WITH the command
+      // ============================================
+      const getCommandContext = () => {
+        if (!result || !result.commandKey || result.commandKey === 'LEARNING') return null;
+        if (!evidence) return null;
+        
+        const { restFollowed, restIgnored, wastedSessions, protectedDays } = evidence;
+        
+        if (result.commandKey === 'REST') {
+          // For REST: show what happened when they ignored before
+          if (restIgnored.total === 0 && restFollowed.total === 0) {
+            return null; // No REST history yet
+          }
+          
+          if (restIgnored.total > 0 && restIgnored.crashed > 0) {
+            // They've ignored REST and crashed before
+            const crashRate = Math.round((restIgnored.crashed / restIgnored.total) * 100);
+            if (restIgnored.crashed === restIgnored.total) {
+              return {
+                type: 'warning',
+                text: `You've ignored REST ${restIgnored.total} time${restIgnored.total > 1 ? 's' : ''}. Crashed every time.`
+              };
+            } else {
+              return {
+                type: 'warning', 
+                text: `${restIgnored.crashed} crash${restIgnored.crashed > 1 ? 'es' : ''} after ignoring REST. ${crashRate}% of the time.`
+              };
+            }
+          } else if (restIgnored.total > 0 && restIgnored.crashed === 0) {
+            // They've ignored REST but gotten lucky so far
+            return {
+              type: 'caution',
+              text: `You've ignored REST ${restIgnored.total} time${restIgnored.total > 1 ? 's' : ''} without crashing. Luck runs out.`
+            };
+          } else if (restFollowed.total > 0) {
+            // They follow REST — affirm the pattern
+            const recoveryRate = Math.round(((restFollowed.total - restFollowed.crashed) / restFollowed.total) * 100);
+            return {
+              type: 'affirm',
+              text: `${recoveryRate}% recovery rate when you follow REST.`
+            };
+          }
+        }
+        
+        if (result.commandKey === 'BUILD' || result.commandKey === 'PERFORM') {
+          // For BUILD/PERFORM: show they've earned this
+          if (protectedDays > 0) {
+            return {
+              type: 'earned',
+              text: `${protectedDays} REST day${protectedDays > 1 ? 's' : ''} followed. You earned this.`
+            };
+          } else if (restFollowed.total > 0) {
+            return {
+              type: 'earned',
+              text: `Recovery banked. Window open.`
+            };
+          }
+        }
+        
+        return null;
+      };
+      
+      const commandContext = getCommandContext();
       
       // Handle onboarding completion
       const handleOnboardingComplete = (source) => {
@@ -1092,13 +1241,22 @@
                 <div className="text-center">
                   <div className="text-slate-400 text-sm">Yesterday was</div>
                   <div className="text-2xl font-bold" style={{ color: PRESCRIPTIONS[yesterdayData.command]?.color || '#6B7280' }}>{yesterdayData.command}</div>
-                  <div className="text-slate-500 text-sm mt-2">How'd it go?</div>
+                  <div className="text-slate-500 text-sm mt-2">
+                    {yesterdayData.command === 'REST' ? 'Did you rest?' : "How'd it go?"}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => recordYesterdayCompliance('yes')} className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg py-2 text-sm font-medium transition">😴 Rested</button>
-                  <button onClick={() => recordYesterdayCompliance('partial')} className="flex-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg py-2 text-sm font-medium transition">🚶 Light</button>
-                  <button onClick={() => recordYesterdayCompliance('no')} className="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg py-2 text-sm font-medium transition">💪 Pushed</button>
-                </div>
+                {yesterdayData.command === 'REST' ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => recordYesterdayCompliance('yes')} className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg py-3 text-sm font-medium transition">Yes</button>
+                    <button onClick={() => recordYesterdayCompliance('no')} className="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg py-3 text-sm font-medium transition">No</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={() => recordYesterdayCompliance('rested')} className="flex-1 bg-slate-600/20 hover:bg-slate-600/30 text-slate-400 rounded-lg py-2 text-sm font-medium transition">😴 Rested</button>
+                    <button onClick={() => recordYesterdayCompliance('light')} className="flex-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg py-2 text-sm font-medium transition">🚶 Light</button>
+                    <button onClick={() => recordYesterdayCompliance('pushed')} className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg py-2 text-sm font-medium transition">💪 Pushed</button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1138,6 +1296,18 @@
                     </div>
                   ))}
                 </div>
+                {/* Command Context - The feedback loop */}
+                {commandContext && (
+                  <div className={`text-center text-sm pt-3 mt-3 border-t border-slate-700/30 ${
+                    commandContext.type === 'warning' ? 'text-red-400/90' :
+                    commandContext.type === 'caution' ? 'text-amber-400/90' :
+                    commandContext.type === 'affirm' ? 'text-green-400/80' :
+                    commandContext.type === 'earned' ? 'text-emerald-400/80' :
+                    'text-slate-400'
+                  }`}>
+                    {commandContext.text}
+                  </div>
+                )}
                 {/* Preview disclaimer */}
                 {result.isPreview && (
                   <div className="text-center text-slate-500 text-xs pt-2 border-t border-slate-700/50">
