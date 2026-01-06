@@ -1147,6 +1147,21 @@
       if (!hrvSource && showOnboarding) {
         return (
           <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col justify-center overflow-x-hidden">
+          {/* TEST MODE: Floating Reset Button */}
+          <button 
+            onClick={() => {
+              if (confirm('Reset ALL data and restart onboarding?')) {
+                resetAll();
+                setShowOnboarding(true);
+                setOnboardingStep(1);
+                setShowHrvGuide(false);
+                setShowInitialSetup(false);
+              }
+            }}
+            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
+          >
+            🔄 RESET TEST
+          </button>
             <div className="max-w-md mx-auto space-y-8">
               
               {/* Screen 1: The crash */}
@@ -1232,6 +1247,21 @@
       if (!hrvSource) {
         return (
           <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
+          {/* TEST MODE: Floating Reset Button */}
+          <button 
+            onClick={() => {
+              if (confirm('Reset ALL data and restart onboarding?')) {
+                resetAll();
+                setShowOnboarding(true);
+                setOnboardingStep(1);
+                setShowHrvGuide(false);
+                setShowInitialSetup(false);
+              }
+            }}
+            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
+          >
+            🔄 RESET TEST
+          </button>
             <div className="max-w-md mx-auto space-y-6 pt-8">
               <div className="text-center space-y-2">
                 <h1 className="text-2xl font-bold">Where do you get your HRV?</h1>
@@ -1293,6 +1323,21 @@
         const guide = HRV_GUIDES[hrvSource.type] || HRV_GUIDES.other;
         return (
           <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
+          {/* TEST MODE: Floating Reset Button */}
+          <button 
+            onClick={() => {
+              if (confirm('Reset ALL data and restart onboarding?')) {
+                resetAll();
+                setShowOnboarding(true);
+                setOnboardingStep(1);
+                setShowHrvGuide(false);
+                setShowInitialSetup(false);
+              }
+            }}
+            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
+          >
+            🔄 RESET TEST
+          </button>
             <div className="max-w-md mx-auto space-y-6 pt-8">
               
               <div className="text-center space-y-2">
@@ -1344,6 +1389,21 @@
       if (showInitialSetup) {
         return (
           <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
+          {/* TEST MODE: Floating Reset Button */}
+          <button 
+            onClick={() => {
+              if (confirm('Reset ALL data and restart onboarding?')) {
+                resetAll();
+                setShowOnboarding(true);
+                setOnboardingStep(1);
+                setShowHrvGuide(false);
+                setShowInitialSetup(false);
+              }
+            }}
+            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
+          >
+            🔄 RESET TEST
+          </button>
             <div className="max-w-md mx-auto space-y-6 pt-8">
               
               <div className="text-center space-y-2">
@@ -1443,6 +1503,22 @@
 
       return (
         <div className="min-h-screen bg-slate-900 text-white p-4 overflow-x-hidden">
+          {/* TEST MODE: Floating Reset Button */}
+          <button 
+            onClick={() => {
+              if (confirm('Reset ALL data and restart onboarding?')) {
+                resetAll();
+                setShowOnboarding(true);
+                setOnboardingStep(1);
+                setShowHrvGuide(false);
+                setShowInitialSetup(false);
+              }
+            }}
+            className="fixed bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-1"
+          >
+            🔄 RESET TEST
+          </button>
+          
           <div className="max-w-md mx-auto space-y-4">
             
             {/* Header */}
