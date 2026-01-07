@@ -590,6 +590,133 @@
     };
 
     // ============================================
+    // FEEDBACK MODAL - The Invitation (not a survey)
+    // ============================================
+    const FeedbackModal = ({ 
+      round, daysOnApp,
+      step, setStep, 
+      response, setResponse, 
+      text, setText, 
+      email, setEmail, 
+      onSend, onDismiss 
+    }) => (
+      <div className="fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
+        <div className="max-w-sm w-full space-y-8">
+          
+          {/* Round 1 (Day 10-14): The Commitment */}
+          {round === 1 && (
+            <>
+              {step === 1 && (
+                <div className="text-center space-y-8 fade-in">
+                  <div className="space-y-4">
+                    <p className="text-zinc-600 text-sm">Day {daysOnApp}</p>
+                    <p className="text-white text-xl leading-relaxed">Most people quit by now.</p>
+                    <p className="text-zinc-400">You didn't.</p>
+                  </div>
+                  <button onClick={() => setStep(2)} className="text-zinc-500 hover:text-white text-sm transition">Continue →</button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="text-center space-y-6 fade-in">
+                  <p className="text-white text-lg">What are you building toward?</p>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'competition', label: 'Competition' },
+                      { key: 'longevity', label: 'Longevity' },
+                      { key: 'consistency', label: 'Staying consistent' },
+                      { key: 'feeling', label: 'Feeling better' },
+                      { key: 'other', label: 'Something else' },
+                    ].map(opt => (
+                      <button key={opt.key} onClick={() => { setResponse(opt.key); setStep(opt.key === 'other' ? 3 : 4); }} className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-3 rounded-xl text-sm transition">{opt.label}</button>
+                    ))}
+                  </div>
+                  <button onClick={() => onDismiss(false)} className="text-zinc-700 text-xs">Skip</button>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="text-center space-y-6 fade-in">
+                  <p className="text-white text-lg">Tell me more.</p>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="What are you working toward..." className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none h-24" autoFocus />
+                  <button onClick={() => setStep(4)} className="w-full bg-white text-black font-medium py-3 rounded-xl">Continue</button>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="text-center space-y-6 fade-in">
+                  <div className="space-y-3">
+                    <p className="text-white text-lg">I'm building something too.</p>
+                    <p className="text-zinc-500 text-sm">Auto-sync. Deeper patterns.<br/>Predictions before you feel them.</p>
+                  </div>
+                  <div className="space-y-3 pt-2">
+                    <p className="text-zinc-400 text-sm">Want early access?</p>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm text-center focus:outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <button onClick={onSend} className="w-full bg-white text-black font-medium py-3 rounded-xl">I'm in</button>
+                    <button onClick={onSend} className="w-full text-zinc-600 text-sm py-2">Just keep going</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Round 2 (Day 35-45): The Inner Circle */}
+          {round === 2 && (
+            <>
+              {step === 1 && (
+                <div className="text-center space-y-8 fade-in">
+                  <div className="space-y-4">
+                    <p className="text-zinc-600 text-sm">Day {daysOnApp}</p>
+                    <p className="text-white text-xl leading-relaxed">You're still here.</p>
+                    <p className="text-zinc-500 text-sm">That puts you ahead of 95% of people<br/>who try to train smarter.</p>
+                  </div>
+                  <button onClick={() => setStep(2)} className="text-zinc-500 hover:text-white text-sm transition">Continue →</button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="text-center space-y-6 fade-in">
+                  <div className="space-y-2">
+                    <p className="text-white text-lg">I'm building the next version.</p>
+                    <p className="text-zinc-500 text-sm">What would make this twice as valuable?</p>
+                  </div>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="The one thing..." className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none h-24" autoFocus />
+                  <button onClick={() => setStep(3)} className="w-full bg-white text-black font-medium py-3 rounded-xl">Continue</button>
+                  <button onClick={() => setStep(3)} className="text-zinc-700 text-xs">Skip</button>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="text-center space-y-6 fade-in">
+                  <div className="space-y-3">
+                    <p className="text-white text-lg">One more thing.</p>
+                    <p className="text-zinc-500 text-sm">Anyone in your life who needs this?</p>
+                    <p className="text-zinc-600 text-xs">A training partner. Someone who never rests.<br/>A friend who's always overtrained.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <button onClick={() => { setResponse('yes'); setStep(4); }} className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-3 rounded-xl text-sm">Yes, I know someone</button>
+                    <button onClick={() => { setResponse('no'); onSend(); }} className="w-full text-zinc-600 text-sm py-2">Not right now</button>
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="text-center space-y-6 fade-in">
+                  <p className="text-white text-lg">I'll make sure they get in.</p>
+                  <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Their email or name" className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm text-center focus:outline-none" autoFocus />
+                  <button onClick={onSend} className="w-full bg-white text-black font-medium py-3 rounded-xl">Done</button>
+                  <button onClick={onSend} className="text-zinc-700 text-xs">Skip</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+
+    // ============================================
     // HRV SOURCE SELECTOR
     // ============================================
     const HRV_SOURCES = [
@@ -681,6 +808,18 @@
       const [lastObservationType, setLastObservationType] = useState(null);
       const [lastObservationDate, setLastObservationDate] = useState(null);
 
+      // Feedback state
+      const [showFeedback, setShowFeedback] = useState(false);
+      const [feedbackRound, setFeedbackRound] = useState(1);
+      const [feedbackStep, setFeedbackStep] = useState(1);
+      const [feedbackResponse, setFeedbackResponse] = useState(null);
+      const [feedbackText, setFeedbackText] = useState('');
+      const [feedbackEmail, setFeedbackEmail] = useState('');
+      const [feedbackRound1Complete, setFeedbackRound1Complete] = useState(false);
+      const [feedbackRound1Response, setFeedbackRound1Response] = useState(null);
+      const [feedbackRound1DismissedAt, setFeedbackRound1DismissedAt] = useState(null);
+      const [feedbackRound2Complete, setFeedbackRound2Complete] = useState(false);
+
       // TEST MODE state
       const [showDebug, setShowDebug] = useState(false);
       const [simulatedDaysOnApp, setSimulatedDaysOnApp] = useState(null);
@@ -698,6 +837,10 @@
             setUserName(data.userName || '');
             setLastObservationType(data.lastObservationType || null);
             setLastObservationDate(data.lastObservationDate || null);
+            setFeedbackRound1Complete(data.feedbackRound1Complete || false);
+            setFeedbackRound1Response(data.feedbackRound1Response || null);
+            setFeedbackRound1DismissedAt(data.feedbackRound1DismissedAt || null);
+            setFeedbackRound2Complete(data.feedbackRound2Complete || false);
           }
         } catch (e) { 
           console.log('No saved data'); 
@@ -710,9 +853,10 @@
         if (isLoading) return;
         localStorage.setItem('genysys_v2_test_data', JSON.stringify({
           hrvHistory, complianceLog, firstUseDate, hrvSource, userName,
-          lastObservationType, lastObservationDate
+          lastObservationType, lastObservationDate,
+          feedbackRound1Complete, feedbackRound1Response, feedbackRound1DismissedAt, feedbackRound2Complete
         }));
-      }, [hrvHistory, complianceLog, firstUseDate, hrvSource, userName, lastObservationType, lastObservationDate, isLoading]);
+      }, [hrvHistory, complianceLog, firstUseDate, hrvSource, userName, lastObservationType, lastObservationDate, feedbackRound1Complete, feedbackRound1Response, feedbackRound1DismissedAt, feedbackRound2Complete, isLoading]);
 
       // Set firstUseDate when they start
       useEffect(() => {
@@ -871,6 +1015,57 @@
       const hasTodayHRV = hrvHistory.some(h => h.date === getTodayLocal());
       const styles = result ? COMMAND_STYLES[result.commandKey] : COMMAND_STYLES.LEARNING;
 
+      // ============================================
+      // FEEDBACK SYSTEM
+      // ============================================
+      const shouldShowFeedback = () => {
+        if (!feedbackRound1Complete && !feedbackRound1DismissedAt && daysOnApp >= 10 && daysOnApp <= 14) return 1;
+        if (!feedbackRound2Complete && daysOnApp >= 35 && daysOnApp <= 45) {
+          if (feedbackRound1Response === 'yes' || feedbackRound1Complete || daysOnApp >= 35) return 2;
+        }
+        return 0;
+      };
+
+      useEffect(() => {
+        if (result && result.commandKey && result.commandKey !== 'LEARNING') {
+          const round = shouldShowFeedback();
+          if (round > 0) {
+            const timer = setTimeout(() => {
+              setFeedbackRound(round);
+              setFeedbackStep(1);
+              setFeedbackResponse(null);
+              setFeedbackText('');
+              setShowFeedback(true);
+            }, 2000);
+            return () => clearTimeout(timer);
+          }
+        }
+      }, [result?.commandKey, daysOnApp]);
+
+      const sendFeedback = () => {
+        if (feedbackRound === 1) {
+          setFeedbackRound1Complete(true);
+          setFeedbackRound1Response(feedbackResponse);
+        } else if (feedbackRound === 2) {
+          setFeedbackRound2Complete(true);
+        }
+        setShowFeedback(false);
+        setFeedbackStep(1);
+        setFeedbackText('');
+        setFeedbackEmail('');
+      };
+
+      const dismissFeedback = (dontAskAgain) => {
+        if (feedbackRound === 1) {
+          if (dontAskAgain) setFeedbackRound1Complete(true);
+          else setFeedbackRound1DismissedAt(getTodayLocal());
+        } else if (feedbackRound === 2) {
+          setFeedbackRound2Complete(true);
+        }
+        setShowFeedback(false);
+        setFeedbackStep(1);
+      };
+
       // Reset function
       const resetAll = () => {
         localStorage.removeItem('genysys_v2_test_data');
@@ -884,6 +1079,10 @@
         setLastObservationType(null);
         setLastObservationDate(null);
         setSimulatedDaysOnApp(null);
+        setFeedbackRound1Complete(false);
+        setFeedbackRound1Response(null);
+        setFeedbackRound1DismissedAt(null);
+        setFeedbackRound2Complete(false);
       };
 
       // Load test scenario
@@ -963,16 +1162,35 @@
               <div>Command: {result?.commandKey || 'none'} | Z: {result?.zScore?.toFixed(2) || 'N/A'}</div>
               <div>Observation type: {observation?.type || 'none'}</div>
               <div>Patterns: trend={patterns?.trend || 'N/A'}, below={patterns?.consecutiveBelowBaseline || 0}, crashes={patterns?.crashesAfterIgnoredRest?.length || 0}</div>
+              <div>Feedback: R1={feedbackRound1Complete ? 'done' : 'pending'} ({feedbackRound1Response || '-'}) | R2={feedbackRound2Complete ? 'done' : 'pending'}</div>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button onClick={resetAll} className="bg-red-900 px-3 py-1 rounded text-xs">Reset All</button>
               <button 
                 onClick={() => setLastObservationType(null)} 
                 className="bg-zinc-800 px-3 py-1 rounded text-xs"
               >
                 Reset Observation
+              </button>
+              <button 
+                onClick={() => { setFeedbackRound(1); setFeedbackStep(1); setShowFeedback(true); }} 
+                className="bg-blue-900/50 px-3 py-1 rounded text-xs"
+              >
+                Test Feedback R1
+              </button>
+              <button 
+                onClick={() => { setFeedbackRound(2); setFeedbackStep(1); setShowFeedback(true); }} 
+                className="bg-blue-900/50 px-3 py-1 rounded text-xs"
+              >
+                Test Feedback R2
+              </button>
+              <button 
+                onClick={() => { setFeedbackRound1Complete(false); setFeedbackRound1Response(null); setFeedbackRound1DismissedAt(null); setFeedbackRound2Complete(false); }} 
+                className="bg-zinc-800 px-3 py-1 rounded text-xs"
+              >
+                Reset Feedback
               </button>
             </div>
           </div>
@@ -1316,6 +1534,24 @@
                 </button>
               </div>
             </div>
+          )}
+
+          {/* Feedback Modal */}
+          {showFeedback && (
+            <FeedbackModal
+              round={feedbackRound}
+              daysOnApp={daysOnApp}
+              step={feedbackStep}
+              setStep={setFeedbackStep}
+              response={feedbackResponse}
+              setResponse={setFeedbackResponse}
+              text={feedbackText}
+              setText={setFeedbackText}
+              email={feedbackEmail}
+              setEmail={setFeedbackEmail}
+              onSend={sendFeedback}
+              onDismiss={dismissFeedback}
+            />
           )}
         </div>
       );
