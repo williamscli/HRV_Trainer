@@ -508,15 +508,19 @@
       const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
       const pick = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
       
-      // No patterns yet = learning phase
+      // No patterns yet = learning phase (countdown to commands)
       if (!patterns) {
         if (hrvHistory.length === 0) {
           return { text: "I don't know you yet. Today I start watching.", type: 'learning_zero' };
         }
-        if (hrvHistory.length <= 2) {
-          return { text: `${hrvHistory.length} days of data. I need a few more to see your baseline.`, type: 'learning_early' };
+        const daysUntilCommands = 3 - hrvHistory.length;
+        if (daysUntilCommands > 0) {
+          return { 
+            text: `${daysUntilCommands} day${daysUntilCommands > 1 ? 's' : ''} until commands start.`, 
+            type: 'learning_countdown' 
+          };
         }
-        return { text: `${hrvHistory.length} days logged. Your baseline is forming.`, type: 'learning_forming' };
+        return { text: "Your baseline is forming.", type: 'learning_forming' };
       }
 
       // === BUILD RECEIPTS ===
@@ -962,6 +966,43 @@
       BUILD: { color: '#c9b896', bg: 'rgba(201, 184, 150, 0.12)', border: 'rgba(201, 184, 150, 0.2)', glow: 'rgba(201, 184, 150, 0.1)' },
       PERFORM: { color: '#9dc4a8', bg: 'rgba(157, 196, 168, 0.12)', border: 'rgba(157, 196, 168, 0.2)', glow: 'rgba(157, 196, 168, 0.1)' },
       LEARNING: { color: '#a8b5a8', bg: 'rgba(168, 181, 168, 0.12)', border: 'rgba(168, 181, 168, 0.2)', glow: 'rgba(168, 181, 168, 0.1)' },
+    };
+
+    // ============================================
+    // TYPEWRITER COMPONENT - Word by word reveal
+    // ============================================
+    const Typewriter = ({ text, speed = 80, onComplete, className = '' }) => {
+      const [displayedWords, setDisplayedWords] = useState(0);
+      const [isComplete, setIsComplete] = useState(false);
+      const words = text ? text.split(' ') : [];
+      
+      useEffect(() => {
+        if (!text) return;
+        setDisplayedWords(0);
+        setIsComplete(false);
+      }, [text]);
+      
+      useEffect(() => {
+        if (displayedWords < words.length) {
+          const timer = setTimeout(() => {
+            setDisplayedWords(prev => prev + 1);
+          }, speed);
+          return () => clearTimeout(timer);
+        } else if (words.length > 0 && !isComplete) {
+          setIsComplete(true);
+          onComplete?.();
+        }
+      }, [displayedWords, words.length, speed, isComplete, onComplete]);
+      
+      const visibleText = words.slice(0, displayedWords).join(' ');
+      const showCursor = !isComplete && words.length > 0;
+      
+      return (
+        <span className={className}>
+          {visibleText}
+          {showCursor && <span className="animate-pulse ml-0.5">|</span>}
+        </span>
+      );
     };
 
     // Tagline Component
@@ -2001,7 +2042,11 @@
             {observation && (
               <div className="text-center fade-in">
                 <p className="text-white/60 text-sm leading-snug px-2 line-clamp-2">
-                  "{observation.text}"
+                  "<Typewriter 
+                    key={observation.type + observation.text.substring(0, 20)} 
+                    text={observation.text} 
+                    speed={60} 
+                  />"
                 </p>
               </div>
             )}
