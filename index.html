@@ -1472,7 +1472,93 @@
     // ============================================
     // INFO MODAL - How GENYSYS Works
     // ============================================
-    const InfoModal = ({ onClose }) => (
+    const InfoModal = ({ onClose, hrvSource }) => {
+      // Device-specific HRV instructions
+      const getHrvInstructions = () => {
+        const deviceId = hrvSource?.id || 'apple';
+        const deviceLabel = hrvSource?.label || 'Apple Watch';
+        
+        const instructions = {
+          apple: {
+            title: 'Where to find your HRV (Apple Watch)',
+            steps: [
+              'Open the Health app on your iPhone',
+              'Tap Browse → Heart → Heart Rate Variability',
+              'Look at your most recent morning reading',
+              'Use the number in milliseconds (ms)'
+            ]
+          },
+          whoop: {
+            title: 'Where to find your HRV (WHOOP)',
+            steps: [
+              'Open the WHOOP app',
+              'Tap on your daily Recovery score',
+              'Scroll to "Heart Rate Variability"',
+              'Use the number in milliseconds (ms)'
+            ]
+          },
+          garmin: {
+            title: 'Where to find your HRV (Garmin)',
+            steps: [
+              'Open Garmin Connect app',
+              'Go to Health Stats → Heart Rate Variability',
+              'Check your morning HRV Status reading',
+              'Use the number in milliseconds (ms)'
+            ]
+          },
+          oura: {
+            title: 'Where to find your HRV (Oura)',
+            steps: [
+              'Open the Oura app',
+              'Tap on Readiness tab',
+              'Scroll to "HRV Balance"',
+              'Tap to see your average HRV in milliseconds'
+            ]
+          },
+          fitbit: {
+            title: 'Where to find your HRV (Fitbit)',
+            steps: [
+              'Open the Fitbit app',
+              'Tap the Health Metrics tile',
+              'Find "Heart Rate Variability"',
+              'Use your daily average in milliseconds'
+            ]
+          },
+          polar: {
+            title: 'Where to find your HRV (Polar)',
+            steps: [
+              'Open Polar Flow app',
+              'Go to your Nightly Recharge report',
+              'Find "ANS Charge" which includes HRV',
+              'Use the RMSSD value in milliseconds'
+            ]
+          },
+          samsung: {
+            title: 'Where to find your HRV (Samsung)',
+            steps: [
+              'Open Samsung Health app',
+              'Go to Home → Stress measurement',
+              'Take a stress reading (includes HRV)',
+              'Use the HRV value in milliseconds'
+            ]
+          },
+          custom: {
+            title: `Where to find your HRV (${deviceLabel})`,
+            steps: [
+              `Please check the ${deviceLabel} app or website`,
+              'Look for Heart Rate Variability or HRV',
+              'Find your most recent morning reading',
+              'Use the number in milliseconds (ms)'
+            ]
+          }
+        };
+        
+        return instructions[deviceId] || instructions.custom;
+      };
+      
+      const hrvInstructions = getHrvInstructions();
+      
+      return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}></div>
         <div className="glass rounded-3xl p-6 max-w-sm w-full relative z-10 max-h-[85vh] overflow-y-auto space-y-5">
@@ -1508,12 +1594,11 @@
           </div>
           
           <div className="border-t border-white/10 pt-4 space-y-2">
-            <h3 className="text-white/80 text-sm font-medium">Where to find your HRV (Apple Watch)</h3>
+            <h3 className="text-white/80 text-sm font-medium">{hrvInstructions.title}</h3>
             <ol className="text-white/50 text-xs leading-relaxed space-y-1 list-decimal list-inside">
-              <li>Open the Health app on your iPhone</li>
-              <li>Tap Browse → Heart → Heart Rate Variability</li>
-              <li>Look at your most recent morning reading</li>
-              <li>Use the number in milliseconds (ms)</li>
+              {hrvInstructions.steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
             </ol>
           </div>
           
@@ -1563,7 +1648,7 @@
           </p>
         </div>
       </div>
-    );
+    )};
 
     // ============================================
     // MAIN APP
@@ -1844,9 +1929,12 @@
           return;
         }
         
-        // Only regenerate if command changed
+        // During learning phase, always regenerate when hrvHistory changes
         const commandKey = result.commandKey;
-        if (commandKey === lastCommandRef.current) return;
+        const isLearning = commandKey === 'LEARNING';
+        
+        // Only skip regeneration if command unchanged AND not in learning phase
+        if (commandKey === lastCommandRef.current && !isLearning) return;
         
         lastCommandRef.current = commandKey;
         
@@ -1870,7 +1958,7 @@
             daysOnApp 
           });
         }
-      }, [result?.commandKey, patterns, daysOnApp]);
+      }, [result?.commandKey, patterns, daysOnApp, hrvHistory.length]);
 
       // Use currentObservation instead of computed observation
       const observation = currentObservation;
@@ -2089,7 +2177,7 @@
             <Tagline />
             
             {/* Info Modal */}
-            {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+            {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} hrvSource={hrvSource} />}
           </div>
         );
       }
@@ -2266,7 +2354,7 @@
             )}
             
             {/* Info Modal */}
-            {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+            {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} hrvSource={hrvSource} />}
             
             <Tagline />
           </div>
@@ -2490,7 +2578,7 @@
           )}
           
           {/* Info Modal */}
-          {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+          {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} hrvSource={hrvSource} />}
           
           <Tagline />
         </div>
