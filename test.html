@@ -5,22 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#1a2f1a">
   <title>GENYSYS — TEST MODE</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js" crossorigin="anonymous"></script>
   <style>
-    body { background: #0a0a0a; }
+    body { 
+      background: linear-gradient(180deg, #2d3b2d 0%, #3d4f3d 20%, #4a5d4a 40%, #5a6b5a 60%, #6b7b6b 80%, #8a9a8a 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+    .glass { background: rgba(40, 50, 40, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-light { background: rgba(60, 75, 60, 0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.06); }
+    .glass-dark { background: rgba(20, 30, 20, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    .mist-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(180,190,180,0.1) 0%, rgba(180,190,180,0) 30%, rgba(180,190,180,0) 70%, rgba(180,190,180,0.05) 100%); pointer-events: none; z-index: 1; }
+    .content-layer { position: relative; z-index: 2; }
     input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+    input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
     .fade-in { animation: fadeIn 0.6s ease-out forwards; }
     .fade-in-delay-1 { animation: fadeIn 0.6s ease-out 0.2s forwards; opacity: 0; }
     .fade-in-delay-2 { animation: fadeIn 0.6s ease-out 0.4s forwards; opacity: 0; }
     .fade-in-delay-3 { animation: fadeIn 0.6s ease-out 0.6s forwards; opacity: 0; }
     .pulse-slow { animation: pulse 3s ease-in-out infinite; }
+    .float { animation: float 4s ease-in-out infinite; }
+    * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
   </style>
 </head>
 <body>
@@ -580,17 +597,28 @@
     };
 
     // ============================================
-    // COLORS
+    // COLORS - Earthy, organic palette
     // ============================================
     const COMMAND_STYLES = {
-      REST: { color: '#f87171', bg: 'rgba(248, 113, 113, 0.1)', border: 'rgba(248, 113, 113, 0.2)' },
-      BUILD: { color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.1)', border: 'rgba(251, 191, 36, 0.2)' },
-      PERFORM: { color: '#4ade80', bg: 'rgba(74, 222, 128, 0.1)', border: 'rgba(74, 222, 128, 0.2)' },
-      LEARNING: { color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.1)', border: 'rgba(148, 163, 184, 0.2)' },
+      REST: { color: '#e8b89d', bg: 'rgba(232, 184, 157, 0.12)', border: 'rgba(232, 184, 157, 0.2)', glow: 'rgba(232, 184, 157, 0.1)' },
+      BUILD: { color: '#c9b896', bg: 'rgba(201, 184, 150, 0.12)', border: 'rgba(201, 184, 150, 0.2)', glow: 'rgba(201, 184, 150, 0.1)' },
+      PERFORM: { color: '#9dc4a8', bg: 'rgba(157, 196, 168, 0.12)', border: 'rgba(157, 196, 168, 0.2)', glow: 'rgba(157, 196, 168, 0.1)' },
+      LEARNING: { color: '#a8b5a8', bg: 'rgba(168, 181, 168, 0.12)', border: 'rgba(168, 181, 168, 0.2)', glow: 'rgba(168, 181, 168, 0.1)' },
     };
 
+    // Tagline Component
+    const Tagline = () => (
+      <div className="fixed bottom-6 left-0 right-0 text-center fade-in-delay-3" style={{ zIndex: 10 }}>
+        <p className="text-white/40 text-sm tracking-wide mb-2">Your body is talking.</p>
+        <svg className="mx-auto float" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 22C12 22 12 16 12 14C12 12 10 10 8 10C6 10 4 12 4 14C4 16 6 18 8 18" stroke="#8b9b7a" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M12 22C12 22 12 16 12 14C12 12 14 10 16 10C18 10 20 12 20 14C20 16 18 18 16 18" stroke="#a8b89a" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </div>
+    );
+
     // ============================================
-    // FEEDBACK MODAL - The Invitation (not a survey)
+    // FEEDBACK MODAL - The Invitation (glassmorphism)
     // ============================================
     const FeedbackModal = ({ 
       round, daysOnApp,
@@ -600,7 +628,7 @@
       email, setEmail, 
       onSend, onDismiss 
     }) => (
-      <div className="fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-6 z-50">
         <div className="max-w-sm w-full space-y-8">
           
           {/* Round 1 (Day 10-14): The Commitment */}
@@ -609,11 +637,11 @@
               {step === 1 && (
                 <div className="text-center space-y-8 fade-in">
                   <div className="space-y-4">
-                    <p className="text-zinc-600 text-sm">Day {daysOnApp}</p>
+                    <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
                     <p className="text-white text-xl leading-relaxed">Most people quit by now.</p>
-                    <p className="text-zinc-400">You didn't.</p>
+                    <p className="text-white/60">You didn't.</p>
                   </div>
-                  <button onClick={() => setStep(2)} className="text-zinc-500 hover:text-white text-sm transition">Continue →</button>
+                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
                 </div>
               )}
 
@@ -628,18 +656,18 @@
                       { key: 'feeling', label: 'Feeling better' },
                       { key: 'other', label: 'Something else' },
                     ].map(opt => (
-                      <button key={opt.key} onClick={() => { setResponse(opt.key); setStep(opt.key === 'other' ? 3 : 4); }} className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-3 rounded-xl text-sm transition">{opt.label}</button>
+                      <button key={opt.key} onClick={() => { setResponse(opt.key); setStep(opt.key === 'other' ? 3 : 4); }} className="w-full glass hover:bg-white/10 text-white/70 py-3 rounded-2xl text-sm transition-all duration-300">{opt.label}</button>
                     ))}
                   </div>
-                  <button onClick={() => onDismiss(false)} className="text-zinc-700 text-xs">Skip</button>
+                  <button onClick={() => onDismiss(false)} className="text-white/20 text-xs">Skip</button>
                 </div>
               )}
 
               {step === 3 && (
                 <div className="text-center space-y-6 fade-in">
                   <p className="text-white text-lg">Tell me more.</p>
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="What are you working toward..." className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none h-24" autoFocus />
-                  <button onClick={() => setStep(4)} className="w-full bg-white text-black font-medium py-3 rounded-xl">Continue</button>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="What are you working toward..." className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none resize-none h-24" autoFocus />
+                  <button onClick={() => setStep(4)} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Continue</button>
                 </div>
               )}
 
@@ -647,15 +675,15 @@
                 <div className="text-center space-y-6 fade-in">
                   <div className="space-y-3">
                     <p className="text-white text-lg">I'm building something too.</p>
-                    <p className="text-zinc-500 text-sm">Auto-sync. Deeper patterns.<br/>Predictions before you feel them.</p>
+                    <p className="text-white/40 text-sm">Auto-sync. Deeper patterns.<br/>Predictions before you feel them.</p>
                   </div>
                   <div className="space-y-3 pt-2">
-                    <p className="text-zinc-400 text-sm">Want early access?</p>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm text-center focus:outline-none" />
+                    <p className="text-white/50 text-sm">Want early access?</p>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none" />
                   </div>
                   <div className="space-y-2">
-                    <button onClick={onSend} className="w-full bg-white text-black font-medium py-3 rounded-xl">I'm in</button>
-                    <button onClick={onSend} className="w-full text-zinc-600 text-sm py-2">Just keep going</button>
+                    <button onClick={onSend} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">I'm in</button>
+                    <button onClick={onSend} className="w-full text-white/40 text-sm py-2">Just keep going</button>
                   </div>
                 </div>
               )}
@@ -668,11 +696,11 @@
               {step === 1 && (
                 <div className="text-center space-y-8 fade-in">
                   <div className="space-y-4">
-                    <p className="text-zinc-600 text-sm">Day {daysOnApp}</p>
+                    <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
                     <p className="text-white text-xl leading-relaxed">You're still here.</p>
-                    <p className="text-zinc-500 text-sm">That puts you ahead of 95% of people<br/>who try to train smarter.</p>
+                    <p className="text-white/40 text-sm">That puts you ahead of 95% of people<br/>who try to train smarter.</p>
                   </div>
-                  <button onClick={() => setStep(2)} className="text-zinc-500 hover:text-white text-sm transition">Continue →</button>
+                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
                 </div>
               )}
 
@@ -680,11 +708,11 @@
                 <div className="text-center space-y-6 fade-in">
                   <div className="space-y-2">
                     <p className="text-white text-lg">I'm building the next version.</p>
-                    <p className="text-zinc-500 text-sm">What would make this twice as valuable?</p>
+                    <p className="text-white/40 text-sm">What would make this twice as valuable?</p>
                   </div>
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="The one thing..." className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none h-24" autoFocus />
-                  <button onClick={() => setStep(3)} className="w-full bg-white text-black font-medium py-3 rounded-xl">Continue</button>
-                  <button onClick={() => setStep(3)} className="text-zinc-700 text-xs">Skip</button>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="The one thing..." className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none resize-none h-24" autoFocus />
+                  <button onClick={() => setStep(3)} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Continue</button>
+                  <button onClick={() => setStep(3)} className="text-white/20 text-xs">Skip</button>
                 </div>
               )}
 
@@ -692,12 +720,12 @@
                 <div className="text-center space-y-6 fade-in">
                   <div className="space-y-3">
                     <p className="text-white text-lg">One more thing.</p>
-                    <p className="text-zinc-500 text-sm">Anyone in your life who needs this?</p>
-                    <p className="text-zinc-600 text-xs">A training partner. Someone who never rests.<br/>A friend who's always overtrained.</p>
+                    <p className="text-white/40 text-sm">Anyone in your life who needs this?</p>
+                    <p className="text-white/25 text-xs">A training partner. Someone who never rests.<br/>A friend who's always overtrained.</p>
                   </div>
                   <div className="space-y-2">
-                    <button onClick={() => { setResponse('yes'); setStep(4); }} className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-3 rounded-xl text-sm">Yes, I know someone</button>
-                    <button onClick={() => { setResponse('no'); onSend(); }} className="w-full text-zinc-600 text-sm py-2">Not right now</button>
+                    <button onClick={() => { setResponse('yes'); setStep(4); }} className="w-full glass hover:bg-white/10 text-white/70 py-3 rounded-2xl text-sm transition-all">Yes, I know someone</button>
+                    <button onClick={() => { setResponse('no'); onSend(); }} className="w-full text-white/40 text-sm py-2">Not right now</button>
                   </div>
                 </div>
               )}
@@ -705,9 +733,9 @@
               {step === 4 && (
                 <div className="text-center space-y-6 fade-in">
                   <p className="text-white text-lg">I'll make sure they get in.</p>
-                  <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Their email or name" className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm text-center focus:outline-none" autoFocus />
-                  <button onClick={onSend} className="w-full bg-white text-black font-medium py-3 rounded-xl">Done</button>
-                  <button onClick={onSend} className="text-zinc-700 text-xs">Skip</button>
+                  <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Their email or name" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none" autoFocus />
+                  <button onClick={onSend} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Done</button>
+                  <button onClick={onSend} className="text-white/20 text-xs">Skip</button>
                 </div>
               )}
             </>
@@ -1107,8 +1135,9 @@
 
       if (isLoading) {
         return (
-          <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
-            <div className="text-zinc-600 pulse-slow">...</div>
+          <div className="min-h-screen text-white flex items-center justify-center">
+            <div className="mist-overlay"></div>
+            <div className="content-layer text-white/40 pulse-slow">...</div>
           </div>
         );
       }
@@ -1202,11 +1231,12 @@
       // ============================================
       if (!hrvSource) {
         return (
-          <div className="min-h-screen bg-[#0a0a0a] text-white p-6 flex flex-col justify-center">
-            <div className="max-w-sm mx-auto space-y-12">
+          <div className="min-h-screen text-white p-6 flex flex-col justify-center">
+            <div className="mist-overlay"></div>
+            <div className="content-layer max-w-sm mx-auto space-y-12">
               
               <div className="space-y-6 text-center fade-in">
-                <p className="text-zinc-400 text-lg leading-relaxed">
+                <p className="text-white/60 text-lg leading-relaxed">
                   I'm going to learn your body.
                 </p>
                 <p className="text-white text-xl leading-relaxed">
@@ -1214,20 +1244,20 @@
                 </p>
               </div>
 
-              <div className="space-y-3 text-center text-zinc-500 fade-in-delay-1">
+              <div className="space-y-3 text-center text-white/40 fade-in-delay-1">
                 <p>Give me a week and I'll know your baseline.</p>
                 <p>Give me a month and I'll know your patterns.</p>
                 <p>Give me a year and I'll know you better than anyone.</p>
               </div>
 
               <div className="space-y-4 fade-in-delay-2">
-                <p className="text-zinc-600 text-sm text-center">Where does your HRV come from?</p>
+                <p className="text-white/30 text-sm text-center">Where does your HRV come from?</p>
                 <div className="grid grid-cols-2 gap-2">
                   {HRV_SOURCES.map(source => (
                     <button
                       key={source.id}
                       onClick={() => setHrvSource(source)}
-                      className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-xl py-3 px-4 text-sm text-zinc-300 transition-all"
+                      className="glass hover:bg-white/10 rounded-2xl py-3 px-4 text-sm text-white/70 transition-all duration-300"
                     >
                       {source.label}
                     </button>
@@ -1240,11 +1270,12 @@
             {/* Test mode button */}
             <button
               onClick={() => setShowDebug(true)}
-              className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg"
+              className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
             >
               🧪 TEST
             </button>
             {showDebug && <DebugPanel />}
+            <Tagline />
           </div>
         );
       }
@@ -1254,30 +1285,31 @@
       // ============================================
       if (!hasTodayHRV) {
         return (
-          <div className="min-h-screen bg-[#0a0a0a] text-white p-6 flex flex-col">
-            <div className="max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
+          <div className="min-h-screen text-white p-6 flex flex-col">
+            <div className="mist-overlay"></div>
+            <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
               
               <div className="text-center fade-in">
-                <div className="text-zinc-600 text-sm">
+                <div className="text-white/30 text-sm tracking-wide">
                   {daysOnApp <= 1 ? "Day 1" : `Day ${daysOnApp}`}
                 </div>
               </div>
 
               {needsYesterdayCompliance && (
-                <div className="bg-zinc-900/50 rounded-2xl p-5 space-y-4 fade-in">
-                  <p className="text-zinc-400 text-center">
+                <div className="glass rounded-2xl p-5 space-y-4 fade-in">
+                  <p className="text-white/60 text-center">
                     Yesterday I said <span style={{ color: COMMAND_STYLES[yesterdayLog.command].color }}>{yesterdayLog.command}</span>
                   </p>
                   <div className="flex gap-3">
                     <button
                       onClick={() => recordCompliance('yes')}
-                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 rounded-xl py-3 text-sm transition-all"
+                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-3 text-sm text-white/80 transition-all duration-300"
                     >
                       I listened
                     </button>
                     <button
                       onClick={() => recordCompliance('no')}
-                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 rounded-xl py-3 text-sm transition-all"
+                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-3 text-sm text-white/80 transition-all duration-300"
                     >
                       I didn't
                     </button>
@@ -1286,7 +1318,7 @@
               )}
 
               <div className="space-y-4 fade-in-delay-1">
-                <p className="text-zinc-400 text-center text-lg">
+                <p className="text-white/60 text-center text-lg">
                   {daysOnApp <= 1 ? "What's your HRV this morning?" : "What's your HRV?"}
                 </p>
                 <div className="flex gap-3">
@@ -1296,24 +1328,24 @@
                     onChange={(e) => setTodayHRV(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmitHRV()}
                     placeholder="HRV"
-                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-4 text-2xl text-center font-light focus:outline-none focus:border-zinc-600 transition-all"
+                    className="flex-1 glass rounded-2xl px-4 py-4 text-2xl text-center font-light text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
                     autoFocus
                   />
                   <button
                     onClick={handleSubmitHRV}
-                    className="bg-white text-black rounded-xl px-6 py-4 font-medium hover:bg-zinc-200 transition-all"
+                    className="bg-white/90 text-black rounded-2xl px-6 py-4 font-medium hover:bg-white transition-all duration-300"
                   >
                     Go
                   </button>
                 </div>
-                <p className="text-zinc-700 text-xs text-center">
+                <p className="text-white/20 text-xs text-center">
                   from {hrvSource.label}
                 </p>
               </div>
 
               <button
                 onClick={() => setShowAddHistory(true)}
-                className="text-zinc-700 text-sm hover:text-zinc-500 transition-all"
+                className="text-white/30 text-sm hover:text-white/50 transition-all"
               >
                 + Add past days
               </button>
@@ -1323,26 +1355,26 @@
             {/* Test button */}
             <button
               onClick={() => setShowDebug(true)}
-              className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg"
+              className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
             >
               🧪 TEST
             </button>
             {showDebug && <DebugPanel />}
 
             {showAddHistory && (
-              <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-50">
-                <div className="bg-zinc-900 rounded-t-3xl p-6 w-full max-w-md space-y-6">
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
+                <div className="glass-dark rounded-t-3xl p-6 w-full max-w-md space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Add Past HRV</h3>
+                    <h3 className="text-lg font-medium text-white">Add Past HRV</h3>
                     <button 
                       onClick={() => setShowAddHistory(false)}
-                      className="text-zinc-500 hover:text-white text-2xl"
+                      className="text-white/40 hover:text-white text-2xl"
                     >
                       ×
                     </button>
                   </div>
                   
-                  <p className="text-zinc-500 text-sm">
+                  <p className="text-white/40 text-sm">
                     The more history I have, the faster I learn you.
                   </p>
                   
@@ -1353,18 +1385,18 @@
                       onChange={(e) => setNewEntry(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && addHistoricalEntry()}
                       placeholder="HRV"
-                      className="w-24 bg-zinc-800 rounded-xl px-3 py-3 text-center focus:outline-none"
+                      className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none"
                       autoFocus
                     />
                     <input
                       type="date"
                       value={newEntryDate}
                       onChange={(e) => setNewEntryDate(e.target.value)}
-                      className="flex-1 bg-zinc-800 rounded-xl px-3 py-3 text-zinc-400 focus:outline-none"
+                      className="flex-1 glass rounded-xl px-3 py-3 text-white/60 focus:outline-none"
                     />
                     <button
                       onClick={addHistoricalEntry}
-                      className="bg-zinc-700 hover:bg-zinc-600 rounded-xl px-4 py-3"
+                      className="glass-light hover:bg-white/10 rounded-xl px-4 py-3 text-white/80 transition-all"
                     >
                       Add
                     </button>
@@ -1373,7 +1405,7 @@
                   {hrvHistory.length > 0 && (
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {[...hrvHistory].reverse().slice(0, 14).map((entry, i) => (
-                        <div key={entry.date} className="flex justify-between text-sm text-zinc-500 py-2 border-b border-zinc-800">
+                        <div key={entry.date} className="flex justify-between text-sm text-white/40 py-2 border-b border-white/5">
                           <span>{entry.date}</span>
                           <span className="font-mono">{entry.value} ms</span>
                         </div>
@@ -1383,13 +1415,15 @@
 
                   <button
                     onClick={() => setShowAddHistory(false)}
-                    className="w-full bg-zinc-800 hover:bg-zinc-700 rounded-xl py-3"
+                    className="w-full glass-light hover:bg-white/10 rounded-xl py-3 text-white/80 transition-all"
                   >
                     Done — {hrvHistory.length} days logged
                   </button>
                 </div>
               </div>
             )}
+            
+            <Tagline />
           </div>
         );
       }
@@ -1398,26 +1432,27 @@
       // MAIN VIEW
       // ============================================
       return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white p-6 flex flex-col">
-          <div className="max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
+        <div className="min-h-screen text-white p-6 flex flex-col">
+          <div className="mist-overlay"></div>
+          <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
             
             <div className="text-center">
-              <span className="text-zinc-700 text-sm">Day {daysOnApp}</span>
+              <span className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</span>
             </div>
 
             {observation && (
               <div className="text-center space-y-2 fade-in">
-                <p className="text-zinc-300 text-lg leading-relaxed px-4">
+                <p className="text-white/70 text-lg leading-relaxed px-4">
                   "{observation.text}"
                 </p>
               </div>
             )}
 
             <div 
-              className="rounded-3xl py-12 px-8 text-center fade-in-delay-1"
+              className="glass rounded-3xl py-12 px-8 text-center fade-in-delay-1"
               style={{ 
-                backgroundColor: styles.bg,
-                border: `1px solid ${styles.border}`
+                boxShadow: `0 8px 32px ${styles.glow || 'rgba(0,0,0,0.2)'}`,
+                borderColor: styles.border
               }}
             >
               <div 
@@ -1430,7 +1465,7 @@
 
             {promise && (
               <div className="text-center fade-in-delay-2">
-                <p className="text-zinc-500 text-base italic">
+                <p className="text-white/40 text-base italic">
                   {promise}
                 </p>
               </div>
@@ -1438,7 +1473,7 @@
 
             {result?.isPreview && (
               <div className="text-center">
-                <p className="text-zinc-700 text-xs">
+                <p className="text-white/20 text-xs">
                   Still calibrating — {result.daysUntilFull} more days
                 </p>
               </div>
@@ -1446,7 +1481,7 @@
 
             {patterns && daysOnApp >= 14 && (
               <div className="text-center pt-8">
-                <p className="text-zinc-800 text-xs">
+                <p className="text-white/15 text-xs">
                   {patterns.performDays} peaks · {patterns.restDays} protected · {patterns.totalDays} days watched
                 </p>
               </div>
@@ -1454,16 +1489,16 @@
 
           </div>
 
-          <div className="max-w-sm mx-auto w-full pt-8 flex justify-between text-zinc-800 text-xs">
+          <div className="content-layer max-w-sm mx-auto w-full pt-8 flex justify-between text-white/20 text-xs">
             <button 
               onClick={() => setShowAddHistory(true)}
-              className="hover:text-zinc-500 transition-all"
+              className="hover:text-white/40 transition-all"
             >
               + Add history
             </button>
             <button 
               onClick={resetAll}
-              className="hover:text-zinc-500 transition-all"
+              className="hover:text-white/40 transition-all"
             >
               Reset
             </button>
@@ -1472,20 +1507,20 @@
           {/* Test button */}
           <button
             onClick={() => setShowDebug(true)}
-            className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg"
+            className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
           >
             🧪 TEST
           </button>
           {showDebug && <DebugPanel />}
 
           {showAddHistory && (
-            <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-50">
-              <div className="bg-zinc-900 rounded-t-3xl p-6 w-full max-w-md space-y-6">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
+              <div className="glass-dark rounded-t-3xl p-6 w-full max-w-md space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">Add Past HRV</h3>
+                  <h3 className="text-lg font-medium text-white">Add Past HRV</h3>
                   <button 
                     onClick={() => setShowAddHistory(false)}
-                    className="text-zinc-500 hover:text-white text-2xl"
+                    className="text-white/40 hover:text-white text-2xl"
                   >
                     ×
                   </button>
@@ -1498,18 +1533,18 @@
                     onChange={(e) => setNewEntry(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addHistoricalEntry()}
                     placeholder="HRV"
-                    className="w-24 bg-zinc-800 rounded-xl px-3 py-3 text-center focus:outline-none"
+                    className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none"
                     autoFocus
                   />
                   <input
                     type="date"
                     value={newEntryDate}
                     onChange={(e) => setNewEntryDate(e.target.value)}
-                    className="flex-1 bg-zinc-800 rounded-xl px-3 py-3 text-zinc-400 focus:outline-none"
+                    className="flex-1 glass rounded-xl px-3 py-3 text-white/60 focus:outline-none"
                   />
                   <button
                     onClick={addHistoricalEntry}
-                    className="bg-zinc-700 hover:bg-zinc-600 rounded-xl px-4 py-3"
+                    className="glass-light hover:bg-white/10 rounded-xl px-4 py-3 text-white/80 transition-all"
                   >
                     Add
                   </button>
@@ -1518,7 +1553,7 @@
                 {hrvHistory.length > 0 && (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {[...hrvHistory].reverse().slice(0, 14).map((entry, i) => (
-                      <div key={entry.date} className="flex justify-between text-sm text-zinc-500 py-2 border-b border-zinc-800">
+                      <div key={entry.date} className="flex justify-between text-sm text-white/40 py-2 border-b border-white/5">
                         <span>{entry.date}</span>
                         <span className="font-mono">{entry.value} ms</span>
                       </div>
@@ -1528,7 +1563,7 @@
 
                 <button
                   onClick={() => setShowAddHistory(false)}
-                  className="w-full bg-zinc-800 hover:bg-zinc-700 rounded-xl py-3"
+                  className="w-full glass-light hover:bg-white/10 rounded-xl py-3 text-white/80 transition-all"
                 >
                   Done
                 </button>
@@ -1553,6 +1588,8 @@
               onDismiss={dismissFeedback}
             />
           )}
+          
+          <Tagline />
         </div>
       );
     };
