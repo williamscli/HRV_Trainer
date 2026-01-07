@@ -299,6 +299,16 @@
         );
       }
 
+      // Find last REST day
+      const restDaysHistory = withZScores.filter(h => h.command === 'REST');
+      if (restDaysHistory.length > 0) {
+        const lastRest = restDaysHistory[restDaysHistory.length - 1];
+        patterns.lastRestDate = lastRest.date;
+        patterns.daysSinceRest = Math.floor(
+          (new Date(getTodayLocal()) - new Date(lastRest.date)) / (1000 * 60 * 60 * 24)
+        );
+      }
+
       // Analyze compliance outcomes
       if (complianceLog && complianceLog.length > 0) {
         complianceLog.forEach(log => {
@@ -382,225 +392,461 @@
     // ============================================
     // THE VOICE - Observation Generator
     // ============================================
-    const generateObservation = (command, patterns, daysOnApp, lastObservationType, hrvHistory) => {
-      if (!patterns) {
-        if (daysOnApp < 1) {
-          return { text: "I don't know you yet. Today I'm guessing.", type: 'learning' };
-        }
-        return { text: "I'm still learning your patterns.", type: 'learning' };
-      }
-
-      // Use date-based seed for consistent daily selection
+    // ============================================
+    // RECEIPT-FIRST MESSAGING SYSTEM
+    // Every line earns its existence by pointing at something true
+    // ============================================
+    
+    const generateObservation = (command, patterns, daysOnApp, lastObservationType, hrvHistory, usedFrames = []) => {
+      // Deterministic seed: same day = same copy
       const today = new Date();
       const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-      const pickIndex = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
-
-      const observations = [];
+      const pick = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
       
-      // === MILESTONE OBSERVATIONS (highest priority) ===
-      if (daysOnApp === 7 && lastObservationType !== 'milestone_baseline') {
+      // No patterns yet = learning phase
+      if (!patterns) {
+        if (hrvHistory.length === 0) {
+          return { text: "I don't know you yet. Today I start watching.", type: 'learning_zero' };
+        }
+        if (hrvHistory.length <= 2) {
+          return { text: `${hrvHistory.length} days of data. I need a few more to see your baseline.`, type: 'learning_early' };
+        }
+        return { text: `${hrvHistory.length} days logged. Your baseline is forming.`, type: 'learning_forming' };
+      }
+
+      // === BUILD RECEIPTS ===
+      const receipts = {
+        daysBelow: patterns.consecutiveBelowBaseline || 0,
+        daysAbove: patterns.consecutiveAboveBaseline || 0,
+        daysSincePerform: patterns.daysSincePerform || 0,
+        daysSinceRest: patterns.daysSinceRest || 0,
+        trend: patterns.trend || 'stable',
+        totalDays: patterns.totalDays || hrvHistory.length,
+        performDays: patterns.performDays || 0,
+        restDays: patterns.restDays || 0,
+        crashCount: patterns.crashesAfterIgnoredRest?.length || 0,
+        isVolatile: patterns.isVolatile || false,
+      };
+
+      // === MILESTONE OBSERVATIONS (highest priority, override everything) ===
+      if (daysOnApp === 7) {
         return {
-          text: "I've found your baseline. You're not average. Now I can see when you're above yourself—and when you're below.",
-          type: 'milestone_baseline'
+          text: `${receipts.totalDays} days. I've found your baseline. Now I can see when you're above yourself—and when you're below.`,
+          type: 'milestone_7'
         };
       }
       
-      if (daysOnApp === 30 && lastObservationType !== 'milestone_30') {
-        const insight = patterns.isVolatile 
-          ? "Your body runs hot and cold. Big swings. I've adjusted for your rhythm."
-          : patterns.crashesAfterIgnoredRest.length >= 2
-            ? "You push hardest when you're most fragile. I've seen it happen."
-            : patterns.performDays > patterns.restDays
-              ? "You recover faster than most. Your peaks come often."
-              : "You need more recovery than average. That's not weakness—it's information.";
-        return { text: `I've learned something about you. ${insight}`, type: 'milestone_30' };
+      if (daysOnApp === 30) {
+        const insight = receipts.isVolatile 
+          ? `Your HRV swings wide—bigger than most. I've calibrated for your rhythm.`
+          : receipts.crashCount >= 2
+            ? `${receipts.crashCount} times you pushed through REST. ${receipts.crashCount} times you paid for it. I'm watching for that pattern.`
+            : receipts.performDays > receipts.restDays
+              ? `${receipts.performDays} peak days in ${receipts.totalDays}. You recover faster than most.`
+              : `${receipts.restDays} protected days out of ${receipts.totalDays}. You need more recovery than average. That's not weakness—it's data.`;
+        return { text: insight, type: 'milestone_30' };
       }
       
-      if (daysOnApp === 60 && lastObservationType !== 'milestone_60') {
+      if (daysOnApp === 60) {
         return {
-          text: `I know your rhythm now. ${patterns.performDays} peak days in ${patterns.totalDays}. I know when they're coming before you feel it.`,
+          text: `60 days. ${receipts.performDays} peaks, ${receipts.restDays} protected. I know when your windows open before you feel them.`,
           type: 'milestone_60'
         };
       }
       
-      if (daysOnApp === 90 && lastObservationType !== 'milestone_90') {
+      if (daysOnApp === 90) {
         return {
-          text: "I know you better than most coaches ever could. They see you a few hours a week. I've watched every single day.",
+          text: `90 days watched. I know your patterns better than any coach who sees you a few hours a week.`,
           type: 'milestone_90'
         };
       }
 
-      // === DANGER OBSERVATIONS (REST days) ===
+      // === TENURE-BASED LANGUAGE DEPTH ===
+      const tenure = daysOnApp <= 30 ? 'early' : daysOnApp <= 180 ? 'developing' : 'mature';
+
+      // === REST FRAMES ===
       if (command === 'REST') {
-        if (patterns.crashesAfterIgnoredRest.length > 0 && lastObservationType !== 'ignored_crash') {
-          const crash = patterns.crashesAfterIgnoredRest[patterns.crashesAfterIgnoredRest.length - 1];
-          observations.push({
-            text: `You've seen this before. ${getRelativeDay(crash.ignoredDate)}, you pushed through. You paid for it.`,
-            type: 'ignored_crash',
+        const frames = [];
+        
+        if (receipts.crashCount > 0) {
+          frames.push({
+            text: `You've ignored REST ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''} and crashed ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''}. I remember.`,
+            type: 'rest_crash_history',
             priority: 10
           });
         }
-        
-        if (patterns.nearestMatch && patterns.nearestMatch.pushed && patterns.nearestMatch.nextDayCrashed && lastObservationType !== 'historical_match') {
-          observations.push({
-            text: `The last time your body looked like this was ${getRelativeDay(patterns.nearestMatch.date)}. You pushed. You crashed.`,
-            type: 'historical_match',
+
+        if (receipts.daysBelow >= 2) {
+          frames.push({
+            text: `${receipts.daysBelow} days below your baseline. Your body is asking for something.`,
+            type: 'rest_consecutive_low',
             priority: 9
           });
+          if (tenure !== 'early') {
+            frames.push({
+              text: `You've been spending more than you're earning for ${receipts.daysBelow} days.`,
+              type: 'rest_deficit',
+              priority: 9
+            });
+          }
         }
-        
-        if (patterns.consecutiveBelowBaseline >= 2 && lastObservationType !== 'consecutive_low') {
-          observations.push({
-            text: `You've been below yourself for ${patterns.consecutiveBelowBaseline} days. Your body is asking for something.`,
-            type: 'consecutive_low',
+
+        if (receipts.trend === 'falling') {
+          frames.push({
+            text: "You're trending down. Today is not the day to fight gravity.",
+            type: 'rest_falling',
             priority: 8
           });
         }
 
-        if (patterns.trend === 'falling' && lastObservationType !== 'falling_trend') {
-          observations.push({
-            text: "You're falling. I've been watching. Today is not the day to fight gravity.",
-            type: 'falling_trend',
+        if (receipts.daysSincePerform >= 7) {
+          frames.push({
+            text: `${receipts.daysSincePerform} days since your last peak. Protect today—the climb back starts here.`,
+            type: 'rest_long_drought',
             priority: 7
           });
         }
 
-        // Generic REST - deterministic selection
-        const restMessages = [
-          { text: "Your body is building something. Don't interrupt it.", type: 'rest_building' },
-          { text: "I know you feel fine. You felt fine last time too.", type: 'rest_feel_fine' },
-          { text: "The strongest version of you is counting on what you do right now.", type: 'rest_future' },
+        const genericRest = [
+          { text: "This isn't a motivation problem. It's a capacity problem.", type: 'rest_capacity', priority: 5 },
+          { text: "You can push today. You just won't like the bill.", type: 'rest_bill', priority: 4 },
+          { text: "Your numbers say 'slow down' even if your mind says 'go.'", type: 'rest_numbers', priority: 4 },
+          { text: "If you want the fastest comeback, today is boring on purpose.", type: 'rest_boring', priority: 3 },
+          { text: "The strongest version of you is counting on what you do right now.", type: 'rest_future', priority: 3 },
         ];
-        const unusedRest = restMessages.filter(m => m.type !== lastObservationType);
-        if (unusedRest.length > 0) {
-          observations.push({ ...pickIndex(unusedRest), priority: 3 });
+        
+        if (tenure === 'early') {
+          genericRest.push({ text: "I know you feel fine. You felt fine last time too.", type: 'rest_feel_fine', priority: 4 });
+        } else {
+          genericRest.push({ text: "This is the part where small choices matter more than big ones.", type: 'rest_small_choices', priority: 4 });
         }
+        
+        frames.push(...genericRest);
+        frames.sort((a, b) => b.priority - a.priority);
+        return pick(frames.slice(0, 3));
       }
 
-      // === PERFORM OBSERVATIONS ===
-      if (command === 'PERFORM') {
-        if (patterns.daysSincePerform && patterns.daysSincePerform >= 7 && lastObservationType !== 'perform_rare') {
-          observations.push({
-            text: `This is your first peak day in ${patterns.daysSincePerform} days. It's rare. Use it.`,
-            type: 'perform_rare',
-            priority: 10
-          });
-        }
-
-        if (patterns.trend === 'rising' && patterns.consecutiveAboveBaseline >= 2 && lastObservationType !== 'rising_peak') {
-          observations.push({
-            text: `You've been rising for ${patterns.consecutiveAboveBaseline} days. Today it peaks.`,
-            type: 'rising_peak',
-            priority: 9
-          });
-        }
-
-        if (patterns.recoveriesAfterRest.length > 0 && lastObservationType !== 'earned_peak') {
-          observations.push({
-            text: "You protected your rest. Now you reap what you guarded.",
-            type: 'earned_peak',
-            priority: 8
-          });
-        }
-
-        // Generic PERFORM - deterministic selection
-        const performMessages = [
-          { text: "This is what you've been building toward.", type: 'perform_building' },
-          { text: "Your body is saying yes. It doesn't say yes often.", type: 'perform_yes' },
-          { text: "Windows close. This one's open.", type: 'perform_window' },
-        ];
-        const unusedPerform = performMessages.filter(m => m.type !== lastObservationType);
-        if (unusedPerform.length > 0) {
-          observations.push({ ...pickIndex(unusedPerform), priority: 3 });
-        }
-      }
-
-      // === BUILD OBSERVATIONS ===
+      // === BUILD FRAMES ===
       if (command === 'BUILD') {
-        if (patterns.trend === 'rising' && lastObservationType !== 'build_rising') {
-          observations.push({
-            text: "You're rising. Not there yet. Keep building.",
-            type: 'build_rising',
+        const frames = [];
+
+        if (receipts.trend === 'rising') {
+          frames.push({
+            text: "You're trending up, but you're not bulletproof yet.",
+            type: 'build_rising_caution',
+            priority: 7
+          });
+          if (receipts.daysAbove >= 2) {
+            frames.push({
+              text: `${receipts.daysAbove} days above baseline and climbing. Stay patient.`,
+              type: 'build_climbing',
+              priority: 7
+            });
+          }
+        }
+
+        if (receipts.trend === 'stable') {
+          frames.push({
+            text: "You're stable. This is where real progress gets made.",
+            type: 'build_stable_progress',
             priority: 6
           });
         }
 
-        if (patterns.trend === 'stable' && lastObservationType !== 'build_stable') {
-          observations.push({
-            text: "Nothing special about today. That's not an insult. Most of life is this.",
-            type: 'build_stable',
-            priority: 5
+        if (receipts.daysSinceRest === 1) {
+          frames.push({
+            text: "Yesterday you rested. Today you build on it.",
+            type: 'build_post_rest',
+            priority: 6
           });
         }
 
-        const buildMessages = [
-          { text: "The ones who show up on days like this are the ones who win.", type: 'build_show_up' },
-          { text: "Not your peak. Not your valley. The kind of day that makes peaks possible.", type: 'build_foundation' },
-          { text: "You're laying the foundation for something you can't see yet.", type: 'build_invisible' },
+        const genericBuild = [
+          { text: "Today's not for proving. It's for stacking.", type: 'build_stacking', priority: 5 },
+          { text: "A clean session today keeps the week intact.", type: 'build_clean', priority: 5 },
+          { text: "You've got room—just not for chaos.", type: 'build_room', priority: 4 },
+          { text: "Consistency beats intensity on days like this.", type: 'build_consistency', priority: 3 },
+          { text: "The ones who show up on days like this are the ones who win.", type: 'build_show_up', priority: 3 },
         ];
-        const unusedBuild = buildMessages.filter(m => m.type !== lastObservationType);
-        if (unusedBuild.length > 0) {
-          observations.push({ ...pickIndex(unusedBuild), priority: 3 });
-        }
+        
+        frames.push(...genericBuild);
+        frames.sort((a, b) => b.priority - a.priority);
+        return pick(frames.slice(0, 3));
       }
 
-      // === LEARNING STATE ===
-      if (command === 'LEARNING' || observations.length === 0) {
-        const learningDay = hrvHistory.length;
-        if (learningDay <= 2) {
-          return { text: "I'm still learning your patterns.", type: 'learning_early' };
+      // === PERFORM FRAMES ===
+      if (command === 'PERFORM') {
+        const frames = [];
+
+        if (receipts.daysSincePerform >= 7) {
+          frames.push({
+            text: `First peak day in ${receipts.daysSincePerform} days. This is rare. Use it.`,
+            type: 'perform_rare',
+            priority: 10
+          });
         }
-        return { text: "I'm learning your patterns. Check back tomorrow.", type: 'learning' };
+        if (receipts.daysSincePerform >= 14) {
+          frames.push({
+            text: `${receipts.daysSincePerform} days since your last green light. You've been waiting for this.`,
+            type: 'perform_very_rare',
+            priority: 10
+          });
+        }
+
+        if (receipts.trend === 'rising' && receipts.daysAbove >= 2) {
+          frames.push({
+            text: `${receipts.daysAbove} days above baseline and still rising. Today it peaks.`,
+            type: 'perform_rising_peak',
+            priority: 9
+          });
+        }
+
+        if (patterns.recoveriesAfterRest?.length > 0) {
+          frames.push({
+            text: "You protected your rest. Now you reap what you guarded.",
+            type: 'perform_earned',
+            priority: 8
+          });
+        }
+
+        if (receipts.daysSincePerform >= 3) {
+          frames.push({
+            text: `${receipts.daysSincePerform} build days since your last peak. Today's payoff.`,
+            type: 'perform_build_payoff',
+            priority: 7
+          });
+        }
+
+        const genericPerform = [
+          { text: "This is a rare 'yes' day. Don't dilute it.", type: 'perform_yes_day', priority: 6 },
+          { text: "You've been building. Today you get to spend.", type: 'perform_spend', priority: 5 },
+          { text: "This is what 'ready' looks like in your data.", type: 'perform_ready', priority: 5 },
+          { text: "Your body is saying yes. It doesn't say yes often.", type: 'perform_body_yes', priority: 4 },
+          { text: "Windows close. This one's open.", type: 'perform_window', priority: 4 },
+        ];
+
+        frames.push(...genericPerform);
+        frames.sort((a, b) => b.priority - a.priority);
+        return pick(frames.slice(0, 3));
       }
 
-      observations.sort((a, b) => b.priority - a.priority);
-      return observations[0];
+      return { text: `${hrvHistory.length} days logged. Still calibrating.`, type: 'learning' };
     };
 
     // ============================================
-    // THE PROMISE
+    // THE PROMISE - Receipt-first, deterministic
     // ============================================
     const generatePromise = (command, patterns) => {
+      // Deterministic seed
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + (command?.charCodeAt(0) || 0);
+      const pick = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
+
+      const receipts = {
+        daysBelow: patterns?.consecutiveBelowBaseline || 0,
+        daysAbove: patterns?.consecutiveAboveBaseline || 0,
+        daysSincePerform: patterns?.daysSincePerform || 0,
+        trend: patterns?.trend || 'stable',
+      };
+
       if (command === 'REST') {
-        if (patterns?.trend === 'falling') {
+        if (receipts.trend === 'falling') {
           return "Protect today. Let the floor find you.";
         }
-        if (patterns?.consecutiveBelowBaseline >= 3) {
+        if (receipts.daysBelow >= 3) {
           return "This is how you climb back.";
         }
+        if (receipts.daysBelow >= 2) {
+          return "Hold steady. Let your baseline rise to meet you.";
+        }
+        
         const restPromises = [
           "Tomorrow you'll have more.",
-          "Trust what I've seen.",
+          "Your job today: no damage.",
+          "Minimum dose, maximum recovery.",
+          "Keep it easy. You'll feel the difference by morning.",
+          "We're buying back capacity. Don't interrupt it.",
           "Protect today. Rise tomorrow.",
-          "Guard this. It's building something.",
         ];
-        return restPromises[Math.floor(Math.random() * restPromises.length)];
+        return pick(restPromises);
       }
       
       if (command === 'PERFORM') {
-        if (patterns?.daysSincePerform >= 14) {
+        if (receipts.daysSincePerform >= 14) {
           return "You've waited for this. Don't waste it.";
         }
+        if (receipts.daysSincePerform >= 7) {
+          return "Rare day. Spend it fully.";
+        }
+        if (receipts.trend === 'rising' && receipts.daysAbove >= 2) {
+          return "You earned a real session. Take it.";
+        }
+        
         const performPromises = [
           "Everything you've protected is ready to be spent.",
-          "You earned this.",
-          "This is your day.",
-          "Leave nothing unused.",
+          "Go do the thing you've been holding back.",
+          "Spend the capacity while it's here.",
+          "Use the window. Then close it clean.",
+          "Make a dent today.",
+          "Don't overthink it. Execute.",
         ];
-        return performPromises[Math.floor(Math.random() * performPromises.length)];
+        return pick(performPromises);
       }
       
       if (command === 'BUILD') {
+        if (receipts.trend === 'rising') {
+          return "Stay inside the lines. You'll accumulate faster.";
+        }
+        
         const buildPromises = [
           "Show up. That's enough.",
-          "Progress isn't always visible.",
-          "The work is the answer.",
-          "Keep building.",
+          "Win the session you're in.",
+          "Keep it controlled. Leave with gas in the tank.",
+          "Small strain, big consistency.",
+          "You don't need fireworks. You need reps.",
+          "Aim for quality reps, not a story.",
         ];
-        return buildPromises[Math.floor(Math.random() * buildPromises.length)];
+        return pick(buildPromises);
       }
       
       return "Tomorrow I'll know more.";
+    };
+
+    // ============================================
+    // THREE BULLETS - Archetype-tuned recommendations
+    // ============================================
+    const getArchetype = (baseline) => {
+      if (!baseline || baseline < 35) return 'low';
+      if (baseline < 55) return 'moderate';
+      if (baseline < 75) return 'high';
+      return 'veryHigh';
+    };
+
+    const generateBullets = (command, patterns, hrvHistory) => {
+      if (!patterns || hrvHistory.length < 7) return null;
+      
+      const baseline = patterns.baseline;
+      const archetype = getArchetype(baseline);
+      const receipts = {
+        daysBelow: patterns.consecutiveBelowBaseline || 0,
+        daysAbove: patterns.consecutiveAboveBaseline || 0,
+        daysSincePerform: patterns.daysSincePerform || 0,
+        daysSinceRest: patterns.daysSinceRest || 0,
+      };
+
+      // REST bullets by archetype
+      if (command === 'REST') {
+        if (archetype === 'low') {
+          return [
+            { text: "Sleep is the mission: 8+ hours tonight, same bedtime as last night." },
+            { text: receipts.daysBelow >= 2 
+              ? `Under baseline ${receipts.daysBelow} days → stay under 115–120 bpm. No "just to see."`
+              : "Keep effort tiny: stay under 115–120 bpm (walk, easy bike)." },
+            { text: "Stabilize the basics: water, electrolytes, protein every meal." },
+          ];
+        }
+        if (archetype === 'moderate') {
+          return [
+            { text: "Protect recovery: 7.5–8.5 hours tonight." },
+            { text: receipts.daysBelow >= 2
+              ? `${receipts.daysBelow} days below baseline → move, don't train. Under 120–125 bpm.`
+              : "Move, don't train: under 120–125 bpm for 20–40 min." },
+            { text: "Refuel clean: hydrate + carbs around activity, protein steady." },
+          ];
+        }
+        if (archetype === 'high') {
+          return [
+            { text: "Lock in sleep: 7.5+ hours tonight (you rebound fast when sleep holds)." },
+            { text: "Active recovery only: under 125–130 bpm, 30–45 min easy." },
+            { text: "Keep inflammation low: hydration + real food + early dinner." },
+          ];
+        }
+        return [
+          { text: "Don't waste the rebound: 8 hours tonight." },
+          { text: "Stay easy on purpose: under 130 bpm, no intensity leaks." },
+          { text: "Recovery stack: mobility 10–15 min + hydration + protein." },
+        ];
+      }
+
+      // BUILD bullets by archetype
+      if (command === 'BUILD') {
+        if (archetype === 'low') {
+          return [
+            { text: "Sleep first: 8 hours tonight—this is how you raise the floor." },
+            { text: "Train, but cap it: RPE ≤ 6. Finish feeling better than you started." },
+            { text: "Fuel the build: protein every meal + carbs with training." },
+          ];
+        }
+        if (archetype === 'moderate') {
+          return [
+            { text: "Sleep sets tomorrow: 7.5–8.5 hours tonight." },
+            { text: receipts.daysSinceRest === 1
+              ? "Post-rest session: controlled RPE ≤ 7, stop before the grind starts."
+              : "Controlled session: RPE ≤ 7, stop before the grind starts." },
+            { text: "Simple recovery: 20–30g protein post + hydrate + light walk later." },
+          ];
+        }
+        if (archetype === 'high') {
+          return [
+            { text: "Keep sleep clean: 7.5+ hours tonight (this is where adaptation happens)." },
+            { text: "Quality work: push volume or intensity, not both. Stay crisp." },
+            { text: "Refuel like you mean it: carbs around training + electrolytes." },
+          ];
+        }
+        return [
+          { text: "Sleep locks the gain: 8 hours tonight." },
+          { text: "Build with precision: hard work allowed—but keep form perfect, cap total damage." },
+          { text: "Recover aggressively: carbs + protein + short cooldown walk." },
+        ];
+      }
+
+      // PERFORM bullets by archetype
+      if (command === 'PERFORM') {
+        if (archetype === 'low') {
+          return [
+            { text: "Protect the day: 8 hours sleep tonight so this doesn't turn into a crash." },
+            { text: receipts.daysSincePerform >= 7
+              ? `First green in ${receipts.daysSincePerform} days → one hard piece, no extras.`
+              : "One big win: pick one hard piece (lift OR metcon OR intervals). Don't stack." },
+            { text: "Exit clean: cooldown + hydration + protein/carbs within 2 hours." },
+          ];
+        }
+        if (archetype === 'moderate') {
+          return [
+            { text: "Sleep + fuel: 7.5–8.5 hours tonight; real meal within 2 hours post." },
+            { text: "Hit the main effort: go hard on the key set. Then stop—don't chase extras." },
+            { text: "Close the loop: cooldown + electrolytes + easy walk later." },
+          ];
+        }
+        if (archetype === 'high') {
+          return [
+            { text: "Don't squander the peak: 8 hours tonight (you convert peaks fast)." },
+            { text: receipts.daysSincePerform >= 7
+              ? `${receipts.daysSincePerform} days waiting → execute the PR/benchmark you've been holding.`
+              : "Execute the performance: go for the PR/benchmark/interval target." },
+            { text: "Protect tomorrow: cooldown + carbs + early bedtime." },
+          ];
+        }
+        return [
+          { text: "Performance + recovery are paired: 8 hours tonight." },
+          { text: "Use the window: push hard—then end it on purpose (no bonus volume)." },
+          { text: "Recovery stack: cooldown + carbs + hydration + short walk." },
+        ];
+      }
+
+      // LEARNING bullets
+      if (archetype === 'low') {
+        return [
+          { text: "Get clean data: sleep 8 hours tonight—this is your biggest signal." },
+          { text: "Keep training simple: easy movement only, no intensity experiments yet." },
+          { text: "Building your baseline. Check back in a few days." },
+        ];
+      }
+      return [
+        { text: "Consistency beats guesswork: normal bedtime + normal wake time." },
+        { text: "Train inside the rails: keep it controlled so we learn your real response." },
+        { text: "Building your baseline. Check back in a few days." },
+      ];
     };
 
     // ============================================
@@ -1080,6 +1326,12 @@
         return generatePromise(result.commandKey, patterns);
       }, [result, patterns]);
 
+      // Generate archetype-tuned bullets
+      const bullets = useMemo(() => {
+        if (!result) return null;
+        return generateBullets(result.commandKey, patterns, hrvHistory);
+      }, [result, patterns, hrvHistory]);
+
       const hasTodayHRV = hrvHistory.some(h => h.date === getTodayLocal());
       const styles = result ? COMMAND_STYLES[result.commandKey] : COMMAND_STYLES.LEARNING;
 
@@ -1517,6 +1769,18 @@
                 <p className="text-white/60 text-base italic">
                   {promise}
                 </p>
+              </div>
+            )}
+
+            {/* The Three Bullets - Archetype-tuned recommendations */}
+            {bullets && (
+              <div className="space-y-3 pt-6 fade-in-delay-3">
+                {bullets.map((bullet, i) => (
+                  <div key={i} className="flex items-start gap-3 text-left">
+                    <span className="text-white/30 text-sm mt-0.5">→</span>
+                    <p className="text-white/50 text-sm leading-relaxed">{bullet.text}</p>
+                  </div>
+                ))}
               </div>
             )}
 
