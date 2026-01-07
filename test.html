@@ -791,7 +791,7 @@
         if (canUseDateAnchors && patterns.nearestMatch) {
           const anchor = formatDateAnchor(patterns.nearestMatch.date);
           if (anchor && patterns.nearestMatch.pushed && patterns.nearestMatch.nextDayCrashed) {
-            frames.push({ text: `You were here on ${anchor}. Keep today clean so tomorrow doesn't bite.`, type: 'perform_date_warning', priority: 12 });
+            frames.push({ text: `You were here on ${anchor}. One effort, then leave—so tomorrow doesn't bite.`, type: 'perform_date_warning', priority: 12 });
           }
         }
         
@@ -953,7 +953,7 @@
               "Two good days in a row is the goal. Protect the streak."
             ]),
             guardrail: pick([
-              "Feeling good doesn't mean 'go all out.' It means 'execute cleanly.'",
+              "Feeling good doesn't mean 'go all out.' It means 'finish with something left.'",
               "One rest day doesn't clear all debt. Stay patient."
             ])
           };
@@ -1016,7 +1016,7 @@
           return {
             primaryAction: pick([
               "One hard effort in the first 15 minutes. Then coast. No encores today.",
-              "Hit your main work at RPE 8. Skip accessories entirely. Get out clean.",
+              "Hit your main work at RPE 8. Skip accessories entirely. Leave before you pay for it.",
               "Attack, then retreat. Don't linger looking for more."
             ]),
             effortBoundary: pick([
