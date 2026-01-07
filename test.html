@@ -562,12 +562,12 @@
         const stakes = ["Push today, pay tomorrow. Your call.", "The next PERFORM day is being built right now. Guard it.", "You're not sitting out. You're loading the spring."];
         const warnings = ["I know you feel fine. The numbers disagree. Trust the numbers.", "Your mind is ready. Your system isn't. Listen to the system.", "You could push. You'd get away with it today. Tomorrow is the question."];
         
-        if (receipts.daysBelow >= 2) frames.push({ text: `Day ${receipts.daysBelow} below baseline. Stay patient.`, priority: 10 });
-        if (receipts.crashCount > 0) frames.push({ text: `You've pushed through REST ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''} and paid. I remember.`, priority: 10 });
-        if (context.isWarning) warnings.forEach(w => frames.push({ text: w, priority: 9 }));
-        firstPrinciples.forEach(t => frames.push({ text: t, priority: 7 }));
-        permission.forEach(t => frames.push({ text: t, priority: 6 }));
-        stakes.forEach(t => frames.push({ text: t, priority: 5 }));
+        if (receipts.daysBelow >= 2) frames.push({ text: `Day ${receipts.daysBelow} below baseline. Stay patient.`, type: 'rest_streak', priority: 10 });
+        if (receipts.crashCount > 0) frames.push({ text: `You've pushed through REST ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''} and paid. I remember.`, type: 'rest_crash_history', priority: 10 });
+        if (context.isWarning) warnings.forEach(w => frames.push({ text: w, type: 'rest_warning', priority: 9 }));
+        firstPrinciples.forEach(t => frames.push({ text: t, type: 'rest_first_principles', priority: 7 }));
+        permission.forEach(t => frames.push({ text: t, type: 'rest_permission', priority: 6 }));
+        stakes.forEach(t => frames.push({ text: t, type: 'rest_stakes', priority: 5 }));
         frames.sort((a, b) => b.priority - a.priority);
         return pick(frames.slice(0, 5));
       }
@@ -579,10 +579,10 @@
         const afterRest = ["Yesterday's rest is showing up. Use it wisely.", "The investment is maturing. Solid work today.", "You rested. This is the dividend. Reinvest carefully."];
         const caution = ["Still in range, but the direction matters. Stay aware.", "BUILD today. But the trend is tilting. Be smart.", "I'm giving you BUILD. I almost gave you REST. Respect that."];
         
-        if (context.isAfterRest) afterRest.forEach(t => frames.push({ text: t, priority: 10 }));
-        if (context.isWarning) caution.forEach(t => frames.push({ text: t, priority: 9 }));
-        if (receipts.trend === 'rising') momentum.forEach(t => frames.push({ text: t, priority: 8 }));
-        steadyState.forEach(t => frames.push({ text: t, priority: 6 }));
+        if (context.isAfterRest) afterRest.forEach(t => frames.push({ text: t, type: 'build_after_rest', priority: 10 }));
+        if (context.isWarning) caution.forEach(t => frames.push({ text: t, type: 'build_caution', priority: 9 }));
+        if (receipts.trend === 'rising') momentum.forEach(t => frames.push({ text: t, type: 'build_momentum', priority: 8 }));
+        steadyState.forEach(t => frames.push({ text: t, type: 'build_steady', priority: 6 }));
         frames.sort((a, b) => b.priority - a.priority);
         return pick(frames.slice(0, 5));
       }
@@ -595,11 +595,11 @@
         const cautious = ["Green light. But you've been here before and overcooked it.", "Yes, push. No, don't be stupid.", "Go hard. Then stop. Don't chase the dragon."];
         const consecutive = ["Second straight day. Rare. Use it, but stay aware.", "Back-to-back green. Don't push your luck.", "Two in a row. Go—but know that three is almost never."];
         
-        if (context.isConsecutive) consecutive.forEach(t => frames.push({ text: t, priority: 10 }));
-        if (context.isWarning && !context.isConsecutive) cautious.forEach(t => frames.push({ text: t, priority: 9 }));
-        if (receipts.daysSincePerform >= 7) rare.forEach(t => frames.push({ text: t, priority: 10 }));
-        if (receipts.daysSinceRest <= 2) earned.forEach(t => frames.push({ text: t, priority: 8 }));
-        pure.forEach(t => frames.push({ text: t, priority: 6 }));
+        if (context.isConsecutive) consecutive.forEach(t => frames.push({ text: t, type: 'perform_consecutive', priority: 10 }));
+        if (context.isWarning && !context.isConsecutive) cautious.forEach(t => frames.push({ text: t, type: 'perform_cautious', priority: 9 }));
+        if (receipts.daysSincePerform >= 7) rare.forEach(t => frames.push({ text: t, type: 'perform_rare', priority: 10 }));
+        if (receipts.daysSinceRest <= 2) earned.forEach(t => frames.push({ text: t, type: 'perform_earned', priority: 8 }));
+        pure.forEach(t => frames.push({ text: t, type: 'perform_pure', priority: 6 }));
         frames.sort((a, b) => b.priority - a.priority);
         return pick(frames.slice(0, 5));
       }
