@@ -288,7 +288,7 @@
     // ============================================
     // ALGORITHM (unchanged from validated version)
     // ============================================
-    const THRESHOLDS = { REST: -1.0, PERFORM: 0.5, MIN_DAYS: 7, MIN_PREVIEW_DAYS: 3, MAD_FLOOR: 3.0 };
+    const THRESHOLDS = { REST: -1.0, PERFORM: 0.5, MIN_DAYS: 7, MIN_PREVIEW_DAYS: 4, MAD_FLOOR: 3.0 };
 
     const calculateMedian = (arr) => {
       const sorted = [...arr].sort((a, b) => a - b);
@@ -603,10 +603,10 @@
       
       // No patterns yet = learning phase (countdown to commands)
       if (!patterns) {
-        const daysRemaining = 3 - hrvHistory.length;
+        const daysRemaining = 4 - hrvHistory.length;
         if (daysRemaining > 0) {
           return { 
-            text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands start.`, 
+            text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands. Add history below to unlock today.`, 
             type: 'learning_countdown' 
           };
         }
@@ -881,7 +881,11 @@
       }
 
       // === LEARNING FALLBACK ===
-      return { text: `${hrvHistory.length} days logged. Still calibrating.`, type: 'learning' };
+      const daysRemaining = 4 - hrvHistory.length;
+      if (daysRemaining > 0) {
+        return { text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands. Add history below to unlock today.`, type: 'learning' };
+      }
+      return { text: "Baseline forming. Your guidance begins soon.", type: 'learning' };
     };
 
     // ============================================
@@ -2187,10 +2191,10 @@
       // ============================================
       if (!hasTodayHRV) {
         // Calculate countdown - updates when hrvHistory changes
-        const daysRemaining = 3 - hrvHistory.length;
+        const daysRemaining = 4 - hrvHistory.length;
         const countdownText = daysRemaining > 0 
-          ? `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands start`
-          : hrvHistory.length < 7 ? 'Baseline forming...' : null;
+          ? `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands · Add history below to unlock today`
+          : hrvHistory.length < 7 ? 'Personalized guidance unlocking...' : null;
         
         return (
           <div className="min-h-screen text-white p-4 flex flex-col overflow-y-auto">
@@ -2466,9 +2470,12 @@
 
             {/* Preview indicator */}
             {result?.isPreview && (
-              <div className="text-center">
-                <p className="text-white/40 text-xs">
-                  Still calibrating — {result.daysUntilFull} more days
+              <div className="text-center space-y-1">
+                <p className="text-white/50 text-xs">
+                  {result.daysUntilFull} day{result.daysUntilFull > 1 ? 's' : ''} until personalized guidance unlocks.
+                </p>
+                <p className="text-white/30 text-xs">
+                  We don't guess. We learn you first.
                 </p>
               </div>
             )}
