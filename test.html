@@ -511,7 +511,7 @@
       // No patterns yet = learning phase (countdown to commands)
       if (!patterns) {
         if (hrvHistory.length === 0) {
-          return { text: "I don't know you yet. Today I start watching.", type: 'learning_zero' };
+          return { text: "I don't know you yet. Today I start learning about you.", type: 'learning_zero' };
         }
         const daysUntilCommands = 3 - hrvHistory.length;
         if (daysUntilCommands > 0) {
