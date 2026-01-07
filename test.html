@@ -390,6 +390,11 @@
         return { text: "I'm still learning your patterns.", type: 'learning' };
       }
 
+      // Use date-based seed for consistent daily selection
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      const pickIndex = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
+
       const observations = [];
       
       // === MILESTONE OBSERVATIONS (highest priority) ===
@@ -460,6 +465,7 @@
           });
         }
 
+        // Generic REST - deterministic selection
         const restMessages = [
           { text: "Your body is building something. Don't interrupt it.", type: 'rest_building' },
           { text: "I know you feel fine. You felt fine last time too.", type: 'rest_feel_fine' },
@@ -467,7 +473,7 @@
         ];
         const unusedRest = restMessages.filter(m => m.type !== lastObservationType);
         if (unusedRest.length > 0) {
-          observations.push({ ...unusedRest[Math.floor(Math.random() * unusedRest.length)], priority: 3 });
+          observations.push({ ...pickIndex(unusedRest), priority: 3 });
         }
       }
 
@@ -497,6 +503,7 @@
           });
         }
 
+        // Generic PERFORM - deterministic selection
         const performMessages = [
           { text: "This is what you've been building toward.", type: 'perform_building' },
           { text: "Your body is saying yes. It doesn't say yes often.", type: 'perform_yes' },
@@ -504,7 +511,7 @@
         ];
         const unusedPerform = performMessages.filter(m => m.type !== lastObservationType);
         if (unusedPerform.length > 0) {
-          observations.push({ ...unusedPerform[Math.floor(Math.random() * unusedPerform.length)], priority: 3 });
+          observations.push({ ...pickIndex(unusedPerform), priority: 3 });
         }
       }
 
@@ -533,7 +540,7 @@
         ];
         const unusedBuild = buildMessages.filter(m => m.type !== lastObservationType);
         if (unusedBuild.length > 0) {
-          observations.push({ ...unusedBuild[Math.floor(Math.random() * unusedBuild.length)], priority: 3 });
+          observations.push({ ...pickIndex(unusedBuild), priority: 3 });
         }
       }
 
@@ -541,7 +548,7 @@
       if (command === 'LEARNING' || observations.length === 0) {
         const learningDay = hrvHistory.length;
         if (learningDay <= 2) {
-          return { text: `Day ${learningDay}. I'm still guessing. Give me a few more days.`, type: 'learning_early' };
+          return { text: "I'm still learning your patterns.", type: 'learning_early' };
         }
         return { text: "I'm learning your patterns. Check back tomorrow.", type: 'learning' };
       }
@@ -753,7 +760,7 @@
       { id: 'oura', label: 'Oura' },
       { id: 'garmin', label: 'Garmin' },
       { id: 'fitbit', label: 'Fitbit' },
-      { id: 'welltory', label: 'Welltory' },
+      { id: 'other', label: 'Other' },
     ];
 
     // ============================================
@@ -893,11 +900,15 @@
         }
       }, [hrvSource, firstUseDate]);
 
-      // Calculate days on app (or use simulated)
+      // Calculate days on app (or use simulated) - handle timezone properly
       const daysOnApp = useMemo(() => {
         if (simulatedDaysOnApp !== null) return simulatedDaysOnApp;
-        if (!firstUseDate) return 0;
-        return Math.floor((new Date() - new Date(firstUseDate)) / (1000 * 60 * 60 * 24)) + 1;
+        if (!firstUseDate) return 1;
+        const start = new Date(firstUseDate + 'T00:00:00');
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        return Math.max(1, Math.floor((today - startDay) / (1000 * 60 * 60 * 24)) + 1);
       }, [firstUseDate, simulatedDaysOnApp]);
 
       // Auto-calculate if today's data exists
@@ -994,6 +1005,19 @@
         const prevDate = new Date(newEntryDate);
         prevDate.setDate(prevDate.getDate() - 1);
         setNewEntryDate(getLocalDateString(prevDate));
+      };
+
+      const deleteHistoricalEntry = (dateToDelete) => {
+        const newHistory = hrvHistory.filter(h => h.date !== dateToDelete);
+        setHrvHistory(newHistory);
+        
+        // Also remove any compliance log for that date
+        setComplianceLog(complianceLog.filter(c => c.date !== dateToDelete));
+        
+        // If we deleted today's entry, clear the result
+        if (dateToDelete === getTodayLocal()) {
+          setResult(null);
+        }
       };
 
       // Yesterday compliance
@@ -1233,25 +1257,25 @@
         return (
           <div className="min-h-screen text-white p-6 flex flex-col justify-center">
             <div className="mist-overlay"></div>
-            <div className="content-layer max-w-sm mx-auto space-y-12">
+            <div className="content-layer max-w-sm mx-auto space-y-10">
               
-              <div className="space-y-4 text-center fade-in">
-                <p className="text-white text-xl leading-relaxed">
+              <div className="space-y-3 text-center fade-in">
+                <p className="text-white text-2xl font-light">
                   Your body is talking.
                 </p>
-                <p className="text-white/50">
+                <p className="text-white/60 text-lg">
                   Now you know what it's asking for.
                 </p>
               </div>
 
-              <div className="space-y-2 text-center text-white/40 fade-in-delay-1">
-                <p>Give me a week — I'll find your baseline.</p>
-                <p>Give me a month — I'll recognize your rhythms.</p>
-                <p className="text-white/30 text-sm leading-relaxed pt-1">Give me a year — I'll see what even you can't:<br/>what pushes you forward… and what sets you back.</p>
+              <div className="space-y-4 text-center fade-in-delay-1">
+                <p className="text-white/50">Give me a week — I'll find your baseline.</p>
+                <p className="text-white/50">Give me a month — I'll recognize your rhythms.</p>
+                <p className="text-white/40 leading-relaxed">Give me a year — I'll see what even you can't:<br/>what pushes you forward… and what sets you back.</p>
               </div>
 
               <div className="space-y-4 fade-in-delay-2">
-                <p className="text-white/30 text-sm text-center">Where does your HRV come from?</p>
+                <p className="text-white/40 text-sm text-center">Where does your HRV come from?</p>
                 <div className="grid grid-cols-2 gap-2">
                   {HRV_SOURCES.map(source => (
                     <button
@@ -1405,9 +1429,18 @@
                   {hrvHistory.length > 0 && (
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {[...hrvHistory].reverse().slice(0, 14).map((entry, i) => (
-                        <div key={entry.date} className="flex justify-between text-sm text-white/40 py-2 border-b border-white/5">
+                        <div key={entry.date} className="flex justify-between items-center text-sm text-white/40 py-2 border-b border-white/5">
                           <span>{entry.date}</span>
-                          <span className="font-mono">{entry.value} ms</span>
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono">{entry.value} ms</span>
+                            <button
+                              onClick={() => deleteHistoricalEntry(entry.date)}
+                              className="text-white/20 hover:text-red-400 transition-colors text-lg leading-none"
+                              title="Delete entry"
+                            >
+                              ×
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1465,7 +1498,7 @@
 
             {promise && (
               <div className="text-center fade-in-delay-2">
-                <p className="text-white/40 text-base italic">
+                <p className="text-white/60 text-base italic">
                   {promise}
                 </p>
               </div>
@@ -1473,7 +1506,7 @@
 
             {result?.isPreview && (
               <div className="text-center">
-                <p className="text-white/20 text-xs">
+                <p className="text-white/40 text-sm">
                   Still calibrating — {result.daysUntilFull} more days
                 </p>
               </div>
@@ -1481,7 +1514,7 @@
 
             {patterns && daysOnApp >= 14 && (
               <div className="text-center pt-8">
-                <p className="text-white/15 text-xs">
+                <p className="text-white/30 text-xs">
                   {patterns.performDays} peaks · {patterns.restDays} protected · {patterns.totalDays} days watched
                 </p>
               </div>
@@ -1553,9 +1586,18 @@
                 {hrvHistory.length > 0 && (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {[...hrvHistory].reverse().slice(0, 14).map((entry, i) => (
-                      <div key={entry.date} className="flex justify-between text-sm text-white/40 py-2 border-b border-white/5">
+                      <div key={entry.date} className="flex justify-between items-center text-sm text-white/40 py-2 border-b border-white/5">
                         <span>{entry.date}</span>
-                        <span className="font-mono">{entry.value} ms</span>
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono">{entry.value} ms</span>
+                          <button
+                            onClick={() => deleteHistoricalEntry(entry.date)}
+                            className="text-white/20 hover:text-red-400 transition-colors text-lg leading-none"
+                            title="Delete entry"
+                          >
+                            ×
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
