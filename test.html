@@ -34,6 +34,12 @@
     .fade-in-delay-3 { animation: fadeIn 0.6s ease-out 0.6s forwards; opacity: 0; }
     .pulse-slow { animation: pulse 3s ease-in-out infinite; }
     .float { animation: float 4s ease-in-out infinite; }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
     * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
@@ -350,6 +356,105 @@
       );
       patterns.isVolatile = zScoreStd > 1.5;
       patterns.isStable = zScoreStd < 0.8;
+
+      // === PATTERN NAMES ===
+      
+      // Recovery arc: 3+ days of rising from REST
+      if (patterns.trend === 'rising' && patterns.consecutiveAboveBaseline >= 2) {
+        const recentRest = withZScores.slice(-7).find(h => h.command === 'REST');
+        if (recentRest) {
+          patterns.patternName = 'recovery_arc';
+        }
+      }
+      
+      // Back-to-back PERFORM crash pattern
+      const performIndices = withZScores.map((h, i) => h.command === 'PERFORM' ? i : -1).filter(i => i >= 0);
+      let backToBackCrashes = 0;
+      for (let i = 1; i < performIndices.length; i++) {
+        if (performIndices[i] - performIndices[i-1] === 1) {
+          const dayAfter = withZScores[performIndices[i] + 1];
+          if (dayAfter && dayAfter.command === 'REST') {
+            backToBackCrashes++;
+          }
+        }
+      }
+      if (backToBackCrashes >= 2) {
+        patterns.patternName = 'back_to_back_crash';
+        patterns.backToBackCrashes = backToBackCrashes;
+      }
+      
+      // Day-of-week pattern detection
+      const dayOfWeekStats = {};
+      withZScores.forEach(h => {
+        const dow = new Date(h.date).getDay();
+        if (!dayOfWeekStats[dow]) dayOfWeekStats[dow] = { sum: 0, count: 0 };
+        dayOfWeekStats[dow].sum += h.zScore;
+        dayOfWeekStats[dow].count++;
+      });
+      
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      let worstDay = null, worstAvg = Infinity;
+      let bestDay = null, bestAvg = -Infinity;
+      
+      Object.entries(dayOfWeekStats).forEach(([dow, stats]) => {
+        if (stats.count >= 3) {
+          const avg = stats.sum / stats.count;
+          if (avg < worstAvg) { worstAvg = avg; worstDay = parseInt(dow); }
+          if (avg > bestAvg) { bestAvg = avg; bestDay = parseInt(dow); }
+        }
+      });
+      
+      if (worstDay !== null && worstAvg < -0.5) {
+        patterns.weakDay = { day: dayNames[worstDay], avgZ: worstAvg };
+      }
+      if (bestDay !== null && bestAvg > 0.5) {
+        patterns.strongDay = { day: dayNames[bestDay], avgZ: bestAvg };
+      }
+      
+      const todayDow = new Date().getDay();
+      if (dayOfWeekStats[todayDow] && dayOfWeekStats[todayDow].count >= 3) {
+        const todayDowAvg = dayOfWeekStats[todayDow].sum / dayOfWeekStats[todayDow].count;
+        if (todayDowAvg < -0.3) {
+          patterns.todayDowPattern = { day: dayNames[todayDow], tendency: 'low', avgZ: todayDowAvg };
+        } else if (todayDowAvg > 0.3) {
+          patterns.todayDowPattern = { day: dayNames[todayDow], tendency: 'high', avgZ: todayDowAvg };
+        }
+      }
+
+      // === IMPOSSIBLE INSIGHT ===
+      const todayEntry = hrvHistory.find(h => h.date === getTodayLocal());
+      if (todayEntry) {
+        const todayZ = (todayEntry.value - median) / mad;
+        const todayCommand = getCommandKey(todayZ);
+        
+        if (todayCommand === 'PERFORM' && patterns.trend === 'falling') {
+          patterns.impossibleInsight = {
+            type: 'false_peak',
+            text: "Your HRV is high but your trend is falling. This peak may not hold."
+          };
+        }
+        
+        if (todayZ > 0 && patterns.isVolatile) {
+          patterns.impossibleInsight = {
+            type: 'unstable_high',
+            text: "You're above baseline but your week has been erratic. Tread carefully."
+          };
+        }
+        
+        if (todayCommand === 'PERFORM' && patterns.daysSinceRest >= 5) {
+          patterns.impossibleInsight = {
+            type: 'no_rest_perform',
+            text: `${patterns.daysSinceRest} days without REST. This PERFORM is borrowed time.`
+          };
+        }
+        
+        if (patterns.nearestMatch?.nextDayCrashed && todayCommand !== 'REST') {
+          patterns.impossibleInsight = {
+            type: 'historical_warning',
+            text: "Last time you looked like this, you crashed the next day."
+          };
+        }
+      }
 
       // Find nearest historical match to today
       const today = hrvHistory.find(h => h.date === getTodayLocal());
@@ -1735,67 +1840,88 @@
       return (
         <div className="min-h-screen text-white p-6 flex flex-col">
           <div className="mist-overlay"></div>
-          <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
+          <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-6">
             
             <div className="text-center">
               <span className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</span>
             </div>
 
+            {/* Pattern Name - if detected */}
+            {patterns?.patternName && (
+              <div className="text-center fade-in">
+                <span className="text-white/40 text-xs uppercase tracking-widest">
+                  {patterns.patternName === 'recovery_arc' && "You're in a recovery arc"}
+                  {patterns.patternName === 'back_to_back_crash' && `You crash after back-to-back PERFORMs`}
+                </span>
+              </div>
+            )}
+
+            {/* Day-of-week pattern */}
+            {patterns?.todayDowPattern && !patterns?.patternName && (
+              <div className="text-center fade-in">
+                <span className="text-white/40 text-xs uppercase tracking-widest">
+                  {patterns.todayDowPattern.tendency === 'low' 
+                    ? `Your ${patterns.todayDowPattern.day}s tend to be low`
+                    : `${patterns.todayDowPattern.day}s are usually your strong day`}
+                </span>
+              </div>
+            )}
+
             {observation && (
-              <div className="text-center space-y-2 fade-in">
-                <p className="text-white/70 text-lg leading-relaxed px-4">
+              <div className="text-center fade-in">
+                <p className="text-white/60 text-sm leading-snug px-2 line-clamp-2">
                   "{observation.text}"
                 </p>
               </div>
             )}
 
+            {/* IMPOSSIBLE INSIGHT - when detected */}
+            {patterns?.impossibleInsight && (
+              <div className="text-center fade-in">
+                <p className="text-amber-400/70 text-xs font-medium">
+                  ⚠ {patterns.impossibleInsight.text}
+                </p>
+              </div>
+            )}
+
             <div 
-              className="glass rounded-3xl py-12 px-8 text-center fade-in-delay-1"
+              className="glass rounded-3xl py-8 px-6 text-center fade-in-delay-1"
               style={{ 
                 boxShadow: `0 8px 32px ${styles.glow || 'rgba(0,0,0,0.2)'}`,
                 borderColor: styles.border
               }}
             >
               <div 
-                className="text-6xl font-bold tracking-tight"
+                className="text-5xl font-bold tracking-tight mb-4"
                 style={{ color: styles.color }}
               >
                 {result?.commandKey || 'LEARNING'}
               </div>
-            </div>
-
-            {promise && (
-              <div className="text-center fade-in-delay-2">
-                <p className="text-white/60 text-base italic">
-                  {promise}
+              
+              {/* Stats - right under command */}
+              {patterns && daysOnApp >= 7 && (
+                <p className="text-white/25 text-xs mb-5">
+                  {patterns.performDays} peaks · {patterns.restDays} protected · {patterns.totalDays} days
                 </p>
-              </div>
-            )}
-
-            {/* The Three Bullets - Archetype-tuned recommendations */}
-            {bullets && (
-              <div className="space-y-3 pt-6 fade-in-delay-3">
-                {bullets.map((bullet, i) => (
-                  <div key={i} className="flex items-start gap-3 text-left">
-                    <span className="text-white/30 text-sm mt-0.5">→</span>
-                    <p className="text-white/50 text-sm leading-relaxed">{bullet.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+              )}
+              
+              {/* Three Bullets inside card */}
+              {bullets && (
+                <div className="space-y-2 text-left border-t border-white/10 pt-4 mt-2">
+                  {bullets.map((bullet, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="text-white/25 text-xs mt-0.5">→</span>
+                      <p className="text-white/45 text-xs leading-relaxed">{bullet.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {result?.isPreview && (
               <div className="text-center">
-                <p className="text-white/40 text-sm">
+                <p className="text-white/40 text-xs">
                   Still calibrating — {result.daysUntilFull} more days
-                </p>
-              </div>
-            )}
-
-            {patterns && daysOnApp >= 14 && (
-              <div className="text-center pt-8">
-                <p className="text-white/30 text-xs">
-                  {patterns.performDays} peaks · {patterns.restDays} protected · {patterns.totalDays} days watched
                 </p>
               </div>
             )}
