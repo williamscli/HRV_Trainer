@@ -495,11 +495,151 @@
     };
 
     // ============================================
-    // CONTEXT DETECTION
+    // CONFIDENCE CALCULATION SYSTEM
+    // Hidden driver for language and action selection
+    // Never shown to user - operates in background
     // ============================================
-    const getContext = (command, patterns, complianceLog) => {
-      const context = { type: 'default', isWarning: false, isConsecutive: false, isAfterRest: false };
+    
+    // Scoring: Signal (45%) + Quality (35%) + Support (20%) = 0-100
+    // Buckets: High (≥75), Medium (50-74), Low (<50)
+    // Hard overrides: Travel, <14 days, inconsistent timing → Low
+    
+    const calculateConfidence = (hrvHistory, patterns, complianceLog = []) => {
+      // Early return: not enough data = always Low
+      if (!patterns || hrvHistory.length < 14) {
+        return { 
+          level: 'low', 
+          score: 30,
+          reason: hrvHistory.length < 14 ? 'early_onboarding' : 'no_patterns',
+          components: { signal: 15, quality: 10, support: 5 }
+        };
+      }
+      
+      // ========== 1. SIGNAL STRENGTH (45 points max) ==========
+      // Based on robust z-score: how meaningful is today's reading?
+      const todayEntry = hrvHistory.find(h => h.date === getTodayLocal());
+      let signalScore = 15; // weak default
+      
+      if (todayEntry && patterns.baseline && patterns.mad) {
+        const robustZ = Math.abs((todayEntry.value - patterns.baseline) / patterns.mad);
+        
+        if (robustZ < 0.7) signalScore = 15;      // weak signal
+        else if (robustZ < 1.5) signalScore = 30;  // medium signal
+        else if (robustZ < 2.5) signalScore = 45;  // strong signal
+        else signalScore = 45;                     // very strong (capped)
+      }
+      
+      // ========== 2. MEASUREMENT QUALITY (35 points max) ==========
+      // Based on data consistency and completeness
+      let qualityScore = 10; // low default
+      
+      // Check days of data
+      const totalDays = hrvHistory.length;
+      if (totalDays >= 30) qualityScore = 25;
+      else if (totalDays >= 21) qualityScore = 20;
+      else if (totalDays >= 14) qualityScore = 15;
+      else qualityScore = 10;
+      
+      // Penalty: Missing yesterday's HRV (less context)
+      const yesterday = getYesterdayLocal();
+      const hasYesterday = hrvHistory.some(h => h.date === yesterday);
+      if (!hasYesterday) qualityScore = Math.max(10, qualityScore - 10);
+      
+      // Bonus: Consistent daily logging (check last 7 days)
+      const recentDates = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        recentDates.push(getLocalDateString(d));
+      }
+      const recentLogged = recentDates.filter(d => hrvHistory.some(h => h.date === d)).length;
+      if (recentLogged >= 6) qualityScore = Math.min(35, qualityScore + 10);
+      else if (recentLogged <= 3) qualityScore = Math.max(10, qualityScore - 5);
+      
+      // ========== 3. HISTORICAL SUPPORT (20 points max) ==========
+      // Based on situation fingerprint matching
+      let supportScore = 5; // weak default
+      
+      if (patterns.nearestMatch) {
+        // We have a historical match - check how many similar situations exist
+        const today = hrvHistory.find(h => h.date === getTodayLocal());
+        if (today) {
+          const todayZ = (today.value - patterns.baseline) / patterns.mad;
+          const todayCommand = getCommandKey(todayZ);
+          
+          // Count similar fingerprints: same command + similar trend
+          const withZScores = hrvHistory.map(h => ({
+            ...h,
+            zScore: (h.value - patterns.baseline) / patterns.mad,
+            command: getCommandKey((h.value - patterns.baseline) / patterns.mad)
+          })).filter(h => h.date !== getTodayLocal());
+          
+          const similarDays = withZScores.filter(h => {
+            const zDiff = Math.abs(h.zScore - todayZ);
+            return h.command === todayCommand && zDiff < 0.8;
+          });
+          
+          if (similarDays.length >= 4) supportScore = 20;      // strong support
+          else if (similarDays.length >= 2) supportScore = 12;  // medium support
+          else supportScore = 5;                                // weak support
+        }
+      }
+      
+      // ========== COMPUTE TOTAL & BUCKET ==========
+      const totalScore = signalScore + qualityScore + supportScore;
+      
+      let level = 'low';
+      if (totalScore >= 75) level = 'high';
+      else if (totalScore >= 50) level = 'medium';
+      
+      // ========== HARD OVERRIDES ==========
+      // These force Low confidence regardless of score
+      
+      // Check for volatile week (indicates unstable measurement conditions)
+      if (patterns.isVolatile && level === 'high') {
+        level = 'medium';
+      }
+      
+      // First day back after travel-like pattern (big swing after stability)
+      // This is a proxy for timezone change detection
+      const recent3 = hrvHistory.slice(-3);
+      if (recent3.length >= 3) {
+        const recent3Zs = recent3.map(h => (h.value - patterns.baseline) / patterns.mad);
+        const range = Math.max(...recent3Zs) - Math.min(...recent3Zs);
+        if (range > 2.5) {
+          level = 'low';
+        }
+      }
+      
+      return {
+        level,
+        score: totalScore,
+        reason: level === 'low' ? 'insufficient_evidence' : level === 'medium' ? 'moderate_evidence' : 'strong_evidence',
+        components: { signal: signalScore, quality: qualityScore, support: supportScore }
+      };
+    };
+
+    // ============================================
+    // CONTEXT DETECTION (includes confidence)
+    // ============================================
+    const getContext = (command, patterns, complianceLog, hrvHistory = []) => {
+      const context = { 
+        type: 'default', 
+        isWarning: false, 
+        isConsecutive: false, 
+        isAfterRest: false,
+        confidence: { level: 'low', score: 30 }
+      };
       if (!patterns) return context;
+      
+      // Calculate confidence first - it can force warning state
+      context.confidence = calculateConfidence(hrvHistory, patterns, complianceLog);
+      
+      // Low confidence forces warning context
+      if (context.confidence.level === 'low') {
+        context.isWarning = true;
+        context.type = 'warning';
+      }
       
       if (patterns.trend === 'falling' || patterns.consecutiveBelowBaseline >= 2) {
         context.isWarning = true;
@@ -508,7 +648,8 @@
       
       if (command === 'BUILD' && patterns.daysSinceRest === 1) {
         context.isAfterRest = true;
-        context.type = 'after_rest';
+        // Only use after_rest type if not in warning state
+        if (!context.isWarning) context.type = 'after_rest';
       }
       
       if (command === 'PERFORM') {
@@ -528,6 +669,7 @@
 
     // ============================================
     // THE VOICE - Communication System
+    // Confidence-adjusted language per spec
     // ============================================
     const generateObservation = (command, patterns, daysOnApp, lastObservationType, hrvHistory, complianceLog = []) => {
       const today = new Date();
@@ -549,22 +691,63 @@
         totalDays: patterns.totalDays || hrvHistory.length,
         crashCount: patterns.crashesAfterIgnoredRest?.length || 0,
       };
-      const context = getContext(command, patterns, complianceLog);
+      
+      // Get context WITH hrvHistory for confidence calculation
+      const context = getContext(command, patterns, complianceLog, hrvHistory);
+      const confidence = context.confidence;
+      
+      // Helper: format date for anchoring (only high confidence + day 14+)
+      const formatDateAnchor = (dateStr) => {
+        if (!dateStr) return null;
+        const date = new Date(dateStr + 'T12:00:00');
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const day = date.getDate();
+        const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
+        return `${months[date.getMonth()]} ${day}${suffix}`;
+      };
+      
+      const canUseDateAnchors = confidence.level === 'high' && daysOnApp >= 14;
 
       // Milestones
       const milestones = { 7: "A week. Your baseline is real now. Now we build.", 14: "Two weeks. I know your highs. I know your lows.", 30: "A month. Your rhythms. Now we work together.", 60: "Two months. Your body speaks clearly now.", 90: "Three months. The patterns are undeniable." };
       if (milestones[daysOnApp]) return { text: milestones[daysOnApp], type: `milestone_${daysOnApp}` };
 
+      // ========== REST OBSERVATIONS (confidence-adjusted) ==========
       if (command === 'REST') {
         const frames = [];
+        
+        // HIGH CONFIDENCE: Date-anchored warnings (Day 14+)
+        if (canUseDateAnchors && patterns.nearestMatch?.nextDayCrashed) {
+          const anchor = formatDateAnchor(patterns.nearestMatch.date);
+          if (anchor) frames.push({ text: `This looks like ${anchor}. That one didn't end well.`, type: 'rest_date_anchor', priority: 12 });
+        }
+        
+        // HIGH CONFIDENCE: Sharp pattern warnings
+        if (confidence.level === 'high' && receipts.crashCount >= 2) {
+          frames.push({ text: `This pattern usually costs you. Protect today.`, type: 'rest_pattern_warning', priority: 11 });
+        }
+        
+        // MEDIUM CONFIDENCE: Softer language
+        if (confidence.level === 'medium') {
+          frames.push({ text: "The signal points one direction. Worth respecting.", type: 'rest_medium_conf', priority: 10 });
+        }
+        
+        // LOW CONFIDENCE: Conservative language
+        if (confidence.level === 'low') {
+          frames.push({ text: "Something's off today. Play it conservative.", type: 'rest_low_conf', priority: 10 });
+          frames.push({ text: "Unusual reading. See how tomorrow looks.", type: 'rest_low_conf_2', priority: 10 });
+        }
+        
+        // Standard REST observations
+        if (receipts.daysBelow >= 2) frames.push({ text: `Day ${receipts.daysBelow} below baseline. Stay patient.`, type: 'rest_streak', priority: 10 });
+        if (receipts.crashCount > 0 && confidence.level !== 'high') frames.push({ text: `You've pushed through REST ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''} and paid. I remember.`, type: 'rest_crash_history', priority: 9 });
+        
         const firstPrinciples = ["The work is done. Now the building happens.", "You stressed the system. Now it adapts. Don't interrupt.", "The stimulus is in. The adaptation is happening. Protect it."];
         const permission = ["Not a setback. A setup.", "This isn't stopping. This is building.", "Rest isn't earned. It's required."];
         const stakes = ["Push today, pay tomorrow. Your call.", "The next PERFORM day is being built right now. Guard it.", "You're not sitting out. You're loading the spring."];
         const warnings = ["I know you feel fine. The numbers disagree. Trust the numbers.", "Your mind is ready. Your system isn't. Listen to the system.", "You could push. You'd get away with it today. Tomorrow is the question."];
         
-        if (receipts.daysBelow >= 2) frames.push({ text: `Day ${receipts.daysBelow} below baseline. Stay patient.`, type: 'rest_streak', priority: 10 });
-        if (receipts.crashCount > 0) frames.push({ text: `You've pushed through REST ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''} and paid. I remember.`, type: 'rest_crash_history', priority: 10 });
-        if (context.isWarning) warnings.forEach(w => frames.push({ text: w, type: 'rest_warning', priority: 9 }));
+        if (context.isWarning && confidence.level !== 'low') warnings.forEach(w => frames.push({ text: w, type: 'rest_warning', priority: 9 }));
         firstPrinciples.forEach(t => frames.push({ text: t, type: 'rest_first_principles', priority: 7 }));
         permission.forEach(t => frames.push({ text: t, type: 'rest_permission', priority: 6 }));
         stakes.forEach(t => frames.push({ text: t, type: 'rest_stakes', priority: 5 }));
@@ -572,34 +755,73 @@
         return pick(frames.slice(0, 5));
       }
 
+      // ========== BUILD OBSERVATIONS (confidence-adjusted) ==========
       if (command === 'BUILD') {
         const frames = [];
+        
+        // LOW CONFIDENCE: Conservative language first
+        if (confidence.level === 'low') {
+          frames.push({ text: "Something's tilting. Be smart today.", type: 'build_low_conf', priority: 11 });
+          frames.push({ text: "The signal isn't clear. Stay controlled.", type: 'build_low_conf_2', priority: 11 });
+        }
+        
+        // MEDIUM CONFIDENCE: Softer language
+        if (confidence.level === 'medium') {
+          frames.push({ text: "The trend tells a different story than how you feel.", type: 'build_medium_conf', priority: 10 });
+        }
+        
         const steadyState = ["Room to work. Not room to be reckless.", "Standard capacity. Execute your program.", "Enough in the tank for quality work. Not enough for ego work."];
         const momentum = ["Something's working. Don't change anything.", "Climbing. Let's keep it going.", "The trend is your friend right now."];
         const afterRest = ["Yesterday's rest is showing up. Use it wisely.", "The investment is maturing. Solid work today.", "You rested. This is the dividend. Reinvest carefully."];
         const caution = ["Still in range, but the direction matters. Stay aware.", "BUILD today. But the trend is tilting. Be smart.", "I'm giving you BUILD. I almost gave you REST. Respect that."];
         
-        if (context.isAfterRest) afterRest.forEach(t => frames.push({ text: t, type: 'build_after_rest', priority: 10 }));
-        if (context.isWarning) caution.forEach(t => frames.push({ text: t, type: 'build_caution', priority: 9 }));
-        if (receipts.trend === 'rising') momentum.forEach(t => frames.push({ text: t, type: 'build_momentum', priority: 8 }));
+        if (context.isAfterRest && confidence.level !== 'low') afterRest.forEach(t => frames.push({ text: t, type: 'build_after_rest', priority: 10 }));
+        if (context.isWarning && confidence.level !== 'low') caution.forEach(t => frames.push({ text: t, type: 'build_caution', priority: 9 }));
+        if (receipts.trend === 'rising' && confidence.level !== 'low') momentum.forEach(t => frames.push({ text: t, type: 'build_momentum', priority: 8 }));
         steadyState.forEach(t => frames.push({ text: t, type: 'build_steady', priority: 6 }));
         frames.sort((a, b) => b.priority - a.priority);
         return pick(frames.slice(0, 5));
       }
 
+      // ========== PERFORM OBSERVATIONS (confidence-adjusted) ==========
       if (command === 'PERFORM') {
         const frames = [];
-        const pure = ["The tank is full. This is what you've been building toward.", "Green light. No caveats. Go.", "Everything is aligned. This is your day.", "The system says yes. All the way yes."];
+        
+        // HIGH CONFIDENCE: Date-anchored celebrations or warnings
+        if (canUseDateAnchors && patterns.nearestMatch) {
+          const anchor = formatDateAnchor(patterns.nearestMatch.date);
+          if (anchor && patterns.nearestMatch.pushed && patterns.nearestMatch.nextDayCrashed) {
+            frames.push({ text: `You were here on ${anchor}. Keep today clean so tomorrow doesn't bite.`, type: 'perform_date_warning', priority: 12 });
+          }
+        }
+        
+        // HIGH CONFIDENCE: Sharp language allowed
+        if (confidence.level === 'high') {
+          frames.push({ text: "The system says yes. All the way yes.", type: 'perform_high_conf', priority: 11 });
+        }
+        
+        // MEDIUM CONFIDENCE: Measured language
+        if (confidence.level === 'medium') {
+          frames.push({ text: "Green light. The road still has turns.", type: 'perform_medium_conf', priority: 10 });
+        }
+        
+        // LOW CONFIDENCE: Even PERFORM gets conservative language
+        if (confidence.level === 'low') {
+          frames.push({ text: "The numbers say yes. History says be careful.", type: 'perform_low_conf', priority: 11 });
+          frames.push({ text: "Green light—with a flag. Eyes open.", type: 'perform_low_conf_2', priority: 11 });
+        }
+        
+        const pure = ["The tank is full. This is what you've been building toward.", "Green light. No caveats. Go.", "Everything is aligned. This is your day."];
         const earned = ["You rested when I said rest. This is what that buys you.", "You trusted the system. The system is rewarding you."];
         const rare = [`First green light in ${receipts.daysSincePerform} days. Don't waste it.`, "You haven't been here in a while. Welcome back."];
         const cautious = ["Green light. But you've been here before and overcooked it.", "Yes, push. No, don't be stupid.", "Go hard. Then stop. Don't chase the dragon."];
         const consecutive = ["Second straight day. Rare. Use it, but stay aware.", "Back-to-back green. Don't push your luck.", "Two in a row. Go—but know that three is almost never."];
         
         if (context.isConsecutive) consecutive.forEach(t => frames.push({ text: t, type: 'perform_consecutive', priority: 10 }));
-        if (context.isWarning && !context.isConsecutive) cautious.forEach(t => frames.push({ text: t, type: 'perform_cautious', priority: 9 }));
+        if (context.isWarning && !context.isConsecutive && confidence.level !== 'low') cautious.forEach(t => frames.push({ text: t, type: 'perform_cautious', priority: 9 }));
         if (receipts.daysSincePerform >= 7) rare.forEach(t => frames.push({ text: t, type: 'perform_rare', priority: 10 }));
-        if (receipts.daysSinceRest <= 2) earned.forEach(t => frames.push({ text: t, type: 'perform_earned', priority: 8 }));
-        pure.forEach(t => frames.push({ text: t, type: 'perform_pure', priority: 6 }));
+        if (receipts.daysSinceRest <= 2 && confidence.level !== 'low') earned.forEach(t => frames.push({ text: t, type: 'perform_earned', priority: 8 }));
+        if (confidence.level !== 'low') pure.forEach(t => frames.push({ text: t, type: 'perform_pure', priority: 6 }));
         frames.sort((a, b) => b.priority - a.priority);
         return pick(frames.slice(0, 5));
       }
@@ -608,74 +830,236 @@
 
     // ============================================
     // THE ACTION SYSTEM
+    // Confidence-integrated per spec:
+    // Low → always Warning set
+    // Medium → Default with softer language  
+    // High → Full prescriptions allowed
     // ============================================
     const generateActions = (command, patterns, hrvHistory, complianceLog = []) => {
       if (!patterns || hrvHistory.length < 7) return null;
       const today = new Date();
       const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + (command?.charCodeAt(0) || 0);
       const pick = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
-      const context = getContext(command, patterns, complianceLog);
+      
+      // Get context WITH hrvHistory for confidence
+      const context = getContext(command, patterns, complianceLog, hrvHistory);
+      const confidence = context.confidence;
+      
+      // KEY RULE: Low confidence → always use Warning action set
+      const forceWarning = confidence.level === 'low';
 
       if (command === 'REST') {
-        const isWarning = context.isWarning || patterns.trend === 'falling';
-        return {
-          primaryAction: pick(isWarning ? ["The trend is falling. Real rest today.", "The signal is clear. Protect today and tomorrow."] : ["Sleep is the priority. Protect 8 hours tonight.", "The mission today: recover."]),
-          effortBoundary: pick(isWarning ? ["Movement for mobility only. No challenge.", "RPE 2 max. Barely moving."] : ["Conversational pace only. If you can't talk easily, slow down.", "RPE 3 max. It should feel almost too easy."]),
-          recoveryLever: pick(isWarning ? ["Extra sleep tonight. Non-negotiable.", "Stress audit: what can you drop today?"] : ["Protein at every meal. Your body is rebuilding.", "Hydrate early. Water before coffee."]),
-          guardrail: pick(isWarning ? ["Restlessness is normal. Don't let it drive the plan.", "The trend says rest. Tomorrow will thank you."] : ["No 'just a quick one.' That's how REST days become debt.", "Don't test how you feel with intensity. Trust the number."])
-        };
+        const isWarning = forceWarning || context.isWarning || patterns.trend === 'falling';
+        
+        if (isWarning) {
+          // REST — Warning (Trending Down or Low Confidence)
+          return {
+            primaryAction: pick([
+              "10-20 minute walk. 10 minutes of stretching. That's the whole day.",
+              "Movement is optional today. If you do anything, keep it gentle.",
+              "Less than you think. Then less than that."
+            ]),
+            effortBoundary: pick([
+              "Nose-breath only. If you can't speak in full sentences, slow down.",
+              "RPE 2. Barely above sitting on the couch.",
+              "Conversation pace at all times."
+            ]),
+            recoveryLever: pick([
+              "In bed 30-60 minutes earlier than usual tonight.",
+              "Double down: 8+ hours sleep, steady water intake, protein every meal.",
+              "Cancel or postpone one thing on your calendar. Create space."
+            ]),
+            guardrail: pick(confidence.level === 'low' ? [
+              "Something's off today. Play it conservative.",
+              "Not enough data to be certain. When in doubt, rest."
+            ] : [
+              "I get it—you want to move. Today's win is restraint.",
+              "The trend is falling. Every rest hour today is an investment."
+            ])
+          };
+        } else {
+          // REST — Default
+          return {
+            primaryAction: pick([
+              "20-30 minutes easy movement. Walk, stretch, foam roll. Stop while it still feels easy.",
+              "One walk. One stretch session. Nothing that requires gym clothes.",
+              "Move for 20-30 minutes. If you're tempted to do more, that's the signal to stop."
+            ]),
+            effortBoundary: pick([
+              "Nose-breath only. If you need your mouth, slow down.",
+              "If you can't hold a full conversation, you're going too hard.",
+              "RPE 2-3. You should finish feeling under-stimulated."
+            ]),
+            recoveryLever: pick([
+              "Water before coffee. One bottle by noon. One by dinner.",
+              "Protect an 8-hour sleep window tonight.",
+              "Protein at every meal. Your body is rebuilding."
+            ]),
+            guardrail: pick([
+              "No lifting today. This is a recovery day.",
+              "The gym exists tomorrow. Today it costs more than it gives.",
+              "Don't test how you feel with intensity. Trust the number."
+            ])
+          };
+        }
       }
 
       if (command === 'BUILD') {
-        const isAfterRest = context.isAfterRest;
-        const isWarning = context.isWarning || patterns.trend === 'falling';
-        if (isAfterRest) {
+        const isAfterRest = context.isAfterRest && !forceWarning;
+        const isWarning = forceWarning || context.isWarning || patterns.trend === 'falling';
+        
+        if (isWarning) {
+          // BUILD — Warning (Trending Down or Low Confidence)
           return {
-            primaryAction: pick(["Yesterday's rest is showing up. Use it wisely.", "Fresh but not frisky. Controlled effort."]),
-            effortBoundary: pick(["Room to work, but don't overspend on day one.", "RPE 7 max. Quality over quantity."]),
-            recoveryLever: pick(["Keep the recovery momentum: another good night tonight.", "Build on the foundation. Don't burn it down."]),
-            guardrail: pick(["Feeling good doesn't mean 'go all out.'", "One rest day doesn't clear all debt. Pace yourself."])
+            primaryAction: pick([
+              "Same workout. Pull one lever back 20%: lighter load, fewer reps, or shorter time cap. Pick one.",
+              "Do 80% of what's programmed. Cut the last movement or the last round.",
+              "Abbreviated session. Main work only. Skip accessories entirely."
+            ]),
+            effortBoundary: pick([
+              "RPE 6 ceiling. When form breaks, rack it. No grind reps.",
+              "If it turns into survival, stop. A partial session beats a crash.",
+              "Cap the session at ~45 minutes if you're trending down."
+            ]),
+            recoveryLever: pick([
+              "In bed 30 minutes earlier than usual tonight.",
+              "Protein within 60 minutes. Extra carbs tonight—you're in repair mode.",
+              "Stress audit: cancel or postpone one obligation this week."
+            ]),
+            guardrail: pick(confidence.level === 'low' ? [
+              "Something's tilting. Be smart today.",
+              "The signal isn't clear. Stay controlled."
+            ] : [
+              "Don't fight the trend with more effort. That's how 3 bad days become 7.",
+              "A shortened session is a win. A crash is a week lost."
+            ])
           };
-        } else if (isWarning) {
+        } else if (isAfterRest) {
+          // BUILD — After Rest Day
           return {
-            primaryAction: pick(["The trend is tilting. Respect the direction.", "Solid work today. Not a day to dig deep."]),
-            effortBoundary: pick(["Cap at RPE 6 today. Lower ceiling than usual.", "If it's a struggle, cut it short. No shame."]),
-            recoveryLever: pick(["Sleep matters more tonight. Extra 30 minutes if possible.", "Recovery debt is accumulating. Start paying it back."]),
-            guardrail: pick(["Don't fight the trend with more effort.", "A shortened session is still a win. A crash is not."])
+            primaryAction: pick([
+              "Full programmed work. Finish feeling like you could do a little more—but don't.",
+              "Execute the plan completely. No additions. Bank the session.",
+              "Yesterday's rest bought this capacity. Spend it wisely, not recklessly."
+            ]),
+            effortBoundary: pick([
+              "RPE 7. Finish with something left. That's fuel for the streak.",
+              "Quality reps only. Stop before form degrades.",
+              "If you're tempted to add more, that's ego. Stick to the plan."
+            ]),
+            recoveryLever: pick([
+              "Don't undo yesterday's investment. Another good night tonight.",
+              "Protein within 2 hours. Stay hydrated—you're still in recovery mode.",
+              "Two good days in a row is the goal. Protect the streak."
+            ]),
+            guardrail: pick([
+              "Feeling good doesn't mean 'go all out.' It means 'execute cleanly.'",
+              "One rest day doesn't clear all debt. Stay patient."
+            ])
           };
         } else {
+          // BUILD — Default
           return {
-            primaryAction: pick(["Execute your plan. No additions.", "Quality work today. Save the heroics."]),
-            effortBoundary: pick(["Cap at RPE 7. Leave something in the tank.", "Stop before form breaks. That's the line."]),
-            recoveryLever: pick(["Earn tomorrow's capacity: 7-8 hours sleep tonight.", "Post-workout nutrition within 2 hours."]),
-            guardrail: pick(["Don't turn a BUILD day into a PERFORM day.", "Today is for deposits, not withdrawals."])
+            primaryAction: pick([
+              "Programmed work only. Skip the finisher. Leave 10 minutes before you normally would.",
+              "Full workout. Finish feeling like you could do a little more—and don't.",
+              "Do what's written. Nothing extra. Walk out with gas in the tank."
+            ]),
+            effortBoundary: pick([
+              "RPE 7 cap. Finish feeling like you could do a little more.",
+              "When form gets questionable, rack it. No grind reps today.",
+              "If you're class-based: scale to finish smooth, not wrecked."
+            ]),
+            recoveryLever: pick([
+              "Protein within 2 hours of training. Steady water intake through the day.",
+              "Protect 7-8 hours sleep tonight. Tomorrow's capacity depends on it.",
+              "Note what felt hard. That's data, not failure."
+            ]),
+            guardrail: pick([
+              "Don't turn a BUILD day into a PERFORM day. They have different purposes.",
+              "Today is for deposits, not withdrawals. Save the empty tank for green light days."
+            ])
           };
         }
       }
 
       if (command === 'PERFORM') {
         const isConsecutive = context.isConsecutive;
-        const isWarning = context.isWarning && !isConsecutive;
+        const isWarning = (forceWarning || context.isWarning) && !isConsecutive;
+        
         if (isConsecutive) {
+          // PERFORM — Consecutive (Day 2)
           return {
-            primaryAction: pick(["Second straight green light. Rare. Stay disciplined.", "Back-to-back capacity. Don't push your luck."]),
-            effortBoundary: pick(["Slightly lower ceiling than yesterday. RPE 8 max.", "Quality still high, but volume lower."]),
-            recoveryLever: pick(["Tonight is critical. The bill comes tomorrow.", "This is probably the last green for a while. Plan for it."]),
-            guardrail: pick(["Three consecutive PERFORMs almost never end well.", "Know when to stop while you're ahead."])
+            primaryAction: pick([
+              "Shorter session than yesterday. 75% of the duration, 85% of the intensity.",
+              "Main work only. Cut all accessories. Be in and out in 40 minutes.",
+              "One moderate-high effort. No true max attempts today."
+            ]),
+            effortBoundary: pick([
+              "RPE 7-8 ceiling. Lower than yesterday. You're spending reserves.",
+              "If anything feels off in warm-up, convert to a BUILD day. No questions.",
+              "Quality over quantity. Every rep should look the same as rep one."
+            ]),
+            recoveryLever: pick([
+              "Tonight is critical. 8+ hours. Extra protein. Steady hydration.",
+              "This is probably your last green for a while. Plan for REST tomorrow.",
+              "Recovery starts the moment you leave. Prioritize it over everything else tonight."
+            ]),
+            guardrail: pick([
+              "Three consecutive PERFORMs almost never end well. Don't chase the hat trick.",
+              "The third day is where problems happen. Stop while you're ahead.",
+              "Tomorrow's REST is already scheduled. Accept it now."
+            ])
           };
         } else if (isWarning) {
+          // PERFORM — Warning (Pattern Risk or Low Confidence)
           return {
-            primaryAction: pick(["Green light—with a flag. Go hard, but eyes open.", "The numbers say yes. History says be careful."]),
-            effortBoundary: pick(["One peak effort maximum. No encores.", "RPE 9 once, then done."]),
-            recoveryLever: pick(["Double down on recovery tonight.", "What you do after matters more than the session."]),
-            guardrail: pick(["The green light doesn't clear the pattern. Stay aware.", "Confidence is good. Overconfidence is expensive."])
+            primaryAction: pick([
+              "One hard effort in the first 15 minutes. Then coast. No encores today.",
+              "Hit your main work at RPE 8. Skip accessories entirely. Get out clean.",
+              "Attack, then retreat. Don't linger looking for more."
+            ]),
+            effortBoundary: pick([
+              "RPE 8 once. Then immediately drop to 6. Hard stop.",
+              "Set a time limit: ~45 minutes including warm-up. Then leave.",
+              "One solid effort. Whether it's a PR or not, move on."
+            ]),
+            recoveryLever: pick([
+              "Double down on recovery tonight. This pattern has cost you before.",
+              "Protein within 30 minutes. Extra sleep: in bed 30 minutes earlier.",
+              "What you do in the next 12 hours matters more than what you did in the gym."
+            ]),
+            guardrail: pick(confidence.level === 'low' ? [
+              "The numbers say yes. History says be careful.",
+              "Green light—with a flag. Eyes open."
+            ] : [
+              "The green light doesn't erase the pattern. Stay sharp.",
+              "Confidence is fuel. Overconfidence gets expensive."
+            ])
           };
         } else {
+          // PERFORM — Default
           return {
-            primaryAction: pick(["The tank is full. Put your hardest work first.", "Green light. Go hard once, then shut it down."]),
-            effortBoundary: pick(["One peak effort. RPE 9-10 allowed. Don't chase a second.", "Finish clean. Don't grind to empty."]),
-            recoveryLever: pick(["Tonight: protect sleep so you don't waste the win.", "Tomorrow's command depends on tonight's recovery."]),
-            guardrail: pick(["Don't turn a great day into a two-day hangover.", "One hard session. Not 'hard day.'"])
+            primaryAction: pick([
+              "The tank is full. Put your hardest work in the first 15-20 minutes.",
+              "Green light. Execute the effort you've been holding back.",
+              "Capacity is peaking. Use it—you can't save it."
+            ]),
+            effortBoundary: pick([
+              "One peak effort. RPE 8-9 allowed, then coast at 6-7. Don't chase a second peak.",
+              "Leave a rep in reserve even on the hardest set. That's the discipline.",
+              "~45-60 minutes, then leave. No bonus volume."
+            ]),
+            recoveryLever: pick([
+              "Refuel within 60 minutes. Carbs + protein.",
+              "Protect an 8-hour sleep window tonight. This is the ROI on today's effort.",
+              "Tomorrow will tell you if you got this right. Plan for a BUILD or REST."
+            ]),
+            guardrail: pick([
+              "Don't turn a great day into a two-day hangover. One peak. Then done.",
+              "The extra set, the extra attempt, the 'one more'—that's where problems start.",
+              "Sustainable peaks beat one-time glory. There will be more green days if you're smart."
+            ])
           };
         }
       }
