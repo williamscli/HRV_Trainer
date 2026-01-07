@@ -608,7 +608,7 @@
 
     // Tagline Component
     const Tagline = () => (
-      <div className="fixed bottom-6 left-0 right-0 text-center fade-in-delay-3" style={{ zIndex: 10 }}>
+      <div className="fixed bottom-6 left-0 right-0 text-center fade-in-delay-3" style={{ zIndex: 10, pointerEvents: 'none' }}>
         <p className="text-white/40 text-sm tracking-wide mb-2">Your body is talking.</p>
         <svg className="mx-auto float" width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M12 22C12 22 12 16 12 14C12 12 10 10 8 10C6 10 4 12 4 14C4 16 6 18 8 18" stroke="#8b9b7a" strokeWidth="1.5" strokeLinecap="round"/>
@@ -1235,19 +1235,19 @@
             <div className="mist-overlay"></div>
             <div className="content-layer max-w-sm mx-auto space-y-12">
               
-              <div className="space-y-6 text-center fade-in">
-                <p className="text-white/60 text-lg leading-relaxed">
-                  I'm going to learn your body.
-                </p>
+              <div className="space-y-4 text-center fade-in">
                 <p className="text-white text-xl leading-relaxed">
-                  Not bodies in general. Yours.
+                  Your body is talking.
+                </p>
+                <p className="text-white/50">
+                  Now you know what it's asking for.
                 </p>
               </div>
 
-              <div className="space-y-3 text-center text-white/40 fade-in-delay-1">
-                <p>Give me a week and I'll know your baseline.</p>
-                <p>Give me a month and I'll know your patterns.</p>
-                <p>Give me a year and I'll know you better than anyone.</p>
+              <div className="space-y-2 text-center text-white/40 fade-in-delay-1">
+                <p>Give me a week — I'll find your baseline.</p>
+                <p>Give me a month — I'll recognize your rhythms.</p>
+                <p className="text-white/30 text-sm leading-relaxed pt-1">Give me a year — I'll see what even you can't:<br/>what pushes you forward… and what sets you back.</p>
               </div>
 
               <div className="space-y-4 fade-in-delay-2">
@@ -1257,7 +1257,7 @@
                     <button
                       key={source.id}
                       onClick={() => setHrvSource(source)}
-                      className="glass hover:bg-white/10 rounded-2xl py-3 px-4 text-sm text-white/70 transition-all duration-300"
+                      className="glass hover:bg-white/10 rounded-2xl py-3 px-4 text-sm text-white/70 hover:text-white transition-all duration-300"
                     >
                       {source.label}
                     </button>
@@ -1489,16 +1489,16 @@
 
           </div>
 
-          <div className="content-layer max-w-sm mx-auto w-full pt-8 flex justify-between text-white/20 text-xs">
+          <div className="content-layer max-w-sm mx-auto w-full pt-8 pb-16 flex justify-between text-white/40 text-xs">
             <button 
               onClick={() => setShowAddHistory(true)}
-              className="hover:text-white/40 transition-all"
+              className="hover:text-white/70 transition-all"
             >
               + Add history
             </button>
             <button 
               onClick={resetAll}
-              className="hover:text-white/40 transition-all"
+              className="hover:text-white/70 transition-all"
             >
               Reset
             </button>
