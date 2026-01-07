@@ -603,10 +603,10 @@
       
       // No patterns yet = learning phase (countdown to commands)
       if (!patterns) {
-        const daysUntilCommands = 3 - hrvHistory.length;
-        if (daysUntilCommands > 0) {
+        const daysRemaining = 3 - hrvHistory.length;
+        if (daysRemaining > 0) {
           return { 
-            text: `${daysUntilCommands} day${daysUntilCommands > 1 ? 's' : ''} until commands start.`, 
+            text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands start.`, 
             type: 'learning_countdown' 
           };
         }
@@ -2098,14 +2098,20 @@
       // HRV INPUT - Before Today's Entry
       // ============================================
       if (!hasTodayHRV) {
+        // Calculate countdown - updates when hrvHistory changes
+        const daysRemaining = 3 - hrvHistory.length;
+        const countdownText = daysRemaining > 0 
+          ? `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands start`
+          : hrvHistory.length < 7 ? 'Baseline forming...' : null;
+        
         return (
-          <div className="min-h-screen text-white p-6 flex flex-col">
+          <div className="min-h-screen text-white p-4 flex flex-col overflow-y-auto">
             <div className="mist-overlay"></div>
             
             {/* Info icon - top right */}
             <button 
               onClick={() => setShowInfoModal(true)}
-              className="fixed top-6 right-6 text-white/30 hover:text-white/60 transition-all z-20"
+              className="fixed top-4 right-4 text-white/30 hover:text-white/60 transition-all z-20"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10"/>
@@ -2113,31 +2119,36 @@
               </svg>
             </button>
             
-            <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
+            <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-6 py-12">
               
-              {/* Day counter */}
-              <div className="text-center fade-in">
+              {/* Day counter + countdown */}
+              <div className="text-center fade-in space-y-1">
                 <div className="text-white/30 text-sm tracking-wide">
                   {daysOnApp <= 1 ? "Day 1" : `Day ${daysOnApp}`}
                 </div>
+                {countdownText && (
+                  <div className="text-white/20 text-xs">
+                    {countdownText}
+                  </div>
+                )}
               </div>
 
               {/* Yesterday compliance */}
               {needsYesterdayCompliance && (
-                <div className="glass rounded-2xl p-5 space-y-4 fade-in">
-                  <p className="text-white/60 text-center">
+                <div className="glass rounded-2xl p-4 space-y-3 fade-in">
+                  <p className="text-white/60 text-center text-sm">
                     Yesterday I said <span style={{ color: COMMAND_STYLES[yesterdayLog.command].color }}>{yesterdayLog.command}</span>
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => recordCompliance('yes')}
-                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-3 text-sm text-white/80 transition-all duration-300"
+                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-2.5 text-sm text-white/80 transition-all duration-300"
                     >
                       I listened
                     </button>
                     <button
                       onClick={() => recordCompliance('no')}
-                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-3 text-sm text-white/80 transition-all duration-300"
+                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-2.5 text-sm text-white/80 transition-all duration-300"
                     >
                       I didn't
                     </button>
@@ -2146,23 +2157,23 @@
               )}
 
               {/* HRV Input */}
-              <div className="space-y-4 fade-in-delay-1">
-                <p className="text-white/60 text-center text-lg">
+              <div className="space-y-3 fade-in-delay-1">
+                <p className="text-white/60 text-center">
                   {daysOnApp <= 1 ? "What's your HRV this morning?" : "What's your HRV?"}
                 </p>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <input
                     type="number"
                     value={todayHRV}
                     onChange={(e) => setTodayHRV(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmitHRV()}
                     placeholder="HRV"
-                    className="flex-1 glass rounded-2xl px-4 py-4 text-2xl text-center font-light text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
+                    className="flex-1 glass rounded-2xl px-4 py-3 text-xl text-center font-light text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
                     autoFocus
                   />
                   <button
                     onClick={handleSubmitHRV}
-                    className="bg-white/90 text-black rounded-2xl px-6 py-4 font-medium hover:bg-white transition-all duration-300"
+                    className="bg-white/90 text-black rounded-2xl px-5 py-3 font-medium hover:bg-white transition-all duration-300"
                   >
                     Go
                   </button>
