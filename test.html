@@ -1387,12 +1387,6 @@
       // Use currentObservation instead of computed observation
       const observation = currentObservation;
 
-      // Generate promise
-      const promise = useMemo(() => {
-        if (!result) return null;
-        return generatePromise(result.commandKey, patterns);
-      }, [result, patterns]);
-
       // Generate action system
       const actions = useMemo(() => {
         if (!result) return null;
