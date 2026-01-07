@@ -1039,24 +1039,40 @@
         [hrvHistory, complianceLog, firstUseDate]
       );
 
-      // Generate observation
-      const observation = useMemo(() => {
-        if (!result) return null;
+      // Store observation in state to prevent recalculation loops
+      const [currentObservation, setCurrentObservation] = useState(null);
+      const lastCommandRef = useRef(null);
+
+      // Generate observation only when command changes
+      useEffect(() => {
+        if (!result) {
+          setCurrentObservation(null);
+          return;
+        }
+        
+        // Only regenerate if command changed
+        const commandKey = result.commandKey;
+        if (commandKey === lastCommandRef.current) return;
+        
+        lastCommandRef.current = commandKey;
+        
         const obs = generateObservation(
-          result.commandKey, 
+          commandKey, 
           patterns, 
           daysOnApp, 
           lastObservationType,
           hrvHistory
         );
-        return obs;
-      }, [result, patterns, daysOnApp, lastObservationType, hrvHistory]);
-
-      useEffect(() => {
-        if (observation && observation.type !== lastObservationType) {
-          setLastObservationType(observation.type);
+        
+        setCurrentObservation(obs);
+        
+        if (obs && obs.type !== lastObservationType) {
+          setLastObservationType(obs.type);
         }
-      }, [observation]);
+      }, [result?.commandKey, patterns, daysOnApp]);
+
+      // Use currentObservation instead of computed observation
+      const observation = currentObservation;
 
       // Generate promise
       const promise = useMemo(() => {
