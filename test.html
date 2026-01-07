@@ -893,7 +893,7 @@
         }
         if (archetype === 'high') {
           return [
-            { text: "Keep sleep clean: 7.5+ hours tonight (this is where adaptation happens)." },
+            { text: "Protect your sleep: 7.5+ hours tonight (this is where adaptation happens)." },
             { text: "Quality work: push volume or intensity, not both. Stay crisp." },
             { text: "Refuel like you mean it: carbs around training + electrolytes." },
           ];
@@ -1111,8 +1111,103 @@
       { id: 'oura', label: 'Oura' },
       { id: 'garmin', label: 'Garmin' },
       { id: 'fitbit', label: 'Fitbit' },
-      { id: 'other', label: 'Other' },
     ];
+
+    // ============================================
+    // INFO MODAL - How GENYSYS Works
+    // ============================================
+    const InfoModal = ({ onClose }) => (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}></div>
+        <div className="glass rounded-3xl p-6 max-w-sm w-full relative z-10 max-h-[85vh] overflow-y-auto space-y-5">
+          <div className="flex justify-between items-start">
+            <h2 className="text-white text-lg font-medium">How GENYSYS Works</h2>
+            <button onClick={onClose} className="text-white/40 hover:text-white text-xl">×</button>
+          </div>
+          
+          <p className="text-white/60 text-sm leading-relaxed">
+            Your nervous system tells us how recovered you are. We read it. We tell you what to do.
+          </p>
+          
+          <div className="space-y-2">
+            <div className="flex items-start gap-3">
+              <span className="text-[#e8b89d] font-bold text-sm">REST</span>
+              <span className="text-white/50 text-sm">Light movement only. System needs recovery.</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-[#c9b896] font-bold text-sm">BUILD</span>
+              <span className="text-white/50 text-sm">Standard training. Execute your program.</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-[#9dc4a8] font-bold text-sm">PERFORM</span>
+              <span className="text-white/50 text-sm">System primed. Push hard. Chase PRs.</span>
+            </div>
+          </div>
+          
+          <div className="border-t border-white/10 pt-4 space-y-2">
+            <h3 className="text-white/80 text-sm font-medium">What is HRV?</h3>
+            <p className="text-white/50 text-xs leading-relaxed">
+              Heart Rate Variability — the time variation between heartbeats, measured in milliseconds (ms). Higher usually means more recovered. Most people range from 20-100ms.
+            </p>
+          </div>
+          
+          <div className="border-t border-white/10 pt-4 space-y-2">
+            <h3 className="text-white/80 text-sm font-medium">Where to find your HRV (Apple Watch)</h3>
+            <ol className="text-white/50 text-xs leading-relaxed space-y-1 list-decimal list-inside">
+              <li>Open the Health app on your iPhone</li>
+              <li>Tap Browse → Heart → Heart Rate Variability</li>
+              <li>Look at your most recent morning reading</li>
+              <li>Use the number in milliseconds (ms)</li>
+            </ol>
+          </div>
+          
+          <div className="border-t border-white/10 pt-4 space-y-2">
+            <h3 className="text-white/80 text-sm font-medium">The Process</h3>
+            <ol className="text-white/50 text-xs leading-relaxed space-y-1 list-decimal list-inside">
+              <li>Log your morning HRV from your device</li>
+              <li>After 3 days: Preview commands begin</li>
+              <li>After 7 days: Full personalized baseline</li>
+            </ol>
+          </div>
+          
+          <div className="border-t border-white/10 pt-4 space-y-2">
+            <h3 className="text-white/80 text-sm font-medium">No Wearable?</h3>
+            <p className="text-white/50 text-xs leading-relaxed mb-2">
+              Download Welltory (free). Take a 1-minute reading with your phone camera each morning.
+            </p>
+            <div className="flex gap-2">
+              <a 
+                href="https://apps.apple.com/app/welltory-heart-rate-monitor/id1074367771" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="glass-light rounded-lg px-3 py-1.5 text-xs text-white/60 hover:text-white transition-all"
+              >
+                iOS App Store
+              </a>
+              <a 
+                href="https://play.google.com/store/apps/details?id=com.welltory.client.android" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="glass-light rounded-lg px-3 py-1.5 text-xs text-white/60 hover:text-white transition-all"
+              >
+                Google Play
+              </a>
+            </div>
+          </div>
+          
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+            <p className="text-amber-400/80 text-xs leading-relaxed">
+              <span className="font-medium">⚠️ Use the Same Device</span><br/>
+              Your data is stored locally on this device only. It won't transfer to other phones or computers. Always log from the same device.
+            </p>
+          </div>
+          
+          <p className="text-white/30 text-xs text-center pt-2">
+            GENYSYS Private Beta — Your feedback shapes what we build next.
+          </p>
+        </div>
+      </div>
+    );
 
     // ============================================
     // TEST DATA GENERATORS
@@ -1187,6 +1282,8 @@
       const [todayHRV, setTodayHRV] = useState('');
       const [result, setResult] = useState(null);
       const [showAddHistory, setShowAddHistory] = useState(false);
+      const [customDevice, setCustomDevice] = useState('');
+      const [showInfoModal, setShowInfoModal] = useState(false);
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(getYesterdayLocal());
       
@@ -1632,6 +1729,18 @@
             <div className="mist-overlay"></div>
             <div className="content-layer max-w-sm mx-auto space-y-10">
               
+              {/* Info icon - top right */}
+              <button 
+                onClick={() => setShowInfoModal(true)}
+                className="absolute top-6 right-6 text-white/30 hover:text-white/60 transition-all"
+                style={{ position: 'fixed' }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+              </button>
+              
               <div className="space-y-3 text-center fade-in">
                 <p className="text-white text-2xl font-light">
                   Your body is talking.
@@ -1660,6 +1769,25 @@
                     </button>
                   ))}
                 </div>
+                
+                {/* Custom device input */}
+                <div className="flex gap-2 mt-3">
+                  <input
+                    type="text"
+                    value={customDevice}
+                    onChange={(e) => setCustomDevice(e.target.value)}
+                    placeholder="Other device..."
+                    className="flex-1 glass rounded-2xl py-3 px-4 text-sm text-white placeholder-white/30 bg-transparent border-0 outline-none focus:ring-1 focus:ring-white/20"
+                  />
+                  {customDevice.trim() && (
+                    <button
+                      onClick={() => setHrvSource({ id: 'custom', label: customDevice.trim() })}
+                      className="glass hover:bg-white/10 rounded-2xl py-3 px-4 text-sm text-white/70 hover:text-white transition-all duration-300"
+                    >
+                      →
+                    </button>
+                  )}
+                </div>
               </div>
 
             </div>
@@ -1673,6 +1801,9 @@
             </button>
             {showDebug && <DebugPanel />}
             <Tagline />
+            
+            {/* Info Modal */}
+            {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
           </div>
         );
       }
