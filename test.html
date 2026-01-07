@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a2f1a">
-  <title>GENYSYS â€” TEST MODE</title>
+  <title>GENYSYS — TEST MODE</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
@@ -327,7 +327,7 @@
           
           if (!nextDay) return;
           
-          // REST ignored â†’ crashed?
+          // REST ignored → crashed?
           if (log.command === 'REST' && log.followed === 'no') {
             if (nextDay.zScore < THRESHOLDS.REST) {
               patterns.crashesAfterIgnoredRest.push({
@@ -338,7 +338,7 @@
             }
           }
           
-          // REST followed â†’ recovered?
+          // REST followed → recovered?
           if (log.command === 'REST' && log.followed === 'yes') {
             if (nextDay.zScore >= THRESHOLDS.REST) {
               patterns.recoveriesAfterRest.push({
@@ -764,7 +764,7 @@
                     <p className="text-white text-xl leading-relaxed">Most people quit by now.</p>
                     <p className="text-white/60">You didn't.</p>
                   </div>
-                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue â†’</button>
+                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
                 </div>
               )}
 
@@ -823,7 +823,7 @@
                     <p className="text-white text-xl leading-relaxed">You're still here.</p>
                     <p className="text-white/40 text-sm">That puts you ahead of 95% of people<br/>who try to train smarter.</p>
                   </div>
-                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue â†’</button>
+                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
                 </div>
               )}
 
@@ -892,7 +892,7 @@
             title: 'Where to find your HRV (Apple Watch)',
             steps: [
               'Open the Health app on your iPhone',
-              'Tap Browse â†’ Heart â†’ Heart Rate Variability',
+              'Tap Browse → Heart → Heart Rate Variability',
               'Look at your most recent morning reading',
               'Use the number in milliseconds (ms)'
             ]
@@ -910,7 +910,7 @@
             title: 'Where to find your HRV (Garmin)',
             steps: [
               'Open Garmin Connect app',
-              'Go to Health Stats â†’ Heart Rate Variability',
+              'Go to Health Stats → Heart Rate Variability',
               'Check your morning HRV Status reading',
               'Use the number in milliseconds (ms)'
             ]
@@ -946,7 +946,7 @@
             title: 'Where to find your HRV (Samsung)',
             steps: [
               'Open Samsung Health app',
-              'Go to Home â†’ Stress measurement',
+              'Go to Home → Stress measurement',
               'Take a stress reading (includes HRV)',
               'Use the HRV value in milliseconds'
             ]
@@ -973,7 +973,7 @@
         <div className="glass rounded-3xl p-6 max-w-sm w-full relative z-10 max-h-[85vh] overflow-y-auto space-y-5">
           <div className="flex justify-between items-start">
             <h2 className="text-white text-lg font-medium">How GENYSYS Works</h2>
-            <button onClick={onClose} className="text-white/40 hover:text-white text-xl">Ã—</button>
+            <button onClick={onClose} className="text-white/40 hover:text-white text-xl">×</button>
           </div>
           
           <p className="text-white/60 text-sm leading-relaxed">
@@ -998,7 +998,7 @@
           <div className="border-t border-white/10 pt-4 space-y-2">
             <h3 className="text-white/80 text-sm font-medium">What is HRV?</h3>
             <p className="text-white/50 text-xs leading-relaxed">
-              Heart Rate Variability â€” the time variation between heartbeats, measured in milliseconds (ms). Higher usually means more recovered. Most people range from 20-100ms.
+              Heart Rate Variability — the time variation between heartbeats, measured in milliseconds (ms). Higher usually means more recovered. Most people range from 20-100ms.
             </p>
           </div>
           
@@ -1047,13 +1047,13 @@
           
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
             <p className="text-amber-400/80 text-xs leading-relaxed">
-              <span className="font-medium">âš ï¸ Use the Same Device</span><br/>
+              <span className="font-medium">⚠️ Use the Same Device</span><br/>
               Your data is stored locally on this device only. It won't transfer to other phones or computers. Always log from the same device.
             </p>
           </div>
           
           <p className="text-white/30 text-xs text-center pt-2">
-            GENYSYS Private Beta â€” Your feedback shapes what we build next.
+            GENYSYS Private Beta — Your feedback shapes what we build next.
           </p>
         </div>
       </div>
@@ -1503,7 +1503,7 @@
           <div className="max-w-lg mx-auto space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-xs text-zinc-500 font-mono">TEST MODE</span>
-              <button onClick={() => setShowDebug(false)} className="text-zinc-500 text-lg">Ã—</button>
+              <button onClick={() => setShowDebug(false)} className="text-zinc-500 text-lg">×</button>
             </div>
             
             {/* Quick load scenarios */}
@@ -1610,9 +1610,9 @@
               </div>
 
               <div className="space-y-4 text-center fade-in-delay-1">
-                <p className="text-white/50">Give me a week â€” I'll find your baseline.</p>
-                <p className="text-white/50">Give me a month â€” I'll recognize your rhythms.</p>
-                <p className="text-white/40 leading-relaxed">Give me a year â€” I'll see what even you can't:<br/>what pushes you forwardâ€¦ and what sets you back.</p>
+                <p className="text-white/50">Give me a week — I'll find your baseline.</p>
+                <p className="text-white/50">Give me a month — I'll recognize your rhythms.</p>
+                <p className="text-white/40 leading-relaxed">Give me a year — I'll see what even you can't:<br/>what pushes you forward… and what sets you back.</p>
               </div>
 
               <div className="space-y-4 fade-in-delay-2">
@@ -1643,7 +1643,7 @@
                       onClick={() => setHrvSource({ id: 'custom', label: customDevice.trim() })}
                       className="glass hover:bg-white/10 rounded-2xl py-3 px-4 text-sm text-white/70 hover:text-white transition-all duration-300"
                     >
-                      â†’
+                      →
                     </button>
                   )}
                 </div>
@@ -1674,7 +1674,7 @@
         // Calculate countdown - updates when hrvHistory changes
         const daysRemaining = 4 - hrvHistory.length;
         const countdownText = daysRemaining > 0 
-          ? `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands Â· Add history below to unlock today`
+          ? `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands · Add history below to unlock today`
           : hrvHistory.length < 7 ? 'Personalized guidance unlocking...' : null;
         
         return (
@@ -1781,7 +1781,7 @@
                       onClick={() => setShowAddHistory(false)}
                       className="text-white/40 hover:text-white text-2xl"
                     >
-                      Ã—
+                      ×
                     </button>
                   </div>
                   
@@ -1825,7 +1825,7 @@
                               className="text-white/20 hover:text-red-400 transition-colors text-lg leading-none"
                               title="Delete entry"
                             >
-                              Ã—
+                              ×
                             </button>
                           </div>
                         </div>
@@ -1837,7 +1837,7 @@
                     onClick={() => setShowAddHistory(false)}
                     className="w-full glass-light hover:bg-white/10 rounded-xl py-3 text-white/80 transition-all"
                   >
-                    Done â€” {hrvHistory.length} days logged
+                    Done — {hrvHistory.length} days logged
                   </button>
                 </div>
               </div>
@@ -1912,7 +1912,7 @@
             {patterns?.impossibleInsight && (
               <div className="text-center fade-in">
                 <p className="text-amber-400/70 text-xs font-medium">
-                  âš  {patterns.impossibleInsight.text}
+                  ⚠ {patterns.impossibleInsight.text}
                 </p>
               </div>
             )}
@@ -1934,7 +1934,7 @@
               {/* Stats - right under command */}
               {patterns && daysOnApp >= 7 && (
                 <p className="text-white/25 text-xs mb-5">
-                  {patterns.performDays} peaks Â· {patterns.restDays} protected Â· {patterns.totalDays} days
+                  {patterns.performDays} peaks · {patterns.restDays} protected · {patterns.totalDays} days
                 </p>
               )}
               
@@ -2014,7 +2014,7 @@
                       onClick={() => setShowAddHistory(false)}
                       className="text-white/40 hover:text-white text-2xl"
                     >
-                      Ã—
+                      ×
                     </button>
                   </div>
                 </div>
@@ -2055,7 +2055,7 @@
                             className="text-white/20 hover:text-red-400 transition-colors text-lg leading-none"
                             title="Delete entry"
                           >
-                            Ã—
+                            ×
                           </button>
                         </div>
                       </div>
