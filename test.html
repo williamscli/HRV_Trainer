@@ -761,6 +761,7 @@
 
     // ============================================
     // THE VOICE - Three-Mode Communication System
+    // + Personalization Layer (rarity, proof, date anchors)
     // DIRECTIVE: Brief, direct, no hedging
     // PROTECTIVE: Acknowledge urge, make call, one escape
     // UNCERTAIN: Honest about uncertainty
@@ -779,6 +780,27 @@
       // Get context with mode
       const context = getContext(command, patterns, complianceLog, hrvHistory, daysOnApp);
       const mode = context.mode;
+      const confidence = context.confidence;
+      
+      // === PERSONALIZATION DATA ===
+      const daysSincePerform = patterns.daysSincePerform || 0;
+      const daysSinceRest = patterns.daysSinceRest || 0;
+      const crashCount = patterns.crashesAfterIgnoredRest?.length || 0;
+      const consecutiveCrashes = patterns.consecutivePerformCrashes || 0;
+      
+      // Date anchor helper (format: "January 15th")
+      const formatDateAnchor = (dateStr) => {
+        if (!dateStr) return null;
+        const date = new Date(dateStr + 'T12:00:00');
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const day = date.getDate();
+        const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
+        return `${months[date.getMonth()]} ${day}${suffix}`;
+      };
+      
+      // Gates for personalization
+      const canUsePersonalization = daysOnApp >= 14 && confidence.level !== 'low';
+      const canUseDateAnchors = canUsePersonalization && confidence.level === 'high';
       
       // Milestones (override everything)
       const milestones = { 
@@ -791,6 +813,18 @@
 
       // ========== REST OBSERVATIONS ==========
       if (command === 'REST') {
+        // PERSONALIZATION: Date anchor warning (highest priority)
+        if (canUseDateAnchors && patterns.nearestMatch?.nextDayCrashed) {
+          const anchor = formatDateAnchor(patterns.nearestMatch.date);
+          if (anchor) return { text: `This looks like ${anchor}. That day cost you.`, type: 'rest_date_anchor' };
+        }
+        
+        // PERSONALIZATION: Small-number proof
+        if (canUsePersonalization && crashCount >= 2) {
+          return { text: `${crashCount} times you've pushed through REST. ${crashCount} times you paid. I remember.`, type: 'rest_proof' };
+        }
+        
+        // MODE-BASED
         if (mode === 'DIRECTIVE') {
           return pick([
             { text: "Rest today. Train Thursday.", type: 'rest_directive' },
@@ -814,12 +848,20 @@
 
       // ========== BUILD OBSERVATIONS ==========
       if (command === 'BUILD') {
+        // PERSONALIZATION: Rarity callout (long time since PERFORM)
+        if (canUsePersonalization && daysSincePerform >= 10) {
+          return { text: `${daysSincePerform} days since green. BUILD is building toward it.`, type: 'build_rarity' };
+        }
+        
+        // After rest (special case)
         if (context.isAfterRest && mode === 'DIRECTIVE') {
           return pick([
             { text: "Yesterday's rest bought this. Execute the plan.", type: 'build_after_rest' },
             { text: "That rest is showing up. Use it, don't spend it.", type: 'build_after_rest' }
           ]);
         }
+        
+        // MODE-BASED
         if (mode === 'DIRECTIVE') {
           return pick([
             { text: "Work available. Execute the plan.", type: 'build_directive' },
@@ -843,12 +885,32 @@
 
       // ========== PERFORM OBSERVATIONS ==========
       if (command === 'PERFORM') {
+        // PERSONALIZATION: Consecutive crash proof (highest priority for PERFORM)
+        if (canUsePersonalization && context.isConsecutive && consecutiveCrashes >= 2) {
+          const total = consecutiveCrashes + 1; // +1 for current pattern
+          return { text: `${consecutiveCrashes} of ${total} back-to-backs cost you. One peak, then done.`, type: 'perform_consecutive_proof' };
+        }
+        
+        // PERSONALIZATION: Date anchor (similar pattern warning)
+        if (canUseDateAnchors && patterns.nearestMatch?.pushed && patterns.nearestMatch?.nextDayCrashed) {
+          const anchor = formatDateAnchor(patterns.nearestMatch.date);
+          if (anchor) return { text: `You were here on ${anchor}. One peak—then leave.`, type: 'perform_date_anchor' };
+        }
+        
+        // PERSONALIZATION: Rarity callout
+        if (canUsePersonalization && daysSincePerform >= 7) {
+          return { text: `First green in ${daysSincePerform} days. Make it count. Don't waste it.`, type: 'perform_rarity' };
+        }
+        
+        // Consecutive (standard)
         if (context.isConsecutive) {
           return pick([
             { text: "Back-to-back green is rare. Today's skill is restraint.", type: 'perform_consecutive' },
             { text: "Second straight day. Don't chase the hat trick.", type: 'perform_consecutive' }
           ]);
         }
+        
+        // MODE-BASED
         if (mode === 'DIRECTIVE') {
           return pick([
             { text: "Green light. One peak.", type: 'perform_directive' },
