@@ -6,102 +6,41 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a2f1a">
-  <title>GENYSYS</title>
+  <title>GENYSYS — TEST MODE</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js" crossorigin="anonymous"></script>
   <style>
-    /* Nature gradient background */
     body { 
-      background: linear-gradient(180deg, 
-        #2d3b2d 0%, 
-        #3d4f3d 20%, 
-        #4a5d4a 40%, 
-        #5a6b5a 60%, 
-        #6b7b6b 80%, 
-        #8a9a8a 100%
-      );
+      background: linear-gradient(180deg, #2d3b2d 0%, #3d4f3d 20%, #4a5d4a 40%, #5a6b5a 60%, #6b7b6b 80%, #8a9a8a 100%);
       background-attachment: fixed;
       min-height: 100vh;
     }
-    
-    /* Glassmorphism base */
-    .glass {
-      background: rgba(40, 50, 40, 0.6);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    
-    .glass-light {
-      background: rgba(60, 75, 60, 0.5);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    
-    .glass-dark {
-      background: rgba(20, 30, 20, 0.7);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    /* Subtle mist overlay */
-    .mist-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(180deg, 
-        rgba(180, 190, 180, 0.1) 0%, 
-        rgba(180, 190, 180, 0) 30%,
-        rgba(180, 190, 180, 0) 70%,
-        rgba(180, 190, 180, 0.05) 100%
-      );
-      pointer-events: none;
-      z-index: 1;
-    }
-    
-    /* Content layer */
-    .content-layer {
-      position: relative;
-      z-index: 2;
-    }
-    
+    .glass { background: rgba(40, 50, 40, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-light { background: rgba(60, 75, 60, 0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.06); }
+    .glass-dark { background: rgba(20, 30, 20, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    .mist-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(180,190,180,0.1) 0%, rgba(180,190,180,0) 30%, rgba(180,190,180,0) 70%, rgba(180,190,180,0.05) 100%); pointer-events: none; z-index: 1; }
+    .content-layer { position: relative; z-index: 2; }
     input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     input[type="number"] { -moz-appearance: textfield; }
-    
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-    
     .fade-in { animation: fadeIn 0.6s ease-out forwards; }
     .fade-in-delay-1 { animation: fadeIn 0.6s ease-out 0.2s forwards; opacity: 0; }
     .fade-in-delay-2 { animation: fadeIn 0.6s ease-out 0.4s forwards; opacity: 0; }
     .fade-in-delay-3 { animation: fadeIn 0.6s ease-out 0.6s forwards; opacity: 0; }
     .pulse-slow { animation: pulse 3s ease-in-out infinite; }
     .float { animation: float 4s ease-in-out infinite; }
-    
-    /* Line clamp utility */
     .line-clamp-2 {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    
-    /* Soft text rendering */
-    * {
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    
-    /* Custom scrollbar */
+    * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -116,10 +55,8 @@
     // ============================================
     // ANALYTICS CONFIGURATION
     // ============================================
-    // Replace with your Google Apps Script Web App URL
-    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxp_XAHJDYn8gRpbqaHrDjC1u1Dgyy3-i_JU6WS9R62XiFm26tJdhZP1EOi3ID8mgtg/exec';
+    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/library/d/1tH6wJT61hMFEdVka0Md_fhMPzL060snQkeT930cVytFgseesr2eRPiWH/5';
     
-    // Allowed events (must match server allowlist)
     const ALLOWED_EVENTS = [
       'session_start', 'onboarding_complete', 'first_hrv_logged', 'hrv_logged',
       'hrv_backfilled', 'command_generated', 'compliance_recorded',
@@ -130,7 +67,6 @@
       'data_exported', 'data_reset', 'legacy_user_migrated'
     ];
 
-    // Generate UUID v4
     const generateUUID = () => {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = Math.random() * 16 | 0;
@@ -139,7 +75,6 @@
       });
     };
 
-    // Get timezone (privacy-friendly region detection)
     const getTimezone = () => {
       try {
         return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -148,7 +83,6 @@
       }
     };
 
-    // Analytics tracker
     const Analytics = {
       userId: null,
       timezone: null,
@@ -165,34 +99,24 @@
         } else {
           this.userId = generateUUID();
           this.timezone = getTimezone();
-          
-          // Check for existing app data (legacy user)
-          const appData = localStorage.getItem('genysys_v2_data');
+          const appData = localStorage.getItem('genysys_v2_test_data');
           if (appData) {
             try {
               const parsed = JSON.parse(appData);
               this.firstUseDate = parsed.firstUseDate || this.getTodayLocal();
-              setTimeout(() => this.track('legacy_user_migrated', { 
-                device: parsed.hrvSource?.label || 'unknown',
-                daysLogged: parsed.hrvHistory?.length || 0
-              }), 100);
             } catch (e) {
               this.firstUseDate = this.getTodayLocal();
             }
           } else {
             this.firstUseDate = this.getTodayLocal();
           }
-          
           this.save();
         }
       },
 
       getTodayLocal() {
         const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       },
 
       save() {
@@ -203,15 +127,11 @@
         }));
       },
 
-      setDevice(device) {
-        this.device = device;
-      },
+      setDevice(device) { this.device = device; },
 
       getDaysActive() {
         if (!this.firstUseDate) return 0;
-        const first = new Date(this.firstUseDate);
-        const now = new Date();
-        return Math.floor((now - first) / (1000 * 60 * 60 * 24));
+        return Math.floor((new Date() - new Date(this.firstUseDate)) / (1000 * 60 * 60 * 24));
       },
 
       track(eventName, properties = {}) {
@@ -219,11 +139,7 @@
           console.warn('[Analytics] Unknown event:', eventName);
           return;
         }
-        
-        if (!this.userId) {
-          console.warn('[Analytics] No userId, skipping');
-          return;
-        }
+        if (!this.userId) return;
         
         const payload = {
           timestamp: new Date().toISOString(),
@@ -248,7 +164,6 @@
       }
     };
 
-    // Initialize analytics
     Analytics.init();
 
     // ============================================
@@ -418,7 +333,7 @@
               patterns.crashesAfterIgnoredRest.push({
                 ignoredDate: log.date,
                 crashDate: nextDateStr,
-                daysLost: 1 // Could calculate more precisely
+                daysLost: 1
               });
             }
           }
@@ -457,7 +372,6 @@
       let backToBackCrashes = 0;
       for (let i = 1; i < performIndices.length; i++) {
         if (performIndices[i] - performIndices[i-1] === 1) {
-          // Back-to-back PERFORMs
           const dayAfter = withZScores[performIndices[i] + 1];
           if (dayAfter && dayAfter.command === 'REST') {
             backToBackCrashes++;
@@ -483,7 +397,7 @@
       let bestDay = null, bestAvg = -Infinity;
       
       Object.entries(dayOfWeekStats).forEach(([dow, stats]) => {
-        if (stats.count >= 3) { // Need at least 3 samples
+        if (stats.count >= 3) {
           const avg = stats.sum / stats.count;
           if (avg < worstAvg) { worstAvg = avg; worstDay = parseInt(dow); }
           if (avg > bestAvg) { bestAvg = avg; bestDay = parseInt(dow); }
@@ -497,7 +411,6 @@
         patterns.strongDay = { day: dayNames[bestDay], avgZ: bestAvg };
       }
       
-      // Today's day of week pattern
       const todayDow = new Date().getDay();
       if (dayOfWeekStats[todayDow] && dayOfWeekStats[todayDow].count >= 3) {
         const todayDowAvg = dayOfWeekStats[todayDow].sum / dayOfWeekStats[todayDow].count;
@@ -508,14 +421,12 @@
         }
       }
 
-      // === IMPOSSIBLE INSIGHT: "You feel fine but you're about to crash" ===
-      // Conditions: Today is PERFORM or BUILD, but hidden warning signs
+      // === IMPOSSIBLE INSIGHT ===
       const todayEntry = hrvHistory.find(h => h.date === getTodayLocal());
       if (todayEntry) {
         const todayZ = (todayEntry.value - median) / mad;
         const todayCommand = getCommandKey(todayZ);
         
-        // Warning sign 1: High HRV today but falling trend (often precedes crash)
         if (todayCommand === 'PERFORM' && patterns.trend === 'falling') {
           patterns.impossibleInsight = {
             type: 'false_peak',
@@ -523,7 +434,6 @@
           };
         }
         
-        // Warning sign 2: Above baseline but volatile week (unstable foundation)
         if (todayZ > 0 && patterns.isVolatile) {
           patterns.impossibleInsight = {
             type: 'unstable_high',
@@ -531,7 +441,6 @@
           };
         }
         
-        // Warning sign 3: PERFORM after multiple BUILD days without REST
         if (todayCommand === 'PERFORM' && patterns.daysSinceRest >= 5) {
           patterns.impossibleInsight = {
             type: 'no_rest_perform',
@@ -539,7 +448,6 @@
           };
         }
         
-        // Warning sign 4: Historical pattern match predicts crash
         if (patterns.nearestMatch?.nextDayCrashed && todayCommand !== 'REST') {
           patterns.impossibleInsight = {
             type: 'historical_warning',
@@ -565,7 +473,6 @@
         });
         
         if (nearest) {
-          // Check what happened next
           const nextDate = new Date(nearest.date);
           nextDate.setDate(nextDate.getDate() + 1);
           const nextDateStr = getLocalDateString(nextDate);
@@ -603,10 +510,10 @@
       
       // No patterns yet = learning phase (countdown to commands)
       if (!patterns) {
-        const daysUntilCommands = 3 - hrvHistory.length;
-        if (daysUntilCommands > 0) {
+        const daysRemaining = 3 - hrvHistory.length;
+        if (daysRemaining > 0) {
           return { 
-            text: `${daysUntilCommands} day${daysUntilCommands > 1 ? 's' : ''} until commands start.`, 
+            text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands start.`, 
             type: 'learning_countdown' 
           };
         }
@@ -661,16 +568,12 @@
       }
 
       // === TENURE-BASED LANGUAGE DEPTH ===
-      // Month 1: simple, obvious
-      // Month 2-6: references patterns
-      // 6+: micro-patterns, "I know your tells"
       const tenure = daysOnApp <= 30 ? 'early' : daysOnApp <= 180 ? 'developing' : 'mature';
 
       // === REST FRAMES ===
       if (command === 'REST') {
         const frames = [];
         
-        // HIGH PRIORITY: Crash history (priority 10)
         if (receipts.crashCount > 0) {
           frames.push({
             text: `You've ignored REST ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''} and crashed ${receipts.crashCount} time${receipts.crashCount > 1 ? 's' : ''}. I remember.`,
@@ -679,7 +582,6 @@
           });
         }
 
-        // Consecutive days below (priority 9)
         if (receipts.daysBelow >= 2) {
           frames.push({
             text: `${receipts.daysBelow} days below your baseline. Your body is asking for something.`,
@@ -695,23 +597,14 @@
           }
         }
 
-        // Falling trend (priority 8)
         if (receipts.trend === 'falling') {
           frames.push({
             text: "You're trending down. Today is not the day to fight gravity.",
             type: 'rest_falling',
             priority: 8
           });
-          if (tenure !== 'early') {
-            frames.push({
-              text: "Same setup as your last crash week: falling baseline + accumulated load.",
-              type: 'rest_crash_setup',
-              priority: 8
-            });
-          }
         }
 
-        // Long time since perform (priority 7)
         if (receipts.daysSincePerform >= 7) {
           frames.push({
             text: `${receipts.daysSincePerform} days since your last peak. Protect today—the climb back starts here.`,
@@ -720,7 +613,6 @@
           });
         }
 
-        // Generic frames with receipts (priority 3-5)
         const genericRest = [
           { text: "This isn't a motivation problem. It's a capacity problem.", type: 'rest_capacity', priority: 5 },
           { text: "You can push today. You just won't like the bill.", type: 'rest_bill', priority: 4 },
@@ -731,25 +623,19 @@
         
         if (tenure === 'early') {
           genericRest.push({ text: "I know you feel fine. You felt fine last time too.", type: 'rest_feel_fine', priority: 4 });
-          genericRest.push({ text: "Your body is building something. Don't interrupt it.", type: 'rest_building', priority: 3 });
         } else {
           genericRest.push({ text: "This is the part where small choices matter more than big ones.", type: 'rest_small_choices', priority: 4 });
-          genericRest.push({ text: "You're not 'tired.' You're below your normal range.", type: 'rest_not_tired', priority: 4 });
         }
         
         frames.push(...genericRest);
-        
-        // Sort by priority, pick deterministically
         frames.sort((a, b) => b.priority - a.priority);
-        const topFrames = frames.slice(0, 3); // Top 3 by priority
-        return pick(topFrames);
+        return pick(frames.slice(0, 3));
       }
 
       // === BUILD FRAMES ===
       if (command === 'BUILD') {
         const frames = [];
 
-        // Rising trend (priority 7)
         if (receipts.trend === 'rising') {
           frames.push({
             text: "You're trending up, but you're not bulletproof yet.",
@@ -765,21 +651,14 @@
           }
         }
 
-        // Stable trend (priority 6)
         if (receipts.trend === 'stable') {
           frames.push({
             text: "You're stable. This is where real progress gets made.",
             type: 'build_stable_progress',
             priority: 6
           });
-          frames.push({
-            text: "Numbers are neutral. Your execution doesn't have to be.",
-            type: 'build_neutral',
-            priority: 6
-          });
         }
 
-        // Coming off REST (priority 6)
         if (receipts.daysSinceRest === 1) {
           frames.push({
             text: "Yesterday you rested. Today you build on it.",
@@ -788,35 +667,23 @@
           });
         }
 
-        // Generic BUILD frames
         const genericBuild = [
           { text: "Today's not for proving. It's for stacking.", type: 'build_stacking', priority: 5 },
           { text: "A clean session today keeps the week intact.", type: 'build_clean', priority: 5 },
           { text: "You've got room—just not for chaos.", type: 'build_room', priority: 4 },
-          { text: "This is a 'get better' day, not a 'set records' day.", type: 'build_get_better', priority: 4 },
           { text: "Consistency beats intensity on days like this.", type: 'build_consistency', priority: 3 },
           { text: "The ones who show up on days like this are the ones who win.", type: 'build_show_up', priority: 3 },
         ];
         
-        if (tenure === 'early') {
-          genericBuild.push({ text: "Not your peak. Not your valley. The kind of day that makes peaks possible.", type: 'build_foundation', priority: 4 });
-        } else {
-          genericBuild.push({ text: "Your window is open enough to train—tight enough to stay honest.", type: 'build_window', priority: 4 });
-          genericBuild.push({ text: "Stay inside the lines. You'll accumulate faster.", type: 'build_accumulate', priority: 3 });
-        }
-
         frames.push(...genericBuild);
-        
         frames.sort((a, b) => b.priority - a.priority);
-        const topFrames = frames.slice(0, 3);
-        return pick(topFrames);
+        return pick(frames.slice(0, 3));
       }
 
       // === PERFORM FRAMES ===
       if (command === 'PERFORM') {
         const frames = [];
 
-        // Rarity receipt (priority 10)
         if (receipts.daysSincePerform >= 7) {
           frames.push({
             text: `First peak day in ${receipts.daysSincePerform} days. This is rare. Use it.`,
@@ -832,7 +699,6 @@
           });
         }
 
-        // Rising + above baseline (priority 9)
         if (receipts.trend === 'rising' && receipts.daysAbove >= 2) {
           frames.push({
             text: `${receipts.daysAbove} days above baseline and still rising. Today it peaks.`,
@@ -841,7 +707,6 @@
           });
         }
 
-        // Post-rest payoff (priority 8)
         if (patterns.recoveriesAfterRest?.length > 0) {
           frames.push({
             text: "You protected your rest. Now you reap what you guarded.",
@@ -850,7 +715,6 @@
           });
         }
 
-        // Build day count (priority 7)
         if (receipts.daysSincePerform >= 3) {
           frames.push({
             text: `${receipts.daysSincePerform} build days since your last peak. Today's payoff.`,
@@ -859,7 +723,6 @@
           });
         }
 
-        // Generic PERFORM frames
         const genericPerform = [
           { text: "This is a rare 'yes' day. Don't dilute it.", type: 'perform_yes_day', priority: 6 },
           { text: "You've been building. Today you get to spend.", type: 'perform_spend', priority: 5 },
@@ -868,19 +731,11 @@
           { text: "Windows close. This one's open.", type: 'perform_window', priority: 4 },
         ];
 
-        if (tenure !== 'early') {
-          genericPerform.push({ text: "Your recovery held. Your window widened. Go use it.", type: 'perform_window_wide', priority: 5 });
-          genericPerform.push({ text: "If you've been waiting to test yourself—this is the test day.", type: 'perform_test', priority: 4 });
-        }
-
         frames.push(...genericPerform);
-        
         frames.sort((a, b) => b.priority - a.priority);
-        const topFrames = frames.slice(0, 3);
-        return pick(topFrames);
+        return pick(frames.slice(0, 3));
       }
 
-      // === LEARNING FALLBACK ===
       return { text: `${hrvHistory.length} days logged. Still calibrating.`, type: 'learning' };
     };
 
@@ -901,7 +756,6 @@
       };
 
       if (command === 'REST') {
-        // Conditional promises first
         if (receipts.trend === 'falling') {
           return "Protect today. Let the floor find you.";
         }
@@ -924,7 +778,6 @@
       }
       
       if (command === 'PERFORM') {
-        // Conditional promises first
         if (receipts.daysSincePerform >= 14) {
           return "You've waited for this. Don't waste it.";
         }
@@ -947,7 +800,6 @@
       }
       
       if (command === 'BUILD') {
-        // Conditional promises first
         if (receipts.trend === 'rising') {
           return "Stay inside the lines. You'll accumulate faster.";
         }
@@ -1015,7 +867,6 @@
             { text: "Keep inflammation low: hydration + real food + early dinner." },
           ];
         }
-        // veryHigh
         return [
           { text: "Don't waste the rebound: 8 hours tonight." },
           { text: "Stay easy on purpose: under 130 bpm, no intensity leaks." },
@@ -1048,7 +899,6 @@
             { text: "Refuel like you mean it: carbs around training + electrolytes." },
           ];
         }
-        // veryHigh
         return [
           { text: "Sleep locks the gain: 8 hours tonight." },
           { text: "Build with precision: hard work allowed—but keep form perfect, cap total damage." },
@@ -1083,7 +933,6 @@
             { text: "Protect tomorrow: cooldown + carbs + early bedtime." },
           ];
         }
-        // veryHigh
         return [
           { text: "Performance + recovery are paired: 8 hours tonight." },
           { text: "Use the window: push hard—then end it on purpose (no bonus volume)." },
@@ -1107,305 +956,13 @@
     };
 
     // ============================================
-    // FEEDBACK MODAL - The Invitation (not a survey)
-    // ============================================
-    const FeedbackModal = ({ 
-      round, daysOnApp,
-      step, setStep, 
-      response, setResponse, 
-      text, setText, 
-      email, setEmail, 
-      onSend, onDismiss 
-    }) => (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-6 z-50">
-        <div className="max-w-sm w-full space-y-8">
-          
-          {/* ===== ROUND 1 (Day 10-14): The Commitment ===== */}
-          {round === 1 && (
-            <>
-              {/* Step 1: Acknowledge */}
-              {step === 1 && (
-                <div className="text-center space-y-8 fade-in">
-                  <div className="space-y-4">
-                    <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
-                    <p className="text-white text-xl leading-relaxed">
-                      Most people quit by now.
-                    </p>
-                    <p className="text-white/60">
-                      You didn't.
-                    </p>
-                  </div>
-                  
-                  <button
-                    onClick={() => setStep(2)}
-                    className="text-white/40 hover:text-white text-sm transition"
-                  >
-                    Continue →
-                  </button>
-                </div>
-              )}
-
-              {/* Step 2: What are you building toward? */}
-              {step === 2 && (
-                <div className="text-center space-y-6 fade-in">
-                  <p className="text-white text-lg">
-                    What are you building toward?
-                  </p>
-                  
-                  <div className="space-y-2">
-                    {[
-                      { key: 'competition', label: 'Competition' },
-                      { key: 'longevity', label: 'Longevity' },
-                      { key: 'consistency', label: 'Staying consistent' },
-                      { key: 'feeling', label: 'Feeling better' },
-                      { key: 'other', label: 'Something else' },
-                    ].map(opt => (
-                      <button
-                        key={opt.key}
-                        onClick={() => { setResponse(opt.key); setStep(opt.key === 'other' ? 3 : 4); }}
-                        className="w-full glass hover:bg-white/10 text-white/70 hover:text-white py-3 px-4 rounded-2xl text-sm transition-all duration-300"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <button 
-                    onClick={() => onDismiss(false)} 
-                    className="text-white/20 hover:text-white/40 text-xs transition"
-                  >
-                    Skip
-                  </button>
-                </div>
-              )}
-
-              {/* Step 3: Something else (free text) */}
-              {step === 3 && (
-                <div className="text-center space-y-6 fade-in">
-                  <p className="text-white text-lg">
-                    Tell me more.
-                  </p>
-                  
-                  <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="What are you working toward..."
-                    className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none h-24"
-                    autoFocus
-                  />
-
-                  <button
-                    onClick={() => setStep(4)}
-                    className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl hover:bg-white transition-all duration-300"
-                  >
-                    Continue
-                  </button>
-                </div>
-              )}
-
-              {/* Step 4: Early access invitation */}
-              {step === 4 && (
-                <div className="text-center space-y-6 fade-in">
-                  <div className="space-y-3">
-                    <p className="text-white text-lg">
-                      I'm building something too.
-                    </p>
-                    <p className="text-white/40 text-sm leading-relaxed">
-                      Auto-sync. Deeper patterns.<br/>
-                      Predictions before you feel them.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-3 pt-2">
-                    <p className="text-white/50 text-sm">Want early access?</p>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email"
-                      className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <button
-                      onClick={onSend}
-                      className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl hover:bg-white transition-all duration-300"
-                    >
-                      I'm in
-                    </button>
-                    <button 
-                      onClick={onSend}
-                      className="w-full text-white/40 hover:text-white/60 text-sm py-2 transition"
-                    >
-                      Just keep going
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ===== ROUND 2 (Day 35-45): The Inner Circle ===== */}
-          {round === 2 && (
-            <>
-              {/* Step 1: Acknowledge */}
-              {step === 1 && (
-                <div className="text-center space-y-8 fade-in">
-                  <div className="space-y-4">
-                    <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
-                    <p className="text-white text-xl leading-relaxed">
-                      You're still here.
-                    </p>
-                    <p className="text-white/40 text-sm leading-relaxed">
-                      That puts you ahead of 95% of people<br/>
-                      who try to train smarter.
-                    </p>
-                  </div>
-                  
-                  <button
-                    onClick={() => setStep(2)}
-                    className="text-white/40 hover:text-white text-sm transition"
-                  >
-                    Continue →
-                  </button>
-                </div>
-              )}
-
-              {/* Step 2: What would make it better */}
-              {step === 2 && (
-                <div className="text-center space-y-6 fade-in">
-                  <div className="space-y-2">
-                    <p className="text-white text-lg">
-                      I'm building the next version.
-                    </p>
-                    <p className="text-white/40 text-sm">
-                      What would make this twice as valuable?
-                    </p>
-                  </div>
-                  
-                  <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="The one thing..."
-                    className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none h-24"
-                    autoFocus
-                  />
-
-                  <button
-                    onClick={() => setStep(3)}
-                    className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl hover:bg-white transition-all duration-300"
-                  >
-                    Continue
-                  </button>
-                  
-                  <button 
-                    onClick={() => setStep(3)} 
-                    className="text-white/20 hover:text-white/40 text-xs transition"
-                  >
-                    Skip
-                  </button>
-                </div>
-              )}
-
-              {/* Step 3: Referral */}
-              {step === 3 && (
-                <div className="text-center space-y-6 fade-in">
-                  <div className="space-y-3">
-                    <p className="text-white text-lg">
-                      One more thing.
-                    </p>
-                    <p className="text-white/40 text-sm leading-relaxed">
-                      Anyone in your life who needs this?
-                    </p>
-                    <p className="text-white/25 text-xs">
-                      A training partner. Someone who never rests.<br/>
-                      A friend who's always overtrained.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => { setResponse('yes'); setStep(4); }}
-                      className="w-full glass hover:bg-white/10 text-white/70 hover:text-white py-3 rounded-2xl text-sm transition-all duration-300"
-                    >
-                      Yes, I know someone
-                    </button>
-                    <button
-                      onClick={() => { setResponse('no'); onSend(); }}
-                      className="w-full text-white/40 hover:text-white/60 text-sm py-2 transition"
-                    >
-                      Not right now
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Get referral contact */}
-              {step === 4 && (
-                <div className="text-center space-y-6 fade-in">
-                  <p className="text-white text-lg">
-                    I'll make sure they get in.
-                  </p>
-                  
-                  <input
-                    type="text"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Their email or name"
-                    className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
-                    autoFocus
-                  />
-
-                  <button
-                    onClick={onSend}
-                    className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl hover:bg-white transition-all duration-300"
-                  >
-                    Done
-                  </button>
-                  
-                  <button 
-                    onClick={onSend}
-                    className="text-white/20 hover:text-white/40 text-xs transition"
-                  >
-                    Skip
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    );
-
-    // ============================================
     // COLORS - Earthy, organic palette
     // ============================================
     const COMMAND_STYLES = {
-      REST: { 
-        color: '#e8b89d', 
-        bg: 'rgba(232, 184, 157, 0.12)', 
-        border: 'rgba(232, 184, 157, 0.2)',
-        glow: 'rgba(232, 184, 157, 0.1)'
-      },
-      BUILD: { 
-        color: '#c9b896', 
-        bg: 'rgba(201, 184, 150, 0.12)', 
-        border: 'rgba(201, 184, 150, 0.2)',
-        glow: 'rgba(201, 184, 150, 0.1)'
-      },
-      PERFORM: { 
-        color: '#9dc4a8', 
-        bg: 'rgba(157, 196, 168, 0.12)', 
-        border: 'rgba(157, 196, 168, 0.2)',
-        glow: 'rgba(157, 196, 168, 0.1)'
-      },
-      LEARNING: { 
-        color: '#a8b5a8', 
-        bg: 'rgba(168, 181, 168, 0.12)', 
-        border: 'rgba(168, 181, 168, 0.2)',
-        glow: 'rgba(168, 181, 168, 0.1)'
-      },
+      REST: { color: '#e8b89d', bg: 'rgba(232, 184, 157, 0.12)', border: 'rgba(232, 184, 157, 0.2)', glow: 'rgba(232, 184, 157, 0.1)' },
+      BUILD: { color: '#c9b896', bg: 'rgba(201, 184, 150, 0.12)', border: 'rgba(201, 184, 150, 0.2)', glow: 'rgba(201, 184, 150, 0.1)' },
+      PERFORM: { color: '#9dc4a8', bg: 'rgba(157, 196, 168, 0.12)', border: 'rgba(157, 196, 168, 0.2)', glow: 'rgba(157, 196, 168, 0.1)' },
+      LEARNING: { color: '#a8b5a8', bg: 'rgba(168, 181, 168, 0.12)', border: 'rgba(168, 181, 168, 0.2)', glow: 'rgba(168, 181, 168, 0.1)' },
     };
 
     // ============================================
@@ -1445,9 +1002,7 @@
       );
     };
 
-    // ============================================
-    // TAGLINE COMPONENT - "Your body is talking."
-    // ============================================
+    // Tagline Component
     const Tagline = () => (
       <div className="fixed bottom-6 left-0 right-0 text-center fade-in-delay-3" style={{ zIndex: 10, pointerEvents: 'none' }}>
         <p className="text-white/40 text-sm tracking-wide mb-2">Your body is talking.</p>
@@ -1455,6 +1010,133 @@
           <path d="M12 22C12 22 12 16 12 14C12 12 10 10 8 10C6 10 4 12 4 14C4 16 6 18 8 18" stroke="#8b9b7a" strokeWidth="1.5" strokeLinecap="round"/>
           <path d="M12 22C12 22 12 16 12 14C12 12 14 10 16 10C18 10 20 12 20 14C20 16 18 18 16 18" stroke="#a8b89a" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
+      </div>
+    );
+
+    // ============================================
+    // FEEDBACK MODAL - The Invitation (glassmorphism)
+    // ============================================
+    const FeedbackModal = ({ 
+      round, daysOnApp,
+      step, setStep, 
+      response, setResponse, 
+      text, setText, 
+      email, setEmail, 
+      onSend, onDismiss 
+    }) => (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-6 z-50">
+        <div className="max-w-sm w-full space-y-8">
+          
+          {/* Round 1 (Day 10-14): The Commitment */}
+          {round === 1 && (
+            <>
+              {step === 1 && (
+                <div className="text-center space-y-8 fade-in">
+                  <div className="space-y-4">
+                    <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
+                    <p className="text-white text-xl leading-relaxed">Most people quit by now.</p>
+                    <p className="text-white/60">You didn't.</p>
+                  </div>
+                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="text-center space-y-6 fade-in">
+                  <p className="text-white text-lg">What are you building toward?</p>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'competition', label: 'Competition' },
+                      { key: 'longevity', label: 'Longevity' },
+                      { key: 'consistency', label: 'Staying consistent' },
+                      { key: 'feeling', label: 'Feeling better' },
+                      { key: 'other', label: 'Something else' },
+                    ].map(opt => (
+                      <button key={opt.key} onClick={() => { setResponse(opt.key); setStep(opt.key === 'other' ? 3 : 4); }} className="w-full glass hover:bg-white/10 text-white/70 py-3 rounded-2xl text-sm transition-all duration-300">{opt.label}</button>
+                    ))}
+                  </div>
+                  <button onClick={() => onDismiss(false)} className="text-white/20 text-xs">Skip</button>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="text-center space-y-6 fade-in">
+                  <p className="text-white text-lg">Tell me more.</p>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="What are you working toward..." className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none resize-none h-24" autoFocus />
+                  <button onClick={() => setStep(4)} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Continue</button>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="text-center space-y-6 fade-in">
+                  <div className="space-y-3">
+                    <p className="text-white text-lg">I'm building something too.</p>
+                    <p className="text-white/40 text-sm">Auto-sync. Deeper patterns.<br/>Predictions before you feel them.</p>
+                  </div>
+                  <div className="space-y-3 pt-2">
+                    <p className="text-white/50 text-sm">Want early access?</p>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <button onClick={onSend} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">I'm in</button>
+                    <button onClick={onSend} className="w-full text-white/40 text-sm py-2">Just keep going</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Round 2 (Day 35-45): The Inner Circle */}
+          {round === 2 && (
+            <>
+              {step === 1 && (
+                <div className="text-center space-y-8 fade-in">
+                  <div className="space-y-4">
+                    <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
+                    <p className="text-white text-xl leading-relaxed">You're still here.</p>
+                    <p className="text-white/40 text-sm">That puts you ahead of 95% of people<br/>who try to train smarter.</p>
+                  </div>
+                  <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="text-center space-y-6 fade-in">
+                  <div className="space-y-2">
+                    <p className="text-white text-lg">I'm building the next version.</p>
+                    <p className="text-white/40 text-sm">What would make this twice as valuable?</p>
+                  </div>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="The one thing..." className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none resize-none h-24" autoFocus />
+                  <button onClick={() => setStep(3)} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Continue</button>
+                  <button onClick={() => setStep(3)} className="text-white/20 text-xs">Skip</button>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="text-center space-y-6 fade-in">
+                  <div className="space-y-3">
+                    <p className="text-white text-lg">One more thing.</p>
+                    <p className="text-white/40 text-sm">Anyone in your life who needs this?</p>
+                    <p className="text-white/25 text-xs">A training partner. Someone who never rests.<br/>A friend who's always overtrained.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <button onClick={() => { setResponse('yes'); setStep(4); }} className="w-full glass hover:bg-white/10 text-white/70 py-3 rounded-2xl text-sm transition-all">Yes, I know someone</button>
+                    <button onClick={() => { setResponse('no'); onSend(); }} className="w-full text-white/40 text-sm py-2">Not right now</button>
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="text-center space-y-6 fade-in">
+                  <p className="text-white text-lg">I'll make sure they get in.</p>
+                  <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Their email or name" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none" autoFocus />
+                  <button onClick={onSend} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Done</button>
+                  <button onClick={onSend} className="text-white/20 text-xs">Skip</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     );
 
@@ -1566,6 +1248,63 @@
     );
 
     // ============================================
+    // TEST DATA GENERATORS
+    // ============================================
+    const generateTestData = (days, scenario = 'normal') => {
+      const history = [];
+      const compliance = [];
+      const today = new Date();
+      
+      // Base HRV around 55 with natural variation
+      let baseHRV = 55;
+      
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = getLocalDateString(date);
+        
+        let hrv;
+        if (scenario === 'crashing') {
+          // Simulates someone who ignores REST and crashes
+          hrv = baseHRV + (Math.random() * 20 - 10) - (i < 3 ? 15 : 0);
+        } else if (scenario === 'recovering') {
+          // Simulates someone coming out of a low period
+          hrv = baseHRV + (Math.random() * 10) + (days - i) * 0.5;
+        } else if (scenario === 'volatile') {
+          // Big swings
+          hrv = baseHRV + (Math.random() * 40 - 20);
+        } else if (scenario === 'stable') {
+          // Very consistent
+          hrv = baseHRV + (Math.random() * 6 - 3);
+        } else {
+          // Normal variation
+          hrv = baseHRV + (Math.random() * 16 - 8);
+        }
+        
+        history.push({ date: dateStr, value: Math.round(hrv) });
+        
+        // Add some compliance data
+        if (i > 0 && Math.random() > 0.3) {
+          const values = history.slice(0, -1).map(h => h.value);
+          if (values.length >= 3) {
+            const median = calculateMedian(values);
+            const mad = calculateMAD(values, median);
+            const z = (hrv - median) / mad;
+            const command = getCommandKey(z);
+            
+            compliance.push({
+              date: dateStr,
+              command,
+              followed: Math.random() > 0.3 ? 'yes' : 'no'
+            });
+          }
+        }
+      }
+      
+      return { history, compliance };
+    };
+
+    // ============================================
     // MAIN APP
     // ============================================
     const App = () => {
@@ -1586,7 +1325,7 @@
       const [newEntry, setNewEntry] = useState('');
       const [newEntryDate, setNewEntryDate] = useState(getYesterdayLocal());
       
-      // Observation tracking (to avoid repetition)
+      // Observation tracking
       const [lastObservationType, setLastObservationType] = useState(null);
       const [lastObservationDate, setLastObservationDate] = useState(null);
 
@@ -1602,13 +1341,14 @@
       const [feedbackRound1DismissedAt, setFeedbackRound1DismissedAt] = useState(null);
       const [feedbackRound2Complete, setFeedbackRound2Complete] = useState(false);
 
-      // Track milestone achievements
-      const trackedMilestones = useRef(new Set());
+      // TEST MODE state
+      const [showDebug, setShowDebug] = useState(false);
+      const [simulatedDaysOnApp, setSimulatedDaysOnApp] = useState(null);
 
       // Load from localStorage
       useEffect(() => {
         try {
-          const saved = localStorage.getItem('genysys_v2_data');
+          const saved = localStorage.getItem('genysys_v2_test_data');
           if (saved) {
             const data = JSON.parse(saved);
             setHrvHistory(data.hrvHistory || []);
@@ -1622,14 +1362,6 @@
             setFeedbackRound1Response(data.feedbackRound1Response || null);
             setFeedbackRound1DismissedAt(data.feedbackRound1DismissedAt || null);
             setFeedbackRound2Complete(data.feedbackRound2Complete || false);
-            
-            // Set device for analytics
-            if (data.hrvSource) {
-              Analytics.setDevice(data.hrvSource.label);
-              Analytics.track('session_start', { returning: true, daysLogged: data.hrvHistory?.length || 0 });
-            }
-          } else {
-            Analytics.track('session_start', { returning: false });
           }
         } catch (e) { 
           console.log('No saved data'); 
@@ -1640,7 +1372,7 @@
       // Save to localStorage
       useEffect(() => {
         if (isLoading) return;
-        localStorage.setItem('genysys_v2_data', JSON.stringify({
+        localStorage.setItem('genysys_v2_test_data', JSON.stringify({
           hrvHistory, complianceLog, firstUseDate, hrvSource, userName,
           lastObservationType, lastObservationDate,
           feedbackRound1Complete, feedbackRound1Response, feedbackRound1DismissedAt, feedbackRound2Complete
@@ -1651,38 +1383,19 @@
       useEffect(() => {
         if (hrvSource && !firstUseDate) {
           setFirstUseDate(getTodayLocal());
-          Analytics.setDevice(hrvSource.label);
-          Analytics.track('onboarding_complete', { device: hrvSource.label });
         }
       }, [hrvSource, firstUseDate]);
 
-      // Calculate days on app (handle timezone properly)
+      // Calculate days on app (or use simulated) - handle timezone properly
       const daysOnApp = useMemo(() => {
+        if (simulatedDaysOnApp !== null) return simulatedDaysOnApp;
         if (!firstUseDate) return 1;
         const start = new Date(firstUseDate + 'T00:00:00');
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
         return Math.max(1, Math.floor((today - startDay) / (1000 * 60 * 60 * 24)) + 1);
-      }, [firstUseDate]);
-
-      // Track retention milestones
-      useEffect(() => {
-        if (!hrvSource || isLoading) return;
-        
-        const milestones = [3, 7, 14, 30, 60, 90];
-        milestones.forEach(milestone => {
-          if (daysOnApp >= milestone && !trackedMilestones.current.has(milestone)) {
-            trackedMilestones.current.add(milestone);
-            Analytics.track(`day_${milestone}_active`, { daysLogged: hrvHistory.length });
-            
-            // Also track milestone_reached for special days
-            if ([7, 30, 60, 90].includes(milestone)) {
-              Analytics.track('milestone_reached', { milestone, daysLogged: hrvHistory.length });
-            }
-          }
-        });
-      }, [hrvSource, isLoading, daysOnApp, hrvHistory.length]);
+      }, [firstUseDate, simulatedDaysOnApp]);
 
       // Auto-calculate if today's data exists
       useEffect(() => {
@@ -1726,7 +1439,6 @@
           daysUntilFull: isPreview ? THRESHOLDS.MIN_DAYS - values.length : 0
         });
 
-        // Log command
         const existingLog = complianceLog.findIndex(c => c.date === todayDate);
         if (existingLog >= 0) {
           setComplianceLog(complianceLog.map((c, i) => i === existingLog ? { ...c, command: commandKey } : c));
@@ -1740,7 +1452,6 @@
         if (isNaN(hrv) || hrv <= 0) return;
         
         const todayDate = getTodayLocal();
-        const isFirstHRV = hrvHistory.length === 0;
         let newHistory = [...hrvHistory];
         const existingIndex = newHistory.findIndex(h => h.date === todayDate);
         
@@ -1754,14 +1465,6 @@
         setHrvHistory(newHistory);
         calculateResult(hrv, newHistory);
 
-        // Track HRV logging
-        if (isFirstHRV) {
-          Analytics.track('first_hrv_logged', { hrv, daysOnApp });
-        } else {
-          Analytics.track('hrv_logged', { hrv, daysLogged: newHistory.length, daysOnApp });
-        }
-
-        // Reset observation if it's a new day
         if (lastObservationDate !== todayDate) {
           setLastObservationType(null);
           setLastObservationDate(todayDate);
@@ -1785,10 +1488,6 @@
         setHrvHistory(newHistory);
         setNewEntry('');
         
-        // Track backfill
-        Analytics.track('hrv_backfilled', { hrv: val, hrvDate: newEntryDate, daysLogged: newHistory.length });
-        
-        // Move date back by one day for next entry
         const prevDate = new Date(newEntryDate);
         prevDate.setDate(prevDate.getDate() - 1);
         setNewEntryDate(getLocalDateString(prevDate));
@@ -1818,13 +1517,6 @@
         setComplianceLog(complianceLog.map(c => 
           c.date === yesterdayDate ? { ...c, followed } : c
         ));
-        
-        // Track compliance
-        Analytics.track('compliance_recorded', { 
-          command: yesterdayLog?.command, 
-          followed,
-          daysOnApp 
-        });
       };
 
       // Pattern analysis
@@ -1862,30 +1554,11 @@
         
         if (obs && obs.type !== lastObservationType) {
           setLastObservationType(obs.type);
-          
-          // Track observation shown
-          Analytics.track('observation_shown', { 
-            type: obs.type, 
-            command: commandKey,
-            daysOnApp 
-          });
         }
       }, [result?.commandKey, patterns, daysOnApp]);
 
       // Use currentObservation instead of computed observation
       const observation = currentObservation;
-
-      // Track command generation
-      useEffect(() => {
-        if (result && result.commandKey && result.commandKey !== 'LEARNING') {
-          Analytics.track('command_generated', { 
-            command: result.commandKey, 
-            isPreview: result.isPreview,
-            zScore: result.zScore?.toFixed(2),
-            daysOnApp
-          });
-        }
-      }, [result?.commandKey]);
 
       // Generate promise
       const promise = useMemo(() => {
@@ -1903,33 +1576,20 @@
       const styles = result ? COMMAND_STYLES[result.commandKey] : COMMAND_STYLES.LEARNING;
 
       // ============================================
-      // FEEDBACK SYSTEM - The relationship checking in
-      // Round 1 (Day 10-14): "Is this landing?"
-      // Round 2 (Day 35-45): "Who else needs this?"
+      // FEEDBACK SYSTEM
       // ============================================
       const shouldShowFeedback = () => {
-        // Round 1: Day 10-14
-        if (!feedbackRound1Complete && !feedbackRound1DismissedAt && daysOnApp >= 10 && daysOnApp <= 14) {
-          return 1;
-        }
-        
-        // Round 2: Day 35-45
-        // Show if: said "yes" in round 1 OR continued past day 30 without completing round 1
+        if (!feedbackRound1Complete && !feedbackRound1DismissedAt && daysOnApp >= 10 && daysOnApp <= 14) return 1;
         if (!feedbackRound2Complete && daysOnApp >= 35 && daysOnApp <= 45) {
-          if (feedbackRound1Response === 'yes' || feedbackRound1Complete || daysOnApp >= 35) {
-            return 2;
-          }
+          if (feedbackRound1Response === 'yes' || feedbackRound1Complete || daysOnApp >= 35) return 2;
         }
-        
         return 0;
       };
 
-      // Check for feedback prompt after showing command
       useEffect(() => {
         if (result && result.commandKey && result.commandKey !== 'LEARNING') {
           const round = shouldShowFeedback();
           if (round > 0) {
-            // Delay so they see their command first
             const timer = setTimeout(() => {
               setFeedbackRound(round);
               setFeedbackStep(1);
@@ -1944,25 +1604,11 @@
 
       const sendFeedback = () => {
         if (feedbackRound === 1) {
-          Analytics.track('feedback_round1_submitted', { 
-            response: feedbackResponse,
-            text: feedbackText.substring(0, 500) || '',
-            email: feedbackEmail.trim().substring(0, 100) || '',
-            daysOnApp,
-            daysLogged: hrvHistory.length
-          });
           setFeedbackRound1Complete(true);
           setFeedbackRound1Response(feedbackResponse);
         } else if (feedbackRound === 2) {
-          Analytics.track('feedback_round2_submitted', { 
-            response: feedbackResponse,
-            text: feedbackText.substring(0, 500) || '',
-            daysOnApp,
-            daysLogged: hrvHistory.length
-          });
           setFeedbackRound2Complete(true);
         }
-        
         setShowFeedback(false);
         setFeedbackStep(1);
         setFeedbackText('');
@@ -1971,26 +1617,18 @@
 
       const dismissFeedback = (dontAskAgain) => {
         if (feedbackRound === 1) {
-          if (dontAskAgain) {
-            setFeedbackRound1Complete(true);
-          } else {
-            setFeedbackRound1DismissedAt(getTodayLocal());
-          }
-          Analytics.track('feedback_round1_dismissed', { dontAskAgain, daysOnApp });
+          if (dontAskAgain) setFeedbackRound1Complete(true);
+          else setFeedbackRound1DismissedAt(getTodayLocal());
         } else if (feedbackRound === 2) {
           setFeedbackRound2Complete(true);
-          Analytics.track('feedback_round2_dismissed', { daysOnApp });
         }
-        
         setShowFeedback(false);
         setFeedbackStep(1);
       };
 
       // Reset function
       const resetAll = () => {
-        Analytics.track('data_reset', { daysLogged: hrvHistory.length, daysOnApp });
-        
-        localStorage.removeItem('genysys_v2_data');
+        localStorage.removeItem('genysys_v2_test_data');
         setHrvHistory([]);
         setComplianceLog([]);
         setFirstUseDate(null);
@@ -2000,10 +1638,31 @@
         setTodayHRV('');
         setLastObservationType(null);
         setLastObservationDate(null);
+        setSimulatedDaysOnApp(null);
         setFeedbackRound1Complete(false);
         setFeedbackRound1Response(null);
         setFeedbackRound1DismissedAt(null);
         setFeedbackRound2Complete(false);
+      };
+
+      // Load test scenario
+      const loadTestScenario = (days, scenario) => {
+        const { history, compliance } = generateTestData(days, scenario);
+        setHrvHistory(history);
+        setComplianceLog(compliance);
+        setHrvSource({ id: 'test', label: 'Test Mode' });
+        
+        // Set first use date to simulate correct days on app
+        const firstDate = new Date();
+        firstDate.setDate(firstDate.getDate() - days + 1);
+        setFirstUseDate(getLocalDateString(firstDate));
+        
+        // Calculate result for today
+        const today = history.find(h => h.date === getTodayLocal());
+        if (today) {
+          setTodayHRV(today.value.toString());
+          calculateResult(today.value, history);
+        }
       };
 
       if (isLoading) {
@@ -2016,7 +1675,91 @@
       }
 
       // ============================================
-      // FIRST SCREEN - The Beginning
+      // DEBUG PANEL
+      // ============================================
+      const DebugPanel = () => (
+        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 p-4 z-50">
+          <div className="max-w-lg mx-auto space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-zinc-500 font-mono">TEST MODE</span>
+              <button onClick={() => setShowDebug(false)} className="text-zinc-500 text-lg">×</button>
+            </div>
+            
+            {/* Quick load scenarios */}
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-600">Load Test Scenario:</div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => loadTestScenario(7, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 7 Normal</button>
+                <button onClick={() => loadTestScenario(30, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 30 Normal</button>
+                <button onClick={() => loadTestScenario(60, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 60 Normal</button>
+                <button onClick={() => loadTestScenario(90, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 90 Normal</button>
+                <button onClick={() => loadTestScenario(14, 'crashing')} className="bg-red-900/50 px-3 py-1 rounded text-xs">Crashing</button>
+                <button onClick={() => loadTestScenario(14, 'recovering')} className="bg-green-900/50 px-3 py-1 rounded text-xs">Recovering</button>
+                <button onClick={() => loadTestScenario(14, 'volatile')} className="bg-amber-900/50 px-3 py-1 rounded text-xs">Volatile</button>
+              </div>
+            </div>
+
+            {/* Simulate days */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-600">Simulate Day:</span>
+              <input
+                type="number"
+                value={simulatedDaysOnApp || ''}
+                onChange={(e) => setSimulatedDaysOnApp(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="actual"
+                className="w-20 bg-zinc-800 rounded px-2 py-1 text-xs"
+              />
+              <button 
+                onClick={() => setSimulatedDaysOnApp(null)}
+                className="text-xs text-zinc-500"
+              >
+                reset
+              </button>
+            </div>
+
+            {/* Current state */}
+            <div className="text-xs font-mono text-zinc-600 space-y-1">
+              <div>Days: {daysOnApp} | HRV entries: {hrvHistory.length} | Compliance: {complianceLog.length}</div>
+              <div>Command: {result?.commandKey || 'none'} | Z: {result?.zScore?.toFixed(2) || 'N/A'}</div>
+              <div>Observation type: {observation?.type || 'none'}</div>
+              <div>Patterns: trend={patterns?.trend || 'N/A'}, below={patterns?.consecutiveBelowBaseline || 0}, crashes={patterns?.crashesAfterIgnoredRest?.length || 0}</div>
+              <div>Feedback: R1={feedbackRound1Complete ? 'done' : 'pending'} ({feedbackRound1Response || '-'}) | R2={feedbackRound2Complete ? 'done' : 'pending'}</div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2">
+              <button onClick={resetAll} className="bg-red-900 px-3 py-1 rounded text-xs">Reset All</button>
+              <button 
+                onClick={() => setLastObservationType(null)} 
+                className="bg-zinc-800 px-3 py-1 rounded text-xs"
+              >
+                Reset Observation
+              </button>
+              <button 
+                onClick={() => { setFeedbackRound(1); setFeedbackStep(1); setShowFeedback(true); }} 
+                className="bg-blue-900/50 px-3 py-1 rounded text-xs"
+              >
+                Test Feedback R1
+              </button>
+              <button 
+                onClick={() => { setFeedbackRound(2); setFeedbackStep(1); setShowFeedback(true); }} 
+                className="bg-blue-900/50 px-3 py-1 rounded text-xs"
+              >
+                Test Feedback R2
+              </button>
+              <button 
+                onClick={() => { setFeedbackRound1Complete(false); setFeedbackRound1Response(null); setFeedbackRound1DismissedAt(null); setFeedbackRound2Complete(false); }} 
+                className="bg-zinc-800 px-3 py-1 rounded text-xs"
+              >
+                Reset Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
+      // ============================================
+      // FIRST SCREEN
       // ============================================
       if (!hrvSource) {
         return (
@@ -2086,6 +1829,15 @@
               </div>
 
             </div>
+
+            {/* Test mode button */}
+            <button
+              onClick={() => setShowDebug(true)}
+              className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
+            >
+              🧪 TEST
+            </button>
+            {showDebug && <DebugPanel />}
             <Tagline />
             
             {/* Info Modal */}
@@ -2095,17 +1847,23 @@
       }
 
       // ============================================
-      // HRV INPUT - Before Today's Entry
+      // HRV INPUT
       // ============================================
       if (!hasTodayHRV) {
+        // Calculate countdown - updates when hrvHistory changes
+        const daysRemaining = 3 - hrvHistory.length;
+        const countdownText = daysRemaining > 0 
+          ? `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands start`
+          : hrvHistory.length < 7 ? 'Baseline forming...' : null;
+        
         return (
-          <div className="min-h-screen text-white p-6 flex flex-col">
+          <div className="min-h-screen text-white p-4 flex flex-col overflow-y-auto">
             <div className="mist-overlay"></div>
             
             {/* Info icon - top right */}
             <button 
               onClick={() => setShowInfoModal(true)}
-              className="fixed top-6 right-6 text-white/30 hover:text-white/60 transition-all z-20"
+              className="fixed top-4 right-4 text-white/30 hover:text-white/60 transition-all z-20"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10"/>
@@ -2113,31 +1871,35 @@
               </svg>
             </button>
             
-            <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
+            <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-6 py-12">
               
-              {/* Day counter */}
-              <div className="text-center fade-in">
+              {/* Day counter + countdown */}
+              <div className="text-center fade-in space-y-1">
                 <div className="text-white/30 text-sm tracking-wide">
                   {daysOnApp <= 1 ? "Day 1" : `Day ${daysOnApp}`}
                 </div>
+                {countdownText && (
+                  <div className="text-white/20 text-xs">
+                    {countdownText}
+                  </div>
+                )}
               </div>
 
-              {/* Yesterday compliance */}
               {needsYesterdayCompliance && (
-                <div className="glass rounded-2xl p-5 space-y-4 fade-in">
-                  <p className="text-white/60 text-center">
+                <div className="glass rounded-2xl p-4 space-y-3 fade-in">
+                  <p className="text-white/60 text-center text-sm">
                     Yesterday I said <span style={{ color: COMMAND_STYLES[yesterdayLog.command].color }}>{yesterdayLog.command}</span>
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => recordCompliance('yes')}
-                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-3 text-sm text-white/80 transition-all duration-300"
+                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-2.5 text-sm text-white/80 transition-all duration-300"
                     >
                       I listened
                     </button>
                     <button
                       onClick={() => recordCompliance('no')}
-                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-3 text-sm text-white/80 transition-all duration-300"
+                      className="flex-1 glass-light hover:bg-white/10 rounded-xl py-2.5 text-sm text-white/80 transition-all duration-300"
                     >
                       I didn't
                     </button>
@@ -2145,24 +1907,23 @@
                 </div>
               )}
 
-              {/* HRV Input */}
-              <div className="space-y-4 fade-in-delay-1">
-                <p className="text-white/60 text-center text-lg">
+              <div className="space-y-3 fade-in-delay-1">
+                <p className="text-white/60 text-center">
                   {daysOnApp <= 1 ? "What's your HRV this morning?" : "What's your HRV?"}
                 </p>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <input
                     type="number"
                     value={todayHRV}
                     onChange={(e) => setTodayHRV(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmitHRV()}
                     placeholder="HRV"
-                    className="flex-1 glass rounded-2xl px-4 py-4 text-2xl text-center font-light text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
+                    className="flex-1 glass rounded-2xl px-4 py-3 text-xl text-center font-light text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
                     autoFocus
                   />
                   <button
                     onClick={handleSubmitHRV}
-                    className="bg-white/90 text-black rounded-2xl px-6 py-4 font-medium hover:bg-white transition-all duration-300"
+                    className="bg-white/90 text-black rounded-2xl px-5 py-3 font-medium hover:bg-white transition-all duration-300"
                   >
                     Go
                   </button>
@@ -2172,7 +1933,6 @@
                 </p>
               </div>
 
-              {/* Add history link */}
               <button
                 onClick={() => setShowAddHistory(true)}
                 className="text-white/30 text-sm hover:text-white/50 transition-all"
@@ -2182,7 +1942,15 @@
 
             </div>
 
-            {/* History Modal */}
+            {/* Test button */}
+            <button
+              onClick={() => setShowDebug(true)}
+              className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
+            >
+              🧪 TEST
+            </button>
+            {showDebug && <DebugPanel />}
+
             {showAddHistory && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
                 <div className="glass-dark rounded-t-3xl p-6 w-full max-w-md space-y-6">
@@ -2190,7 +1958,7 @@
                     <h3 className="text-lg font-medium text-white">Add Past HRV</h3>
                     <button 
                       onClick={() => setShowAddHistory(false)}
-                      className="text-white/40 hover:text-white text-2xl transition-colors"
+                      className="text-white/40 hover:text-white text-2xl"
                     >
                       ×
                     </button>
@@ -2207,7 +1975,7 @@
                       onChange={(e) => setNewEntry(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && addHistoricalEntry()}
                       placeholder="HRV"
-                      className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+                      className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none"
                       autoFocus
                     />
                     <input
@@ -2263,7 +2031,7 @@
       }
 
       // ============================================
-      // MAIN VIEW - The Daily Experience
+      // MAIN VIEW
       // ============================================
       return (
         <div className="min-h-screen text-white p-6 flex flex-col">
@@ -2280,9 +2048,8 @@
             </svg>
           </button>
           
-          <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
+          <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-6">
             
-            {/* Day indicator */}
             <div className="text-center">
               <span className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</span>
             </div>
@@ -2308,7 +2075,6 @@
               </div>
             )}
 
-            {/* The Observation - typewriter effect */}
             {observation && (
               <div className="text-center fade-in">
                 <p className="text-white/60 text-sm leading-snug px-2 line-clamp-2">
@@ -2330,7 +2096,6 @@
               </div>
             )}
 
-            {/* The Command - Glass card with bullets inside */}
             <div 
               className="glass rounded-3xl py-8 px-6 text-center fade-in-delay-1"
               style={{ 
@@ -2365,7 +2130,6 @@
               )}
             </div>
 
-            {/* Preview indicator */}
             {result?.isPreview && (
               <div className="text-center">
                 <p className="text-white/40 text-xs">
@@ -2376,7 +2140,6 @@
 
           </div>
 
-          {/* Settings */}
           <div className="content-layer max-w-sm mx-auto w-full pt-8 pb-16 flex justify-between text-white/40 text-xs">
             <button 
               onClick={() => setShowAddHistory(true)}
@@ -2392,7 +2155,15 @@
             </button>
           </div>
 
-          {/* History Modal */}
+          {/* Test button */}
+          <button
+            onClick={() => setShowDebug(true)}
+            className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
+          >
+            🧪 TEST
+          </button>
+          {showDebug && <DebugPanel />}
+
           {showAddHistory && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
               <div className="glass-dark rounded-t-3xl p-6 w-full max-w-md space-y-6">
@@ -2400,7 +2171,7 @@
                   <h3 className="text-lg font-medium text-white">Add Past HRV</h3>
                   <button 
                     onClick={() => setShowAddHistory(false)}
-                    className="text-white/40 hover:text-white text-2xl transition-colors"
+                    className="text-white/40 hover:text-white text-2xl"
                   >
                     ×
                   </button>
@@ -2413,7 +2184,7 @@
                     onChange={(e) => setNewEntry(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addHistoricalEntry()}
                     placeholder="HRV"
-                    className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+                    className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none"
                     autoFocus
                   />
                   <input
