@@ -142,7 +142,7 @@
   <div id="root"></div>
   
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useCallback } = React;
+    const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
     // ============================================
     // ANALYTICS
@@ -1544,9 +1544,31 @@
       const [csvLoaded, setCsvLoaded] = useState(false);
 
       // CSV file input ref
-      const fileInputRef = React.useRef(null);
+      const fileInputRef = useRef(null);
 
-      // Handle CSV upload
+      // Load data
+      useEffect(() => {
+        try {
+          const saved = localStorage.getItem('genysys_v2_data');
+          if (saved) {
+            const data = JSON.parse(saved);
+            setHrvHistory(data.hrvHistory || []);
+            setComplianceLog(data.complianceLog || []);
+            setFirstUseDate(data.firstUseDate);
+            setHrvSource(data.hrvSource);
+            setFeedbackState(data.feedbackState || { round1: false, round2: false });
+            if (data.hrvSource?.label) Analytics.setDevice(data.hrvSource.label);
+          }
+        } catch (e) { console.error(e); }
+        setIsLoading(false);
+      }, []);
+
+      const saveData = useCallback((updates = {}) => {
+        const data = { hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState, ...updates };
+        localStorage.setItem('genysys_v2_data', JSON.stringify(data));
+      }, [hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState]);
+
+      // Handle CSV upload (defined after saveData)
       const handleCSVUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -1555,7 +1577,6 @@
         reader.onload = (e) => {
           const { entries, timezones } = parseWHOOPCSV(e.target.result);
           if (entries.length > 0) {
-            // Generate compliance log based on test compliance rate
             const testLog = generateTestComplianceLog(entries, testCompliance);
             
             setHrvHistory(entries);
@@ -1565,7 +1586,6 @@
             setCsvLoaded(true);
             setSimulatedDay(entries.length - 1);
             
-            // Save
             saveData({
               hrvHistory: entries,
               complianceLog: testLog,
@@ -1592,28 +1612,6 @@
         setComplianceLog(newLog);
         saveData({ complianceLog: newLog });
       };
-
-      // Load data
-      useEffect(() => {
-        try {
-          const saved = localStorage.getItem('genysys_v2_data');
-          if (saved) {
-            const data = JSON.parse(saved);
-            setHrvHistory(data.hrvHistory || []);
-            setComplianceLog(data.complianceLog || []);
-            setFirstUseDate(data.firstUseDate);
-            setHrvSource(data.hrvSource);
-            setFeedbackState(data.feedbackState || { round1: false, round2: false });
-            if (data.hrvSource?.label) Analytics.setDevice(data.hrvSource.label);
-          }
-        } catch (e) { console.error(e); }
-        setIsLoading(false);
-      }, []);
-
-      const saveData = useCallback((updates = {}) => {
-        const data = { hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState, ...updates };
-        localStorage.setItem('genysys_v2_data', JSON.stringify(data));
-      }, [hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState]);
 
       // Compliance prompt check (only after REST days)
       useEffect(() => {
