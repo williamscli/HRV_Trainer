@@ -1,2633 +1,1342 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
- <meta name="apple-mobile-web-app-capable" content="yes">
- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
- <meta name="theme-color" content="#1a2f1a">
- <title>GENYSYS — TEST MODE</title>
- <script src="https://cdn.tailwindcss.com"></script>
- <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
- <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
- <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js" crossorigin="anonymous"></script>
- <style>
- body { 
- background: linear-gradient(180deg, #2d3b2d 0%, #3d4f3d 20%, #4a5d4a 40%, #5a6b5a 60%, #6b7b6b 80%, #8a9a8a 100%);
- background-attachment: fixed;
- min-height: 100vh;
- }
- .glass { background: rgba(40, 50, 40, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
- .glass-light { background: rgba(60, 75, 60, 0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.06); }
- .glass-dark { background: rgba(20, 30, 20, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.05); }
- .mist-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(180,190,180,0.1) 0%, rgba(180,190,180,0) 30%, rgba(180,190,180,0) 70%, rgba(180,190,180,0.05) 100%); pointer-events: none; z-index: 1; }
- .content-layer { position: relative; z-index: 2; }
- input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
- input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
- input[type="number"] { -moz-appearance: textfield; }
- @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
- @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
- @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
- .fade-in { animation: fadeIn 0.6s ease-out forwards; }
- .fade-in-delay-1 { animation: fadeIn 0.6s ease-out 0.2s forwards; opacity: 0; }
- .fade-in-delay-2 { animation: fadeIn 0.6s ease-out 0.4s forwards; opacity: 0; }
- .fade-in-delay-3 { animation: fadeIn 0.6s ease-out 0.6s forwards; opacity: 0; }
- .pulse-slow { animation: pulse 3s ease-in-out infinite; }
- .float { animation: float 4s ease-in-out infinite; }
- .line-clamp-2 {
- display: -webkit-box;
- -webkit-line-clamp: 2;
- -webkit-box-orient: vertical;
- overflow: hidden;
- }
- * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
- ::-webkit-scrollbar { width: 4px; }
- ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
- ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
- </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0A0A0A">
+  <title>GENYSYS — TEST MODE</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js" crossorigin="anonymous"></script>
+  
+  <style>
+    /* ============================================
+       DESIGN SYSTEM - Ive/Dye Philosophy
+       "The best design is the least design."
+       TEST MODE - Additional controls visible
+       ============================================ */
+    
+    :root {
+      --bg-primary: #0A0A0A;
+      --bg-elevated: #111111;
+      --bg-card: #141414;
+      --bg-test: #1a1a0a;
+      
+      --text-primary: #F5F5F0;
+      --text-secondary: #A1A1AA;
+      --text-muted: #52525B;
+      --text-faint: #3F3F46;
+      
+      --gold: #C9A962;
+      --gold-dim: rgba(201, 169, 98, 0.15);
+      --green: #6EE7B7;
+      --green-dim: rgba(110, 231, 183, 0.08);
+      --rose: #FDA4AF;
+      --rose-dim: rgba(253, 164, 175, 0.08);
+      --amber: #FCD34D;
+      
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+      
+      --space-xs: 8px;
+      --space-sm: 16px;
+      --space-md: 24px;
+      --space-lg: 32px;
+      --space-xl: 48px;
+      --margin-screen: 40px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      line-height: 1.6;
+    }
+    
+    .font-display {
+      font-family: var(--font-display);
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+    
+    @keyframes fadeRise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .animate-rise { animation: fadeRise 400ms ease-out forwards; }
+    .animate-fade { animation: fadeIn 400ms ease-out forwards; }
+    
+    .delay-100 { animation-delay: 100ms; opacity: 0; }
+    .delay-200 { animation-delay: 200ms; opacity: 0; }
+    .delay-300 { animation-delay: 300ms; opacity: 0; }
+    .delay-400 { animation-delay: 400ms; opacity: 0; }
+    .delay-500 { animation-delay: 500ms; opacity: 0; }
+    .delay-600 { animation-delay: 600ms; opacity: 0; }
+    
+    .btn-primary {
+      background: transparent;
+      border: 1px solid var(--text-faint);
+      color: var(--text-secondary);
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: all 150ms ease;
+      width: 100%;
+    }
+    
+    .btn-primary:active {
+      background: var(--bg-elevated);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 24px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 150ms ease;
+    }
+    
+    .btn-secondary:hover { color: var(--text-secondary); }
+    
+    .btn-test {
+      background: var(--bg-test);
+      border: 1px solid var(--amber);
+      color: var(--amber);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .btn-test:hover {
+      background: rgba(252, 211, 77, 0.1);
+    }
+    
+    .input-minimal {
+      background: transparent;
+      border: 1px solid var(--text-faint);
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: var(--text-primary);
+      font-size: 17px;
+      font-family: var(--font-body);
+      width: 100%;
+      text-align: center;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+    
+    .input-minimal:focus { border-color: var(--gold); }
+    .input-minimal::placeholder { color: var(--text-muted); }
+    
+    .divider {
+      height: 1px;
+      background: var(--text-faint);
+      opacity: 0.3;
+      margin: var(--space-md) 0;
+    }
+    
+    .insight-block {
+      border-left: 2px solid var(--gold);
+      padding-left: var(--space-md);
+      margin-top: var(--space-lg);
+      opacity: 0.85;
+    }
+    
+    .insight-block .label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--space-xs);
+    }
+    
+    .insight-block .content {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+    }
+    
+    /* TEST MODE PANEL */
+    .test-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-test);
+      border-top: 1px solid var(--amber);
+      padding: 12px 16px;
+      z-index: 100;
+    }
+    
+    .test-badge {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      background: var(--amber);
+      color: #000;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+      z-index: 100;
+    }
+    
+    ::-webkit-scrollbar { width: 0; }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator { 
+      filter: invert(0.5); 
+      cursor: pointer;
+    }
+    
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+  </style>
 </head>
 <body>
- <div id="root"></div>
- 
- <script type="text/babel">
- const { useState, useEffect, useMemo, useRef } = React;
-
- // ============================================
- // ANALYTICS CONFIGURATION
- // ============================================
- const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/library/d/1tH6wJT61hMFEdVka0Md_fhMPzL060snQkeT930cVytFgseesr2eRPiWH/5';
- 
- const ALLOWED_EVENTS = [
- 'session_start', 'onboarding_complete', 'first_hrv_logged', 'hrv_logged',
- 'hrv_backfilled', 'command_generated', 'compliance_recorded',
- 'day_3_active', 'day_7_active', 'day_14_active', 'day_30_active', 'day_60_active', 'day_90_active',
- 'milestone_reached', 'observation_shown',
- 'feedback_round1_submitted', 'feedback_round1_dismissed', 
- 'feedback_round2_submitted', 'feedback_round2_dismissed',
- 'data_exported', 'data_reset', 'legacy_user_migrated'
- ];
-
- const generateUUID = () => {
- return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
- const r = Math.random() * 16 | 0;
- const v = c === 'x' ? r : (r & 0x3 | 0x8);
- return v.toString(16);
- });
- };
-
- const getTimezone = () => {
- try {
- return Intl.DateTimeFormat().resolvedOptions().timeZone;
- } catch (e) {
- return 'Unknown';
- }
- };
-
- const Analytics = {
- userId: null,
- timezone: null,
- device: null,
- firstUseDate: null,
-
- init() {
- let stored = localStorage.getItem('genysys_analytics');
- if (stored) {
- const data = JSON.parse(stored);
- this.userId = data.userId;
- this.timezone = data.timezone || getTimezone();
- this.firstUseDate = data.firstUseDate;
- } else {
- this.userId = generateUUID();
- this.timezone = getTimezone();
- const appData = localStorage.getItem('genysys_v2_test_data');
- if (appData) {
- try {
- const parsed = JSON.parse(appData);
- this.firstUseDate = parsed.firstUseDate || this.getTodayLocal();
- } catch (e) {
- this.firstUseDate = this.getTodayLocal();
- }
- } else {
- this.firstUseDate = this.getTodayLocal();
- }
- this.save();
- }
- },
-
- getTodayLocal() {
- const date = new Date();
- return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
- },
-
- save() {
- localStorage.setItem('genysys_analytics', JSON.stringify({
- userId: this.userId,
- timezone: this.timezone,
- firstUseDate: this.firstUseDate
- }));
- },
-
- setDevice(device) { this.device = device; },
-
- getDaysActive() {
- if (!this.firstUseDate) return 0;
- return Math.floor((new Date() - new Date(this.firstUseDate)) / (1000 * 60 * 60 * 24));
- },
-
- track(eventName, properties = {}) {
- if (!ALLOWED_EVENTS.includes(eventName)) {
- console.warn('[Analytics] Unknown event:', eventName);
- return;
- }
- if (!this.userId) return;
- 
- const payload = {
- timestamp: new Date().toISOString(),
- userId: this.userId,
- event: eventName,
- device: this.device || properties.device || 'unknown',
- daysActive: this.getDaysActive(),
- region: this.timezone,
- ...properties
- };
-
- console.log('[Analytics]', eventName, payload);
-
- if (ANALYTICS_ENDPOINT && ANALYTICS_ENDPOINT !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
- fetch(ANALYTICS_ENDPOINT, {
- method: 'POST',
- mode: 'no-cors',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify(payload)
- }).catch(err => console.log('Analytics error:', err));
- }
- }
- };
-
- Analytics.init();
-
- // ============================================
- // UTILITIES
- // ============================================
- const getLocalDateString = (date = new Date()) => {
- const year = date.getFullYear();
- const month = String(date.getMonth() + 1).padStart(2, '0');
- const day = String(date.getDate()).padStart(2, '0');
- return `${year}-${month}-${day}`;
- };
-
- const getTodayLocal = () => getLocalDateString();
- 
- const getYesterdayLocal = () => {
- const yesterday = new Date();
- yesterday.setDate(yesterday.getDate() - 1);
- return getLocalDateString(yesterday);
- };
-
- const getDayName = (dateStr) => {
- const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
- return days[new Date(dateStr).getDay()];
- };
-
- const getRelativeDay = (dateStr) => {
- const today = new Date(getTodayLocal());
- const target = new Date(dateStr);
- const diffDays = Math.floor((today - target) / (1000 * 60 * 60 * 24));
- if (diffDays === 0) return 'today';
- if (diffDays === 1) return 'yesterday';
- if (diffDays < 7) return getDayName(dateStr);
- if (diffDays < 14) return 'last ' + getDayName(dateStr);
- return `${diffDays} days ago`;
- };
-
- // ============================================
- // ALGORITHM (unchanged from validated version)
- // ============================================
- const THRESHOLDS = { REST: -1.0, PERFORM: 0.5, MIN_DAYS: 7, MIN_PREVIEW_DAYS: 4, MAD_FLOOR: 3.0 };
-
- const calculateMedian = (arr) => {
- const sorted = [...arr].sort((a, b) => a - b);
- const mid = Math.floor(sorted.length / 2);
- return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
- };
-
- const calculateMAD = (arr, median) => {
- const deviations = arr.map(v => Math.abs(v - median)).sort((a, b) => a - b);
- return Math.max(calculateMedian(deviations) * 1.4826, THRESHOLDS.MAD_FLOOR);
- };
-
- const getCommandKey = (zScore) => {
- if (zScore === null) return 'LEARNING';
- if (zScore < THRESHOLDS.REST) return 'REST';
- if (zScore >= THRESHOLDS.PERFORM) return 'PERFORM';
- return 'BUILD';
- };
-
- // ============================================
- // PATTERN ENGINE
- // ============================================
- const analyzePatterns = (hrvHistory, complianceLog, firstUseDate) => {
- if (hrvHistory.length < 3) return null;
-
- const values = hrvHistory.map(h => h.value);
- const median = calculateMedian(values);
- const mad = calculateMAD(values, median);
-
- // Calculate z-scores for all entries
- const withZScores = hrvHistory.map(h => ({
- ...h,
- zScore: (h.value - median) / mad,
- command: getCommandKey((h.value - median) / mad)
- })).sort((a, b) => new Date(a.date) - new Date(b.date));
-
- // Find patterns
- const patterns = {
- baseline: median,
- mad,
- totalDays: hrvHistory.length,
- 
- // Command distribution
- restDays: withZScores.filter(h => h.command === 'REST').length,
- buildDays: withZScores.filter(h => h.command === 'BUILD').length,
- performDays: withZScores.filter(h => h.command === 'PERFORM').length,
- 
- // Crash analysis
- crashes: [],
- crashesAfterIgnoredRest: [],
- recoveriesAfterRest: [],
- 
- // Trend
- trend: null,
- consecutiveBelowBaseline: 0,
- consecutiveAboveBaseline: 0,
- 
- // Historical comparisons
- nearestMatch: null,
- lastPerformDate: null,
- daysSincePerform: null,
- 
- // Volatility
- isVolatile: false,
- isStable: false,
- };
-
- // Analyze trend (last 3-5 days)
- const recent = withZScores.slice(-5);
- if (recent.length >= 3) {
- let rising = 0, falling = 0;
- for (let i = 1; i < recent.length; i++) {
- if (recent[i].zScore > recent[i-1].zScore) rising++;
- else if (recent[i].zScore < recent[i-1].zScore) falling++;
- }
- if (rising >= 3) patterns.trend = 'rising';
- else if (falling >= 3) patterns.trend = 'falling';
- else patterns.trend = 'stable';
- }
-
- // Count consecutive days below/above baseline
- const reversed = [...withZScores].reverse();
- for (const h of reversed) {
- if (h.zScore < 0) patterns.consecutiveBelowBaseline++;
- else break;
- }
- for (const h of reversed) {
- if (h.zScore > 0) patterns.consecutiveAboveBaseline++;
- else break;
- }
-
- // Find last PERFORM day
- const performDays = withZScores.filter(h => h.command === 'PERFORM');
- if (performDays.length > 0) {
- const lastPerform = performDays[performDays.length - 1];
- patterns.lastPerformDate = lastPerform.date;
- patterns.daysSincePerform = Math.floor(
- (new Date(getTodayLocal()) - new Date(lastPerform.date)) / (1000 * 60 * 60 * 24)
- );
- }
-
- // Find last REST day
- const restDaysHistory = withZScores.filter(h => h.command === 'REST');
- if (restDaysHistory.length > 0) {
- const lastRest = restDaysHistory[restDaysHistory.length - 1];
- patterns.lastRestDate = lastRest.date;
- patterns.daysSinceRest = Math.floor(
- (new Date(getTodayLocal()) - new Date(lastRest.date)) / (1000 * 60 * 60 * 24)
- );
- }
-
- // Analyze compliance outcomes
- if (complianceLog && complianceLog.length > 0) {
- complianceLog.forEach(log => {
- if (!log.command || !log.followed) return;
- 
- const nextDate = new Date(log.date);
- nextDate.setDate(nextDate.getDate() + 1);
- const nextDateStr = getLocalDateString(nextDate);
- const nextDay = withZScores.find(h => h.date === nextDateStr);
- 
- if (!nextDay) return;
- 
- // REST ignored → crashed?
- if (log.command === 'REST' && log.followed === 'no') {
- if (nextDay.zScore < THRESHOLDS.REST) {
- patterns.crashesAfterIgnoredRest.push({
- ignoredDate: log.date,
- crashDate: nextDateStr,
- daysLost: 1
- });
- }
- }
- 
- // REST followed → recovered?
- if (log.command === 'REST' && log.followed === 'yes') {
- if (nextDay.zScore >= THRESHOLDS.REST) {
- patterns.recoveriesAfterRest.push({
- restDate: log.date,
- readyDate: nextDateStr
- });
- }
- }
- });
- }
-
- // Calculate volatility
- const zScoreStd = Math.sqrt(
- withZScores.reduce((sum, h) => sum + Math.pow(h.zScore, 2), 0) / withZScores.length
- );
- patterns.isVolatile = zScoreStd > 1.5;
- patterns.isStable = zScoreStd < 0.8;
-
- // === PATTERN NAMES ===
- 
- // Recovery arc: 3+ days of rising from REST
- if (patterns.trend === 'rising' && patterns.consecutiveAboveBaseline >= 2) {
- const recentRest = withZScores.slice(-7).find(h => h.command === 'REST');
- if (recentRest) {
- patterns.patternName = 'recovery_arc';
- }
- }
- 
- // Back-to-back PERFORM crash pattern
- const performIndices = withZScores.map((h, i) => h.command === 'PERFORM' ? i : -1).filter(i => i >= 0);
- let backToBackCrashes = 0;
- for (let i = 1; i < performIndices.length; i++) {
- if (performIndices[i] - performIndices[i-1] === 1) {
- const dayAfter = withZScores[performIndices[i] + 1];
- if (dayAfter && dayAfter.command === 'REST') {
- backToBackCrashes++;
- }
- }
- }
- if (backToBackCrashes >= 2) {
- patterns.patternName = 'back_to_back_crash';
- patterns.backToBackCrashes = backToBackCrashes;
- }
- 
- // Day-of-week pattern detection
- const dayOfWeekStats = {};
- withZScores.forEach(h => {
- const dow = new Date(h.date).getDay();
- if (!dayOfWeekStats[dow]) dayOfWeekStats[dow] = { sum: 0, count: 0 };
- dayOfWeekStats[dow].sum += h.zScore;
- dayOfWeekStats[dow].count++;
- });
- 
- const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
- let worstDay = null, worstAvg = Infinity;
- let bestDay = null, bestAvg = -Infinity;
- 
- Object.entries(dayOfWeekStats).forEach(([dow, stats]) => {
- if (stats.count >= 3) {
- const avg = stats.sum / stats.count;
- if (avg < worstAvg) { worstAvg = avg; worstDay = parseInt(dow); }
- if (avg > bestAvg) { bestAvg = avg; bestDay = parseInt(dow); }
- }
- });
- 
- if (worstDay !== null && worstAvg < -0.5) {
- patterns.weakDay = { day: dayNames[worstDay], avgZ: worstAvg };
- }
- if (bestDay !== null && bestAvg > 0.5) {
- patterns.strongDay = { day: dayNames[bestDay], avgZ: bestAvg };
- }
- 
- const todayDow = new Date().getDay();
- if (dayOfWeekStats[todayDow] && dayOfWeekStats[todayDow].count >= 3) {
- const todayDowAvg = dayOfWeekStats[todayDow].sum / dayOfWeekStats[todayDow].count;
- if (todayDowAvg < -0.3) {
- patterns.todayDowPattern = { day: dayNames[todayDow], tendency: 'low', avgZ: todayDowAvg };
- } else if (todayDowAvg > 0.3) {
- patterns.todayDowPattern = { day: dayNames[todayDow], tendency: 'high', avgZ: todayDowAvg };
- }
- }
-
- // === IMPOSSIBLE INSIGHT ===
- const todayEntry = hrvHistory.find(h => h.date === getTodayLocal());
- if (todayEntry) {
- const todayZ = (todayEntry.value - median) / mad;
- const todayCommand = getCommandKey(todayZ);
- 
- if (todayCommand === 'PERFORM' && patterns.trend === 'falling') {
- patterns.impossibleInsight = {
- type: 'false_peak',
- text: "Your HRV is high but your trend is falling. This peak may not hold."
- };
- }
- 
- if (todayZ > 0 && patterns.isVolatile) {
- patterns.impossibleInsight = {
- type: 'unstable_high',
- text: "You're above baseline but your week has been erratic. Tread carefully."
- };
- }
- 
- if (todayCommand === 'PERFORM' && patterns.daysSinceRest >= 5) {
- patterns.impossibleInsight = {
- type: 'no_rest_perform',
- text: `${patterns.daysSinceRest} days without REST. This PERFORM is borrowed time.`
- };
- }
- 
- if (patterns.nearestMatch?.nextDayCrashed && todayCommand !== 'REST') {
- patterns.impossibleInsight = {
- type: 'historical_warning',
- text: "Last time you looked like this, you crashed the next day."
- };
- }
- }
-
- // Find nearest historical match to today
- const today = hrvHistory.find(h => h.date === getTodayLocal());
- if (today) {
- const todayZ = (today.value - median) / mad;
- let nearest = null;
- let nearestDiff = Infinity;
- 
- withZScores.forEach(h => {
- if (h.date === getTodayLocal()) return;
- const diff = Math.abs(h.zScore - todayZ);
- if (diff < nearestDiff && diff < 0.5) {
- nearestDiff = diff;
- nearest = h;
- }
- });
- 
- if (nearest) {
- const nextDate = new Date(nearest.date);
- nextDate.setDate(nextDate.getDate() + 1);
- const nextDateStr = getLocalDateString(nextDate);
- const compliance = complianceLog?.find(c => c.date === nearest.date);
- const nextDay = withZScores.find(h => h.date === nextDateStr);
- 
- patterns.nearestMatch = {
- date: nearest.date,
- zScore: nearest.zScore,
- command: nearest.command,
- pushed: compliance?.followed === 'no',
- rested: compliance?.followed === 'yes',
- nextDayCrashed: nextDay ? nextDay.zScore < THRESHOLDS.REST : null,
- nextDayRecovered: nextDay ? nextDay.zScore >= 0 : null
- };
- }
- }
-
- return patterns;
- };
-
- // ============================================
- // CONFIDENCE CALCULATION SYSTEM
- // Hidden driver for language and action selection
- // Never shown to user - operates in background
- // ============================================
- 
- // Scoring: Signal (45%) + Quality (35%) + Support (20%) = 0-100
- // Buckets: High (≥75), Medium (50-74), Low (<50)
- // Hard overrides: Travel, <14 days, inconsistent timing → Low
- 
- const calculateConfidence = (hrvHistory, patterns, complianceLog = []) => {
- // Early return: not enough data = always Low
- if (!patterns || hrvHistory.length < 14) {
- return { 
- level: 'low', 
- score: 30,
- reason: hrvHistory.length < 14 ? 'early_onboarding' : 'no_patterns',
- components: { signal: 15, quality: 10, support: 5 }
- };
- }
- 
- // ========== 1. SIGNAL STRENGTH (45 points max) ==========
- // Based on robust z-score: how meaningful is today's reading?
- const todayEntry = hrvHistory.find(h => h.date === getTodayLocal());
- let signalScore = 15; // weak default
- 
- if (todayEntry && patterns.baseline && patterns.mad) {
- const robustZ = Math.abs((todayEntry.value - patterns.baseline) / patterns.mad);
- 
- if (robustZ < 0.7) signalScore = 15; // weak signal
- else if (robustZ < 1.5) signalScore = 30; // medium signal
- else if (robustZ < 2.5) signalScore = 45; // strong signal
- else signalScore = 45; // very strong (capped)
- }
- 
- // ========== 2. MEASUREMENT QUALITY (35 points max) ==========
- // Based on data consistency and completeness
- let qualityScore = 10; // low default
- 
- // Check days of data
- const totalDays = hrvHistory.length;
- if (totalDays >= 30) qualityScore = 25;
- else if (totalDays >= 21) qualityScore = 20;
- else if (totalDays >= 14) qualityScore = 15;
- else qualityScore = 10;
- 
- // Penalty: Missing yesterday's HRV (less context)
- const yesterday = getYesterdayLocal();
- const hasYesterday = hrvHistory.some(h => h.date === yesterday);
- if (!hasYesterday) qualityScore = Math.max(10, qualityScore - 10);
- 
- // Bonus: Consistent daily logging (check last 7 days)
- const recentDates = [];
- for (let i = 0; i < 7; i++) {
- const d = new Date();
- d.setDate(d.getDate() - i);
- recentDates.push(getLocalDateString(d));
- }
- const recentLogged = recentDates.filter(d => hrvHistory.some(h => h.date === d)).length;
- if (recentLogged >= 6) qualityScore = Math.min(35, qualityScore + 10);
- else if (recentLogged <= 3) qualityScore = Math.max(10, qualityScore - 5);
- 
- // ========== 3. HISTORICAL SUPPORT (20 points max) ==========
- // Based on situation fingerprint matching
- let supportScore = 5; // weak default
- 
- if (patterns.nearestMatch) {
- // We have a historical match - check how many similar situations exist
- const today = hrvHistory.find(h => h.date === getTodayLocal());
- if (today) {
- const todayZ = (today.value - patterns.baseline) / patterns.mad;
- const todayCommand = getCommandKey(todayZ);
- 
- // Count similar fingerprints: same command + similar trend
- const withZScores = hrvHistory.map(h => ({
- ...h,
- zScore: (h.value - patterns.baseline) / patterns.mad,
- command: getCommandKey((h.value - patterns.baseline) / patterns.mad)
- })).filter(h => h.date !== getTodayLocal());
- 
- const similarDays = withZScores.filter(h => {
- const zDiff = Math.abs(h.zScore - todayZ);
- return h.command === todayCommand && zDiff < 0.8;
- });
- 
- if (similarDays.length >= 4) supportScore = 20; // strong support
- else if (similarDays.length >= 2) supportScore = 12; // medium support
- else supportScore = 5; // weak support
- }
- }
- 
- // ========== COMPUTE TOTAL & BUCKET ==========
- const totalScore = signalScore + qualityScore + supportScore;
- 
- let level = 'low';
- if (totalScore >= 75) level = 'high';
- else if (totalScore >= 50) level = 'medium';
- 
- // ========== HARD OVERRIDES ==========
- // These force Low confidence regardless of score
- 
- // Check for volatile week (indicates unstable measurement conditions)
- if (patterns.isVolatile && level === 'high') {
- level = 'medium';
- }
- 
- // First day back after travel-like pattern (big swing after stability)
- // This is a proxy for timezone change detection
- const recent3 = hrvHistory.slice(-3);
- if (recent3.length >= 3) {
- const recent3Zs = recent3.map(h => (h.value - patterns.baseline) / patterns.mad);
- const range = Math.max(...recent3Zs) - Math.min(...recent3Zs);
- if (range > 2.5) {
- level = 'low';
- }
- }
- 
- return {
- level,
- score: totalScore,
- reason: level === 'low' ? 'insufficient_evidence' : level === 'medium' ? 'moderate_evidence' : 'strong_evidence',
- components: { signal: signalScore, quality: qualityScore, support: supportScore }
- };
- };
-
- // ============================================
- // THREE-MODE SYSTEM (Deterministic)
- // DIRECTIVE: Listeners (follow commands)
- // PROTECTIVE: Fighters (override history)
- // UNCERTAIN: Low confidence / early days
- // ============================================
- 
- const getMode = (confidence, complianceLog, daysOnApp) => {
- // UNCERTAIN: Low confidence or early days
- if (confidence.level === 'low' || daysOnApp < 14) {
- return 'UNCERTAIN';
- }
- 
- // Count recent overrides (last 7 days)
- const sevenDaysAgo = new Date();
- sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
- const recentOverrides = complianceLog.filter(log => {
- const logDate = new Date(log.date);
- return logDate >= sevenDaysAgo && log.followed === 'no';
- }).length;
- 
- // Check if yesterday's REST was ignored
- const yesterday = getYesterdayLocal();
- const yesterdayLog = complianceLog.find(c => c.date === yesterday);
- const ignoredYesterdayRest = yesterdayLog?.command === 'REST' && yesterdayLog?.followed === 'no';
- 
- // PROTECTIVE: Recent override behavior
- if (recentOverrides >= 2 || ignoredYesterdayRest) {
- return 'PROTECTIVE';
- }
- 
- // DIRECTIVE: Default for listeners
- return 'DIRECTIVE';
- };
-
- // ============================================
- // RECEIPT SYSTEM - Yesterday's outcome
- // Shown before today's command
- // ============================================
- 
- const generateReceipt = (hrvHistory, complianceLog, patterns) => {
- if (!patterns || hrvHistory.length < 2) return null;
- 
- const yesterday = getYesterdayLocal();
- const yesterdayLog = complianceLog.find(c => c.date === yesterday);
- if (!yesterdayLog) return null;
- 
- const todayEntry = hrvHistory.find(h => h.date === getTodayLocal());
- const yesterdayEntry = hrvHistory.find(h => h.date === yesterday);
- if (!todayEntry || !yesterdayEntry) return null;
- 
- const todayZ = (todayEntry.value - patterns.baseline) / patterns.mad;
- const yesterdayZ = (yesterdayEntry.value - patterns.baseline) / patterns.mad;
- const improved = todayZ > yesterdayZ + 0.3;
- const declined = todayZ < yesterdayZ - 0.3;
- const stable = !improved && !declined;
- 
- const wasRestOrWarning = yesterdayLog.command === 'REST' || yesterdayLog.isWarning;
- const followed = yesterdayLog.followed === 'yes';
- 
- if (wasRestOrWarning) {
- if (followed) {
- if (improved) return { text: "That discipline showed up.", type: 'validated' };
- if (stable) return { text: "Right call. Still processing.", type: 'neutral' };
- return { text: "Body is catching up. You did your part.", type: 'neutral' };
- } else {
- if (declined) return { text: "Yesterday's push is here.", type: 'consequence' };
- return { text: "Got away with it this time.", type: 'lucky' };
- }
- }
- 
- if (yesterdayLog.command === 'PERFORM') {
- if (followed) {
- return { text: "You stopped at one peak. That's why you're not wrecked.", type: 'validated' };
- } else {
- if (declined) return { text: "That extra work showed up.", type: 'consequence' };
- }
- }
- 
- return null;
- };
-
- // ============================================
- // CONTEXT DETECTION (includes mode)
- // ============================================
- const getContext = (command, patterns, complianceLog, hrvHistory = [], daysOnApp = 0) => {
- const context = { 
- type: 'default', 
- mode: 'UNCERTAIN',
- isWarning: false, 
- isConsecutive: false, 
- isAfterRest: false,
- confidence: { level: 'low', score: 30 }
- };
- if (!patterns) return context;
- 
- // Calculate confidence
- context.confidence = calculateConfidence(hrvHistory, patterns, complianceLog);
- 
- // Determine mode (DIRECTIVE / PROTECTIVE / UNCERTAIN)
- context.mode = getMode(context.confidence, complianceLog, daysOnApp);
- 
- // PROTECTIVE and UNCERTAIN modes trigger warning state
- if (context.mode !== 'DIRECTIVE') {
- context.isWarning = true;
- }
- 
- // Trend-based warning
- if (patterns.trend === 'falling' || patterns.consecutiveBelowBaseline >= 2) {
- context.isWarning = true;
- context.type = 'warning';
- }
- 
- // After rest context
- if (command === 'BUILD' && patterns.daysSinceRest === 1) {
- const yesterday = getYesterdayLocal();
- const yesterdayLog = complianceLog.find(c => c.date === yesterday);
- if (yesterdayLog?.followed === 'yes') {
- context.isAfterRest = true;
- if (context.mode === 'DIRECTIVE') context.type = 'after_rest';
- }
- }
- 
- // PERFORM context
- if (command === 'PERFORM') {
- const yesterday = getYesterdayLocal();
- const yesterdayLog = complianceLog?.find(c => c.date === yesterday);
- if (yesterdayLog?.command === 'PERFORM') {
- context.isConsecutive = true;
- context.type = 'consecutive';
- }
- if (patterns.totalDays >= 14 && patterns.crashesAfterIgnoredRest?.length >= 2) {
- context.isWarning = true;
- if (!context.isConsecutive) context.type = 'warning';
- }
- }
- 
- return context;
- };
-
- // ============================================
- // THE VOICE - Three-Mode Communication System
- // + Personalization Layer (rarity, proof, date anchors)
- // DIRECTIVE: Brief, direct, no hedging
- // PROTECTIVE: Acknowledge urge, make call, one escape
- // UNCERTAIN: Honest about uncertainty
- // ============================================
- const generateObservation = (command, patterns, daysOnApp, lastObservationType, hrvHistory, complianceLog = []) => {
- const today = new Date();
- const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
- const pick = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
- 
- if (!patterns) {
- const daysRemaining = 4 - hrvHistory.length;
- if (daysRemaining > 0) return { text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands. Add history below to unlock today.`, type: 'learning_countdown' };
- return { text: "Your baseline is forming.", type: 'learning_forming' };
- }
-
- // Get context with mode
- const context = getContext(command, patterns, complianceLog, hrvHistory, daysOnApp);
- const mode = context.mode;
- const confidence = context.confidence;
- 
- // === PERSONALIZATION DATA ===
- const daysSincePerform = patterns.daysSincePerform || 0;
- const daysSinceRest = patterns.daysSinceRest || 0;
- const crashCount = patterns.crashesAfterIgnoredRest?.length || 0;
- const consecutiveCrashes = patterns.consecutivePerformCrashes || 0;
- 
- // Date anchor helper (format: "January 15th")
- const formatDateAnchor = (dateStr) => {
- if (!dateStr) return null;
- const date = new Date(dateStr + 'T12:00:00');
- const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
- const day = date.getDate();
- const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
- return `${months[date.getMonth()]} ${day}${suffix}`;
- };
- 
- // Gates for personalization
- const canUsePersonalization = daysOnApp >= 14 && confidence.level !== 'low';
- const canUseDateAnchors = canUsePersonalization && confidence.level === 'high';
- 
- // Milestones (override everything)
- const milestones = { 
- 7: "A week. Now we build.", 
- 14: "Two weeks. I know your patterns.", 
- 30: "A month. Your rhythms. Now we work together.", 
- 90: "Three months. The patterns are undeniable." 
- };
- if (milestones[daysOnApp]) return { text: milestones[daysOnApp], type: `milestone_${daysOnApp}` };
-
- // ========== REST OBSERVATIONS ==========
- if (command === 'REST') {
- // PERSONALIZATION: Date anchor warning (highest priority)
- if (canUseDateAnchors && patterns.nearestMatch?.nextDayCrashed) {
- const anchor = formatDateAnchor(patterns.nearestMatch.date);
- if (anchor) return { text: `This looks like ${anchor}. That day cost you.`, type: 'rest_date_anchor' };
- }
- 
- // PERSONALIZATION: Small-number proof
- if (canUsePersonalization && crashCount >= 2) {
- return { text: `${crashCount} times you've pushed through REST. ${crashCount} times you paid. I remember.`, type: 'rest_proof' };
- }
- 
- // MODE-BASED
- if (mode === 'DIRECTIVE') {
- return pick([
- { text: "Rest today. Train Thursday.", type: 'rest_directive' },
- { text: "Recovery day. The work is already done.", type: 'rest_directive' },
- { text: "Not today. Tomorrow.", type: 'rest_directive' }
- ]);
- }
- if (mode === 'PROTECTIVE') {
- return pick([
- { text: "You want to move. I get it. Still: REST.", type: 'rest_protective' },
- { text: "The itch is loud. The signal says wait.", type: 'rest_protective' },
- { text: "I know you feel fine. The numbers don't agree.", type: 'rest_protective' }
- ]);
- }
- // UNCERTAIN
- return pick([
- { text: "Signal is unclear. Default to less.", type: 'rest_uncertain' },
- { text: "Not enough data to push. Tomorrow will tell us more.", type: 'rest_uncertain' }
- ]);
- }
-
- // ========== BUILD OBSERVATIONS ==========
- if (command === 'BUILD') {
- // PERSONALIZATION: Rarity callout (long time since PERFORM)
- if (canUsePersonalization && daysSincePerform >= 10) {
- return { text: `${daysSincePerform} days since green. BUILD is building toward it.`, type: 'build_rarity' };
- }
- 
- // After rest (special case)
- if (context.isAfterRest && mode === 'DIRECTIVE') {
- return pick([
- { text: "Yesterday's rest bought this. Execute the plan.", type: 'build_after_rest' },
- { text: "That rest is showing up. Use it, don't spend it.", type: 'build_after_rest' }
- ]);
- }
- 
- // MODE-BASED
- if (mode === 'DIRECTIVE') {
- return pick([
- { text: "Work available. Execute the plan.", type: 'build_directive' },
- { text: "Solid day. Do what's written.", type: 'build_directive' },
- { text: "Room to work. Not room to add.", type: 'build_directive' }
- ]);
- }
- if (mode === 'PROTECTIVE') {
- return pick([
- { text: "You want to push. The trend says don't.", type: 'build_protective' },
- { text: "Work is available. The margin is smaller than it looks.", type: 'build_protective' },
- { text: "BUILD, not PERFORM. The trend is tilting.", type: 'build_protective' }
- ]);
- }
- // UNCERTAIN
- return pick([
- { text: "Signal is forming. Stay controlled.", type: 'build_uncertain' },
- { text: "Do what's programmed. Nothing extra.", type: 'build_uncertain' }
- ]);
- }
-
- // ========== PERFORM OBSERVATIONS ==========
- if (command === 'PERFORM') {
- // PERSONALIZATION: Consecutive crash proof (highest priority for PERFORM)
- if (canUsePersonalization && context.isConsecutive && consecutiveCrashes >= 2) {
- const total = consecutiveCrashes + 1; // +1 for current pattern
- return { text: `${consecutiveCrashes} of ${total} back-to-backs cost you. One peak, then done.`, type: 'perform_consecutive_proof' };
- }
- 
- // PERSONALIZATION: Date anchor (similar pattern warning)
- if (canUseDateAnchors && patterns.nearestMatch?.pushed && patterns.nearestMatch?.nextDayCrashed) {
- const anchor = formatDateAnchor(patterns.nearestMatch.date);
- if (anchor) return { text: `You were here on ${anchor}. One peak—then leave.`, type: 'perform_date_anchor' };
- }
- 
- // PERSONALIZATION: Rarity callout
- if (canUsePersonalization && daysSincePerform >= 7) {
- return { text: `First green in ${daysSincePerform} days. Make it count. Don't waste it.`, type: 'perform_rarity' };
- }
- 
- // Consecutive (standard)
- if (context.isConsecutive) {
- return pick([
- { text: "Back-to-back green is rare. Today's skill is restraint.", type: 'perform_consecutive' },
- { text: "Second straight day. Don't chase the hat trick.", type: 'perform_consecutive' }
- ]);
- }
- 
- // MODE-BASED
- if (mode === 'DIRECTIVE') {
- return pick([
- { text: "Green light. One peak.", type: 'perform_directive' },
- { text: "The tank is full. Use it.", type: 'perform_directive' },
- { text: "Go. Then stop.", type: 'perform_directive' }
- ]);
- }
- if (mode === 'PROTECTIVE') {
- return pick([
- { text: "Green light. But you've been here before and paid for it.", type: 'perform_protective' },
- { text: "Yes means yes. It doesn't mean reckless.", type: 'perform_protective' },
- { text: "The numbers say go. History says be smart about it.", type: 'perform_protective' }
- ]);
- }
- // UNCERTAIN
- return pick([
- { text: "Green, but signal is noisy. Keep it controlled.", type: 'perform_uncertain' },
- { text: "Capacity is there. Don't outrun the data.", type: 'perform_uncertain' }
- ]);
- }
- 
- return { text: "Baseline forming.", type: 'learning' };
- };
-
- // ============================================
- // THE ACTION SYSTEM - Three-Mode Architecture
- // DIRECTIVE: Hard guardrails, no escape
- // PROTECTIVE: Acknowledge, constrain, one safe override
- // UNCERTAIN: Conservative, honest about noise
- // Forward loss frames in every recovery lever
- // ============================================
- const generateActions = (command, patterns, hrvHistory, complianceLog = [], daysOnApp = 0) => {
- if (!patterns || hrvHistory.length < 7) return null;
- const today = new Date();
- const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + (command?.charCodeAt(0) || 0);
- const pick = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
- 
- // Get context with mode
- const context = getContext(command, patterns, complianceLog, hrvHistory, daysOnApp);
- const mode = context.mode;
-
- // ========== REST ACTIONS ==========
- if (command === 'REST') {
- if (mode === 'DIRECTIVE') {
- return {
- primaryAction: pick([
- "Rest today. Train Thursday.",
- "Sleep is the session. Protect 8 hours.",
- "20 minutes walk + mobility. That's the whole day."
- ]),
- effortBoundary: pick([
- "Nose breathing only. Mouth opens, you're working too hard.",
- "RPE 2. You should feel under-challenged.",
- "Conversation pace. Full sentences, no gasping."
- ]),
- recoveryLever: pick([
- "Thursday's session is on the line tonight.",
- "What you do tonight determines what you can do this weekend.",
- "8 hours sleep. That's the down payment on your next green light."
- ]),
- guardrail: pick([
- "No intensity today.",
- "Don't test how you feel with a workout."
- ])
- };
- }
- if (mode === 'PROTECTIVE') {
- return {
- primaryAction: pick([
- "You want to move. I get it. 20 minutes walk, then done.",
- "The itch is real. Scratch it with mobility, not intensity.",
- "If you need a win: end the day with more energy than you started."
- ]),
- effortBoundary: pick([
- "Nasal breathing the entire time. Mouth opens, you stop.",
- "RPE 2. If it feels like exercise, you've gone too far.",
- "Talk test: full sentences without pausing for breath."
- ]),
- recoveryLever: pick([
- "You're choosing between today's sweat and Saturday's session. Saturday matters more.",
- "Every bit of intensity today comes out of Thursday's tank.",
- "The workout you want today costs the workout you need this weekend."
- ]),
- guardrail: pick([
- "No intensity. If you override: 15 minutes technique work, nasal breathing, leave before you sweat.",
- "No training. If you must move: 20-minute walk, conversation pace, that's the ceiling."
- ])
- };
- }
- // UNCERTAIN
- return {
- primaryAction: pick([
- "Signal is unclear. Default to less.",
- "When in doubt, walk. 20 minutes, easy pace.",
- "Not enough data to push. Tomorrow will tell us more."
- ]),
- effortBoundary: pick([
- "Easy enough to hold a conversation the whole time.",
- "If you're not sure it's easy enough, it's not.",
- "Nasal breathing. No exceptions today."
- ]),
- recoveryLever: pick([
- "Unclear signal means conservative play. We'll reassess tomorrow.",
- "When the data is noisy, rest is never wrong.",
- "Tomorrow's reading will be more useful. Don't outrun the information."
- ]),
- guardrail: pick([
- "Keep it minimal. When the signal is unclear, less is always right.",
- "If you train, keep it short and easy. You'll know more tomorrow."
- ])
- };
- }
-
- // ========== BUILD ACTIONS ==========
- if (command === 'BUILD') {
- if (context.isAfterRest && mode === 'DIRECTIVE') {
- return {
- primaryAction: pick([
- "Yesterday's rest bought this. Execute the plan fully.",
- "Full session. No additions. Bank it.",
- "Do what's written. Leave with fuel in the tank."
- ]),
- effortBoundary: pick([
- "RPE 7. Finish with something left. That's how you string good days together.",
- "Quality reps. Stop before form degrades.",
- "If you're tempted to add, that's the signal to leave."
- ]),
- recoveryLever: pick([
- "Two good days in a row is the goal. Tonight's sleep protects the streak.",
- "Don't undo yesterday's investment with tonight's choices.",
- "This is compound interest. Keep the deposits coming."
- ]),
- guardrail: pick([
- "Don't spend yesterday's rest in one session.",
- "Feeling good isn't permission. It's a resource."
- ])
- };
- }
- if (mode === 'DIRECTIVE') {
- return {
- primaryAction: pick([
- "Do what's programmed. Nothing extra.",
- "Full workout. Leave 10 minutes before you normally would.",
- "Main work. Skip the finisher."
- ]),
- effortBoundary: pick([
- "RPE 7 cap. Finish feeling like you could do more—then don't.",
- "When form breaks, rack it. No grind reps.",
- "Stop while it still looks good."
- ]),
- recoveryLever: pick([
- "Tonight's sleep is tomorrow's capacity.",
- "Protein within 2 hours. That's the reload.",
- "What you do after determines whether this session compounds or costs."
- ]),
- guardrail: pick([
- "Don't turn BUILD into PERFORM.",
- "Today is for deposits, not withdrawals."
- ])
- };
- }
- if (mode === 'PROTECTIVE') {
- return {
- primaryAction: pick([
- "Same session. Pull one lever back 20%: load, reps, or time. Pick one.",
- "80% of what's programmed. Cut the last movement.",
- "Main work only. Skip accessories entirely."
- ]),
- effortBoundary: pick([
- "RPE 6 ceiling. When form slips, you're done.",
- "If it becomes survival, stop. A short session beats a crash.",
- "45 minute cap. Leave before you want to."
- ]),
- recoveryLever: pick([
- "The trend is tilting. Tonight decides if this week recovers or spirals.",
- "Sleep 30 minutes earlier than usual. That's the circuit breaker.",
- "You're 48 hours from this being a bad week or a reset. Tonight is the difference."
- ]),
- guardrail: pick([
- "No digging deep. If you override: main work only, RPE 6 cap, 40 minute hard stop.",
- "No finishers. If you ignore this: leave immediately after the main lift."
- ])
- };
- }
- // UNCERTAIN
- return {
- primaryAction: pick([
- "Do what's programmed. Nothing extra.",
- "Standard session. Stay controlled.",
- "Execute. Don't experiment."
- ]),
- effortBoundary: pick([
- "RPE 6-7. Stop before form breaks.",
- "If it feels hard early, cut it short.",
- "Quality over quantity today."
- ]),
- recoveryLever: pick([
- "We'll know more tomorrow. Don't outrun the data.",
- "Conservative is never wrong when signal is noisy.",
- "Tomorrow's reading will tell the real story."
- ]),
- guardrail: pick([
- "Keep it moderate. When the signal is unclear, less is always right.",
- "No heroics when the data is noisy."
- ])
- };
- }
-
- // ========== PERFORM ACTIONS ==========
- if (command === 'PERFORM') {
- if (context.isConsecutive) {
- return {
- primaryAction: pick([
- "Shorter session than yesterday. 75% duration, 85% intensity.",
- "Main work only. Cut accessories. Be out in 40 minutes.",
- "One moderate-high effort. No true max attempts."
- ]),
- effortBoundary: pick([
- "RPE 7-8 ceiling. Lower than yesterday.",
- "If warm-up feels off, convert to BUILD. No questions.",
- "Quality over quantity. Every rep should look like rep one."
- ]),
- recoveryLever: pick([
- "This is probably your last green for a while. Plan for REST tomorrow.",
- "Tonight is critical. 8+ hours, extra protein, full hydration.",
- "Recovery starts the moment you leave. Everything else is secondary."
- ]),
- guardrail: pick([
- "Don't chase the hat trick. That's where people break.",
- "Tomorrow's REST is already scheduled. Accept it now."
- ])
- };
- }
- if (mode === 'DIRECTIVE') {
- return {
- primaryAction: pick([
- "Hardest work in the first 15-20 minutes.",
- "One peak effort. Put it early.",
- "The tank is full. Empty the part that matters, then coast."
- ]),
- effortBoundary: pick([
- "RPE 9 once. Then drop to 6-7 and stay there.",
- "Leave a rep in reserve even on the hardest set.",
- "45-60 minutes total. Then leave."
- ]),
- recoveryLever: pick([
- "Refuel within 60 minutes. Sleep locks in the gain.",
- "Tonight decides if this peak compounds or costs.",
- "Tomorrow's command depends on tonight's recovery."
- ]),
- guardrail: pick([
- "One peak. You're trading tomorrow for every rep after that.",
- "Don't turn a great day into a two-day hangover."
- ])
- };
- }
- if (mode === 'PROTECTIVE') {
- return {
- primaryAction: pick([
- "One hard effort in the first 15 minutes. Then coast.",
- "Hit your main work at RPE 8. Skip accessories.",
- "Attack, then retreat. No lingering."
- ]),
- effortBoundary: pick([
- "RPE 8 once. Then immediately drop to 6. Hard stop.",
- "45 minutes including warm-up. Then leave.",
- "One solid effort. Whether it's a PR or not, move on."
- ]),
- recoveryLever: pick([
- "You've paid for overdoing this before. Tonight is the insurance.",
- "What you do in the next 12 hours matters more than what you did in the gym.",
- "Protein within 30 minutes. Sleep 30 minutes earlier than usual."
- ]),
- guardrail: pick([
- "One peak only. If you override: RPE 6 for 10 minutes max after, then done.",
- "No chasing. You've seen how this ends."
- ])
- };
- }
- // UNCERTAIN
- return {
- primaryAction: pick([
- "One controlled effort. Don't go searching for your ceiling.",
- "Main work at moderate-high intensity. Skip the extras.",
- "Execute. Don't explore."
- ]),
- effortBoundary: pick([
- "RPE 7-8. Not the day for true max attempts.",
- "Stop while it still feels good.",
- "Quality is the priority when signal is unclear."
- ]),
- recoveryLever: pick([
- "Conservative is never wrong when data is noisy.",
- "Tomorrow will tell us if this was right. Don't compound uncertainty.",
- "Recover like it was a hard day. Better safe."
- ]),
- guardrail: pick([
- "Don't max out on an unclear signal.",
- "One good effort. Save the heroics for when we're sure."
- ])
- };
- }
- return null;
- };
-
- // ============================================
- // COLORS - Earthy, organic palette
- // ============================================
- const COMMAND_STYLES = {
- REST: { color: '#e8b89d', bg: 'rgba(232, 184, 157, 0.12)', border: 'rgba(232, 184, 157, 0.2)', glow: 'rgba(232, 184, 157, 0.1)' },
- BUILD: { color: '#c9b896', bg: 'rgba(201, 184, 150, 0.12)', border: 'rgba(201, 184, 150, 0.2)', glow: 'rgba(201, 184, 150, 0.1)' },
- PERFORM: { color: '#9dc4a8', bg: 'rgba(157, 196, 168, 0.12)', border: 'rgba(157, 196, 168, 0.2)', glow: 'rgba(157, 196, 168, 0.1)' },
- LEARNING: { color: '#a8b5a8', bg: 'rgba(168, 181, 168, 0.12)', border: 'rgba(168, 181, 168, 0.2)', glow: 'rgba(168, 181, 168, 0.1)' },
- };
-
- // ============================================
- // TYPEWRITER COMPONENT - Word by word reveal
- // ============================================
- const Typewriter = ({ text, speed = 80, onComplete, className = '' }) => {
- const [displayedWords, setDisplayedWords] = useState(0);
- const [isComplete, setIsComplete] = useState(false);
- const words = text ? text.split(' ') : [];
- 
- useEffect(() => {
- if (!text) return;
- setDisplayedWords(0);
- setIsComplete(false);
- }, [text]);
- 
- useEffect(() => {
- if (displayedWords < words.length) {
- const timer = setTimeout(() => {
- setDisplayedWords(prev => prev + 1);
- }, speed);
- return () => clearTimeout(timer);
- } else if (words.length > 0 && !isComplete) {
- setIsComplete(true);
- onComplete?.();
- }
- }, [displayedWords, words.length, speed, isComplete, onComplete]);
- 
- const visibleText = words.slice(0, displayedWords).join(' ');
- const showCursor = !isComplete && words.length > 0;
- 
- return (
- <span className={className}>
- {visibleText}
- {showCursor && <span className="animate-pulse ml-0.5">|</span>}
- </span>
- );
- };
-
- // Tagline Component
- const Tagline = () => (
- <div className="fixed bottom-6 left-0 right-0 text-center fade-in-delay-3" style={{ zIndex: 10, pointerEvents: 'none' }}>
- <p className="text-white/40 text-sm tracking-wide mb-2">Your body is talking.</p>
- <svg className="mx-auto float" width="24" height="24" viewBox="0 0 24 24" fill="none">
- <path d="M12 22C12 22 12 16 12 14C12 12 10 10 8 10C6 10 4 12 4 14C4 16 6 18 8 18" stroke="#8b9b7a" strokeWidth="1.5" strokeLinecap="round"/>
- <path d="M12 22C12 22 12 16 12 14C12 12 14 10 16 10C18 10 20 12 20 14C20 16 18 18 16 18" stroke="#a8b89a" strokeWidth="1.5" strokeLinecap="round"/>
- </svg>
- </div>
- );
-
- // ============================================
- // FEEDBACK MODAL - The Invitation (glassmorphism)
- // ============================================
- const FeedbackModal = ({ 
- round, daysOnApp,
- step, setStep, 
- response, setResponse, 
- text, setText, 
- email, setEmail, 
- onSend, onDismiss 
- }) => (
- <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-6 z-50">
- <div className="max-w-sm w-full space-y-8">
- 
- {/* Round 1 (Day 10-14): The Commitment */}
- {round === 1 && (
- <>
- {step === 1 && (
- <div className="text-center space-y-8 fade-in">
- <div className="space-y-4">
- <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
- <p className="text-white text-xl leading-relaxed">Most people quit by now.</p>
- <p className="text-white/60">You didn't.</p>
- </div>
- <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
- </div>
- )}
-
- {step === 2 && (
- <div className="text-center space-y-6 fade-in">
- <p className="text-white text-lg">What are you building toward?</p>
- <div className="space-y-2">
- {[
- { key: 'competition', label: 'Competition' },
- { key: 'longevity', label: 'Longevity' },
- { key: 'consistency', label: 'Staying consistent' },
- { key: 'feeling', label: 'Feeling better' },
- { key: 'other', label: 'Something else' },
- ].map(opt => (
- <button key={opt.key} onClick={() => { setResponse(opt.key); setStep(opt.key === 'other' ? 3 : 4); }} className="w-full glass hover:bg-white/10 text-white/70 py-3 rounded-2xl text-sm transition-all duration-300">{opt.label}</button>
- ))}
- </div>
- <button onClick={() => onDismiss(false)} className="text-white/20 text-xs">Skip</button>
- </div>
- )}
-
- {step === 3 && (
- <div className="text-center space-y-6 fade-in">
- <p className="text-white text-lg">Tell me more.</p>
- <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="What are you working toward..." className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none resize-none h-24" autoFocus />
- <button onClick={() => setStep(4)} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Continue</button>
- </div>
- )}
-
- {step === 4 && (
- <div className="text-center space-y-6 fade-in">
- <div className="space-y-3">
- <p className="text-white text-lg">I'm building something too.</p>
- <p className="text-white/40 text-sm">Auto-sync. Deeper patterns.<br/>Predictions before you feel them.</p>
- </div>
- <div className="space-y-3 pt-2">
- <p className="text-white/50 text-sm">Want early access?</p>
- <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none" />
- </div>
- <div className="space-y-2">
- <button onClick={onSend} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">I'm in</button>
- <button onClick={onSend} className="w-full text-white/40 text-sm py-2">Just keep going</button>
- </div>
- </div>
- )}
- </>
- )}
-
- {/* Round 2 (Day 35-45): The Inner Circle */}
- {round === 2 && (
- <>
- {step === 1 && (
- <div className="text-center space-y-8 fade-in">
- <div className="space-y-4">
- <p className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</p>
- <p className="text-white text-xl leading-relaxed">You're still here.</p>
- <p className="text-white/40 text-sm">That puts you ahead of 95% of people<br/>who try to train smarter.</p>
- </div>
- <button onClick={() => setStep(2)} className="text-white/40 hover:text-white text-sm transition">Continue →</button>
- </div>
- )}
-
- {step === 2 && (
- <div className="text-center space-y-6 fade-in">
- <div className="space-y-2">
- <p className="text-white text-lg">I'm building the next version.</p>
- <p className="text-white/40 text-sm">What would make this twice as valuable?</p>
- </div>
- <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="The one thing..." className="w-full glass rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none resize-none h-24" autoFocus />
- <button onClick={() => setStep(3)} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Continue</button>
- <button onClick={() => setStep(3)} className="text-white/20 text-xs">Skip</button>
- </div>
- )}
-
- {step === 3 && (
- <div className="text-center space-y-6 fade-in">
- <div className="space-y-3">
- <p className="text-white text-lg">One more thing.</p>
- <p className="text-white/40 text-sm">Anyone in your life who needs this?</p>
- <p className="text-white/25 text-xs">A training partner. Someone who never rests.<br/>A friend who's always overtrained.</p>
- </div>
- <div className="space-y-2">
- <button onClick={() => { setResponse('yes'); setStep(4); }} className="w-full glass hover:bg-white/10 text-white/70 py-3 rounded-2xl text-sm transition-all">Yes, I know someone</button>
- <button onClick={() => { setResponse('no'); onSend(); }} className="w-full text-white/40 text-sm py-2">Not right now</button>
- </div>
- </div>
- )}
-
- {step === 4 && (
- <div className="text-center space-y-6 fade-in">
- <p className="text-white text-lg">I'll make sure they get in.</p>
- <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Their email or name" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm text-center placeholder-white/30 focus:outline-none" autoFocus />
- <button onClick={onSend} className="w-full bg-white/90 text-black font-medium py-3 rounded-2xl">Done</button>
- <button onClick={onSend} className="text-white/20 text-xs">Skip</button>
- </div>
- )}
- </>
- )}
- </div>
- </div>
- );
-
- // ============================================
- // HRV SOURCE SELECTOR
- // ============================================
- const HRV_SOURCES = [
- { id: 'whoop', label: 'WHOOP' },
- { id: 'apple', label: 'Apple Watch' },
- { id: 'oura', label: 'Oura' },
- { id: 'garmin', label: 'Garmin' },
- { id: 'fitbit', label: 'Fitbit' },
- { id: 'samsung', label: 'Samsung Watch' },
- ];
-
- // ============================================
- // INFO MODAL - How GENYSYS Works
- // ============================================
- const InfoModal = ({ onClose, hrvSource }) => {
- // Device-specific HRV instructions
- const getHrvInstructions = () => {
- const deviceId = hrvSource?.id || 'apple';
- const deviceLabel = hrvSource?.label || 'Apple Watch';
- 
- const instructions = {
- apple: {
- title: 'Where to find your HRV (Apple Watch)',
- steps: [
- 'Open the Health app on your iPhone',
- 'Tap Browse → Heart → Heart Rate Variability',
- 'Look at your most recent morning reading',
- 'Use the number in milliseconds (ms)'
- ]
- },
- whoop: {
- title: 'Where to find your HRV (WHOOP)',
- steps: [
- 'Open the WHOOP app',
- 'Tap on your daily Recovery score',
- 'Scroll to "Heart Rate Variability"',
- 'Use the number in milliseconds (ms)'
- ]
- },
- garmin: {
- title: 'Where to find your HRV (Garmin)',
- steps: [
- 'Open Garmin Connect app',
- 'Go to Health Stats → Heart Rate Variability',
- 'Check your morning HRV Status reading',
- 'Use the number in milliseconds (ms)'
- ]
- },
- oura: {
- title: 'Where to find your HRV (Oura)',
- steps: [
- 'Open the Oura app',
- 'Tap on Readiness tab',
- 'Scroll to "HRV Balance"',
- 'Tap to see your average HRV in milliseconds'
- ]
- },
- fitbit: {
- title: 'Where to find your HRV (Fitbit)',
- steps: [
- 'Open the Fitbit app',
- 'Tap the Health Metrics tile',
- 'Find "Heart Rate Variability"',
- 'Use your daily average in milliseconds'
- ]
- },
- polar: {
- title: 'Where to find your HRV (Polar)',
- steps: [
- 'Open Polar Flow app',
- 'Go to your Nightly Recharge report',
- 'Find "ANS Charge" which includes HRV',
- 'Use the RMSSD value in milliseconds'
- ]
- },
- samsung: {
- title: 'Where to find your HRV (Samsung Watch)',
- steps: [
- 'Open Samsung Health app on your phone',
- 'Tap Home → scroll to Heart Rate Variability',
- 'Or: Tap Stress → view HRV from stress measurement',
- 'Use the RMSSD value in milliseconds (ms)'
- ]
- },
- custom: {
- title: `Where to find your HRV (${deviceLabel})`,
- steps: [
- `Please check the ${deviceLabel} app or website`,
- 'Look for Heart Rate Variability or HRV',
- 'Find your most recent morning reading',
- 'Use the number in milliseconds (ms)'
- ]
- }
- };
- 
- return instructions[deviceId] || instructions.custom;
- };
- 
- const hrvInstructions = getHrvInstructions();
- 
- return (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
- <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}></div>
- <div className="glass rounded-3xl p-6 max-w-sm w-full relative z-10 max-h-[85vh] overflow-y-auto space-y-5">
- <div className="flex justify-between items-start">
- <h2 className="text-white text-lg font-medium">How GENYSYS Works</h2>
- <button onClick={onClose} className="text-white/40 hover:text-white text-xl">×</button>
- </div>
- 
- <p className="text-white/60 text-sm leading-relaxed">
- Your nervous system tells us how recovered you are. We read it. We tell you what to do.
- </p>
- 
- <div className="space-y-2">
- <div className="flex items-start gap-3">
- <span className="text-[#e8b89d] font-bold text-sm">REST</span>
- <span className="text-white/50 text-sm">Light movement only. System needs recovery.</span>
- </div>
- <div className="flex items-start gap-3">
- <span className="text-[#c9b896] font-bold text-sm">BUILD</span>
- <span className="text-white/50 text-sm">Standard training. Execute your program.</span>
- </div>
- <div className="flex items-start gap-3">
- <span className="text-[#9dc4a8] font-bold text-sm">PERFORM</span>
- <span className="text-white/50 text-sm">System primed. Push hard. Chase PRs.</span>
- </div>
- </div>
- 
- <div className="border-t border-white/10 pt-4 space-y-2">
- <h3 className="text-white/80 text-sm font-medium">What is HRV?</h3>
- <p className="text-white/50 text-xs leading-relaxed">
- Heart Rate Variability — the time variation between heartbeats, measured in milliseconds (ms). Higher usually means more recovered. Most people range from 20-100ms.
- </p>
- </div>
- 
- <div className="border-t border-white/10 pt-4 space-y-2">
- <h3 className="text-white/80 text-sm font-medium">{hrvInstructions.title}</h3>
- <ol className="text-white/50 text-xs leading-relaxed space-y-1 list-decimal list-inside">
- {hrvInstructions.steps.map((step, i) => (
- <li key={i}>{step}</li>
- ))}
- </ol>
- </div>
- 
- <div className="border-t border-white/10 pt-4 space-y-2">
- <h3 className="text-white/80 text-sm font-medium">The Process</h3>
- <ol className="text-white/50 text-xs leading-relaxed space-y-1 list-decimal list-inside">
- <li>Log your morning HRV from your device</li>
- <li>After 3 days: Preview commands begin</li>
- <li>After 7 days: Full personalized baseline</li>
- </ol>
- </div>
- 
- <div className="border-t border-white/10 pt-4 space-y-2">
- <h3 className="text-white/80 text-sm font-medium">No Wearable?</h3>
- <p className="text-white/50 text-xs leading-relaxed mb-2">
- Download Welltory (free). Take a 1-minute reading with your phone camera each morning.
- </p>
- <div className="flex gap-2">
- <a 
- href="https://apps.apple.com/app/welltory-heart-rate-monitor/id1074367771" 
- target="_blank" 
- rel="noopener noreferrer"
- className="glass-light rounded-lg px-3 py-1.5 text-xs text-white/60 hover:text-white transition-all"
- >
- iOS App Store
- </a>
- <a 
- href="https://play.google.com/store/apps/details?id=com.welltory.client.android" 
- target="_blank" 
- rel="noopener noreferrer"
- className="glass-light rounded-lg px-3 py-1.5 text-xs text-white/60 hover:text-white transition-all"
- >
- Google Play
- </a>
- </div>
- </div>
- 
- <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
- <p className="text-amber-400/80 text-xs leading-relaxed">
- <span className="font-medium">⚠️ Use the Same Device</span><br/>
- Your data is stored locally on this device only. It won't transfer to other phones or computers. Always log from the same device.
- </p>
- </div>
- 
- <p className="text-white/30 text-xs text-center pt-2">
- GENYSYS Private Beta — Your feedback shapes what we build next.
- </p>
- </div>
- </div>
- )};
-
- // ============================================
- // TEST DATA GENERATORS
- // ============================================
- const generateTestData = (days, scenario = 'normal') => {
- const history = [];
- const compliance = [];
- const today = new Date();
- 
- // Base HRV around 55 with natural variation
- let baseHRV = 55;
- 
- for (let i = days - 1; i >= 0; i--) {
- const date = new Date(today);
- date.setDate(date.getDate() - i);
- const dateStr = getLocalDateString(date);
- 
- let hrv;
- if (scenario === 'crashing') {
- // Simulates someone who ignores REST and crashes
- hrv = baseHRV + (Math.random() * 20 - 10) - (i < 3 ? 15 : 0);
- } else if (scenario === 'recovering') {
- // Simulates someone coming out of a low period
- hrv = baseHRV + (Math.random() * 10) + (days - i) * 0.5;
- } else if (scenario === 'volatile') {
- // Big swings
- hrv = baseHRV + (Math.random() * 40 - 20);
- } else if (scenario === 'stable') {
- // Very consistent
- hrv = baseHRV + (Math.random() * 6 - 3);
- } else {
- // Normal variation
- hrv = baseHRV + (Math.random() * 16 - 8);
- }
- 
- history.push({ date: dateStr, value: Math.round(hrv) });
- 
- // Add some compliance data
- if (i > 0 && Math.random() > 0.3) {
- const values = history.slice(0, -1).map(h => h.value);
- if (values.length >= 3) {
- const median = calculateMedian(values);
- const mad = calculateMAD(values, median);
- const z = (hrv - median) / mad;
- const command = getCommandKey(z);
- 
- compliance.push({
- date: dateStr,
- command,
- followed: Math.random() > 0.3 ? 'yes' : 'no'
- });
- }
- }
- }
- 
- return { history, compliance };
- };
-
- // ============================================
- // MAIN APP
- // ============================================
- const App = () => {
- // Core state
- const [hrvHistory, setHrvHistory] = useState([]);
- const [complianceLog, setComplianceLog] = useState([]);
- const [firstUseDate, setFirstUseDate] = useState(null);
- const [hrvSource, setHrvSource] = useState(null);
- const [userName, setUserName] = useState('');
- const [isLoading, setIsLoading] = useState(true);
- 
- // UI state
- const [todayHRV, setTodayHRV] = useState('');
- const [result, setResult] = useState(null);
- const [showAddHistory, setShowAddHistory] = useState(false);
- const [customDevice, setCustomDevice] = useState('');
- const [showInfoModal, setShowInfoModal] = useState(false);
- const [newEntry, setNewEntry] = useState('');
- const [newEntryDate, setNewEntryDate] = useState(getYesterdayLocal());
- 
- // Observation tracking
- const [lastObservationType, setLastObservationType] = useState(null);
- const [lastObservationDate, setLastObservationDate] = useState(null);
-
- // Feedback state
- const [showFeedback, setShowFeedback] = useState(false);
- const [feedbackRound, setFeedbackRound] = useState(1);
- const [feedbackStep, setFeedbackStep] = useState(1);
- const [feedbackResponse, setFeedbackResponse] = useState(null);
- const [feedbackText, setFeedbackText] = useState('');
- const [feedbackEmail, setFeedbackEmail] = useState('');
- const [feedbackRound1Complete, setFeedbackRound1Complete] = useState(false);
- const [feedbackRound1Response, setFeedbackRound1Response] = useState(null);
- const [feedbackRound1DismissedAt, setFeedbackRound1DismissedAt] = useState(null);
- const [feedbackRound2Complete, setFeedbackRound2Complete] = useState(false);
-
- // TEST MODE state
- const [showDebug, setShowDebug] = useState(false);
- const [simulatedDaysOnApp, setSimulatedDaysOnApp] = useState(null);
-
- // Load from localStorage
- useEffect(() => {
- try {
- const saved = localStorage.getItem('genysys_v2_test_data');
- if (saved) {
- const data = JSON.parse(saved);
- setHrvHistory(data.hrvHistory || []);
- setComplianceLog(data.complianceLog || []);
- setFirstUseDate(data.firstUseDate || null);
- setHrvSource(data.hrvSource || null);
- setUserName(data.userName || '');
- setLastObservationType(data.lastObservationType || null);
- setLastObservationDate(data.lastObservationDate || null);
- setFeedbackRound1Complete(data.feedbackRound1Complete || false);
- setFeedbackRound1Response(data.feedbackRound1Response || null);
- setFeedbackRound1DismissedAt(data.feedbackRound1DismissedAt || null);
- setFeedbackRound2Complete(data.feedbackRound2Complete || false);
- }
- } catch (e) { 
- console.log('No saved data'); 
- }
- setIsLoading(false);
- }, []);
-
- // Save to localStorage
- useEffect(() => {
- if (isLoading) return;
- localStorage.setItem('genysys_v2_test_data', JSON.stringify({
- hrvHistory, complianceLog, firstUseDate, hrvSource, userName,
- lastObservationType, lastObservationDate,
- feedbackRound1Complete, feedbackRound1Response, feedbackRound1DismissedAt, feedbackRound2Complete
- }));
- }, [hrvHistory, complianceLog, firstUseDate, hrvSource, userName, lastObservationType, lastObservationDate, feedbackRound1Complete, feedbackRound1Response, feedbackRound1DismissedAt, feedbackRound2Complete, isLoading]);
-
- // Set firstUseDate when they start
- useEffect(() => {
- if (hrvSource && !firstUseDate) {
- setFirstUseDate(getTodayLocal());
- }
- }, [hrvSource, firstUseDate]);
-
- // Calculate days on app (or use simulated) - handle timezone properly
- const daysOnApp = useMemo(() => {
- if (simulatedDaysOnApp !== null) return simulatedDaysOnApp;
- if (!firstUseDate) return 1;
- const start = new Date(firstUseDate + 'T00:00:00');
- const now = new Date();
- const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
- const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
- return Math.max(1, Math.floor((today - startDay) / (1000 * 60 * 60 * 24)) + 1);
- }, [firstUseDate, simulatedDaysOnApp]);
-
- // Auto-calculate if today's data exists
- useEffect(() => {
- if (isLoading || !hrvSource) return;
- const todayDate = getTodayLocal();
- const todayEntry = hrvHistory.find(h => h.date === todayDate);
- if (todayEntry) {
- setTodayHRV(todayEntry.value.toString());
- calculateResult(todayEntry.value, hrvHistory);
- }
- }, [isLoading, hrvHistory, hrvSource]);
-
- const calculateResult = (hrv, history) => {
- const todayDate = getTodayLocal();
- const historyWithoutToday = history.filter(h => h.date !== todayDate);
- const values = historyWithoutToday.map(h => h.value);
- 
- const isPreview = values.length >= THRESHOLDS.MIN_PREVIEW_DAYS && values.length < THRESHOLDS.MIN_DAYS;
- 
- if (values.length < THRESHOLDS.MIN_PREVIEW_DAYS) {
- setResult({ 
- commandKey: 'LEARNING', 
- daysNeeded: THRESHOLDS.MIN_PREVIEW_DAYS - values.length,
- isPreview: false 
- });
- return;
- }
- 
- const median = calculateMedian(values);
- const mad = calculateMAD(values, median);
- const zScore = (hrv - median) / mad;
- const commandKey = getCommandKey(zScore);
- 
- // Use total entries (including today) for countdown to match user expectation
- const totalEntries = history.length;
- const daysUntilFull = isPreview ? Math.max(0, THRESHOLDS.MIN_DAYS - totalEntries) : 0;
- 
- setResult({ 
- commandKey, 
- baseline: median, 
- mad, 
- zScore, 
- todayValue: hrv,
- isPreview: daysUntilFull > 0, // Only show preview if there are still days remaining
- daysUntilFull
- });
-
- const existingLog = complianceLog.findIndex(c => c.date === todayDate);
- if (existingLog >= 0) {
- setComplianceLog(complianceLog.map((c, i) => i === existingLog ? { ...c, command: commandKey } : c));
- } else {
- setComplianceLog([...complianceLog, { date: todayDate, command: commandKey, followed: null }]);
- }
- };
-
- const handleSubmitHRV = () => {
- const hrv = parseFloat(todayHRV);
- if (isNaN(hrv) || hrv <= 0) return;
- 
- const todayDate = getTodayLocal();
- let newHistory = [...hrvHistory];
- const existingIndex = newHistory.findIndex(h => h.date === todayDate);
- 
- if (existingIndex >= 0) {
- newHistory[existingIndex] = { value: hrv, date: todayDate };
- } else {
- newHistory.push({ value: hrv, date: todayDate });
- }
- 
- newHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
- setHrvHistory(newHistory);
- calculateResult(hrv, newHistory);
-
- if (lastObservationDate !== todayDate) {
- setLastObservationType(null);
- setLastObservationDate(todayDate);
- }
- };
-
- const addHistoricalEntry = () => {
- const val = parseFloat(newEntry);
- if (isNaN(val) || val <= 0) return;
- 
- let newHistory = [...hrvHistory];
- const existingIndex = newHistory.findIndex(h => h.date === newEntryDate);
- 
- if (existingIndex >= 0) {
- newHistory[existingIndex] = { value: val, date: newEntryDate };
- } else {
- newHistory.push({ value: val, date: newEntryDate });
- }
- 
- newHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
- setHrvHistory(newHistory);
- setNewEntry('');
- 
- // Immediately recalculate result if today's entry exists (keeps bullets in sync)
- const todayDate = getTodayLocal();
- const todayEntry = newHistory.find(h => h.date === todayDate);
- if (todayEntry) {
- calculateResult(todayEntry.value, newHistory);
- }
- 
- // Move date back by one day for next entry (use noon to avoid timezone/DST issues)
- const prevDate = new Date(newEntryDate + 'T12:00:00');
- prevDate.setDate(prevDate.getDate() - 1);
- setNewEntryDate(getLocalDateString(prevDate));
- };
-
- const deleteHistoricalEntry = (dateToDelete) => {
- const newHistory = hrvHistory.filter(h => h.date !== dateToDelete);
- setHrvHistory(newHistory);
- 
- // Also remove any compliance log for that date
- setComplianceLog(complianceLog.filter(c => c.date !== dateToDelete));
- 
- // If we deleted today's entry, clear the result
- if (dateToDelete === getTodayLocal()) {
- setResult(null);
- }
- };
-
- // Yesterday compliance
- const yesterdayDate = getYesterdayLocal();
- const yesterdayLog = complianceLog.find(c => c.date === yesterdayDate);
- const needsYesterdayCompliance = yesterdayLog?.command && 
- yesterdayLog.command !== 'LEARNING' && 
- yesterdayLog.followed === null;
-
- const recordCompliance = (followed) => {
- setComplianceLog(complianceLog.map(c => 
- c.date === yesterdayDate ? { ...c, followed } : c
- ));
- };
-
- // Pattern analysis
- const patterns = useMemo(() => 
- analyzePatterns(hrvHistory, complianceLog, firstUseDate),
- [hrvHistory, complianceLog, firstUseDate]
- );
-
- // Store observation in state to prevent recalculation loops
- const [currentObservation, setCurrentObservation] = useState(null);
- const lastCommandRef = useRef(null);
-
- // Generate observation only when command changes
- useEffect(() => {
- if (!result) {
- setCurrentObservation(null);
- return;
- }
- 
- // During learning phase, always regenerate when hrvHistory changes
- const commandKey = result.commandKey;
- const isLearning = commandKey === 'LEARNING';
- 
- // Only skip regeneration if command unchanged AND not in learning phase
- if (commandKey === lastCommandRef.current && !isLearning) return;
- 
- lastCommandRef.current = commandKey;
- 
- const obs = generateObservation(
- commandKey, 
- patterns, 
- daysOnApp, 
- lastObservationType,
- hrvHistory
- );
- 
- setCurrentObservation(obs);
- 
- if (obs && obs.type !== lastObservationType) {
- setLastObservationType(obs.type);
- }
- }, [result?.commandKey, patterns, daysOnApp, hrvHistory.length]);
-
- // Use currentObservation instead of computed observation
- const observation = currentObservation;
-
- // Generate action system
- const actions = useMemo(() => {
- if (!result) return null;
- return generateActions(result.commandKey, patterns, hrvHistory, complianceLog);
- }, [result, patterns, hrvHistory, complianceLog]);
-
- const hasTodayHRV = hrvHistory.some(h => h.date === getTodayLocal());
- const styles = result ? COMMAND_STYLES[result.commandKey] : COMMAND_STYLES.LEARNING;
-
- // ============================================
- // FEEDBACK SYSTEM
- // ============================================
- const shouldShowFeedback = () => {
- if (!feedbackRound1Complete && !feedbackRound1DismissedAt && daysOnApp >= 10 && daysOnApp <= 14) return 1;
- if (!feedbackRound2Complete && daysOnApp >= 35 && daysOnApp <= 45) {
- if (feedbackRound1Response === 'yes' || feedbackRound1Complete || daysOnApp >= 35) return 2;
- }
- return 0;
- };
-
- useEffect(() => {
- if (result && result.commandKey && result.commandKey !== 'LEARNING') {
- const round = shouldShowFeedback();
- if (round > 0) {
- const timer = setTimeout(() => {
- setFeedbackRound(round);
- setFeedbackStep(1);
- setFeedbackResponse(null);
- setFeedbackText('');
- setShowFeedback(true);
- }, 2000);
- return () => clearTimeout(timer);
- }
- }
- }, [result?.commandKey, daysOnApp]);
-
- const sendFeedback = () => {
- if (feedbackRound === 1) {
- setFeedbackRound1Complete(true);
- setFeedbackRound1Response(feedbackResponse);
- } else if (feedbackRound === 2) {
- setFeedbackRound2Complete(true);
- }
- setShowFeedback(false);
- setFeedbackStep(1);
- setFeedbackText('');
- setFeedbackEmail('');
- };
-
- const dismissFeedback = (dontAskAgain) => {
- if (feedbackRound === 1) {
- if (dontAskAgain) setFeedbackRound1Complete(true);
- else setFeedbackRound1DismissedAt(getTodayLocal());
- } else if (feedbackRound === 2) {
- setFeedbackRound2Complete(true);
- }
- setShowFeedback(false);
- setFeedbackStep(1);
- };
-
- // Reset function
- const resetAll = () => {
- localStorage.removeItem('genysys_v2_test_data');
- setHrvHistory([]);
- setComplianceLog([]);
- setFirstUseDate(null);
- setHrvSource(null);
- setUserName('');
- setResult(null);
- setTodayHRV('');
- setLastObservationType(null);
- setLastObservationDate(null);
- setSimulatedDaysOnApp(null);
- setFeedbackRound1Complete(false);
- setFeedbackRound1Response(null);
- setFeedbackRound1DismissedAt(null);
- setFeedbackRound2Complete(false);
- };
-
- // Load test scenario
- const loadTestScenario = (days, scenario) => {
- const { history, compliance } = generateTestData(days, scenario);
- setHrvHistory(history);
- setComplianceLog(compliance);
- setHrvSource({ id: 'test', label: 'Test Mode' });
- 
- // Set first use date to simulate correct days on app
- const firstDate = new Date();
- firstDate.setDate(firstDate.getDate() - days + 1);
- setFirstUseDate(getLocalDateString(firstDate));
- 
- // Calculate result for today
- const today = history.find(h => h.date === getTodayLocal());
- if (today) {
- setTodayHRV(today.value.toString());
- calculateResult(today.value, history);
- }
- };
-
- if (isLoading) {
- return (
- <div className="min-h-screen text-white flex items-center justify-center">
- <div className="mist-overlay"></div>
- <div className="content-layer text-white/40 pulse-slow">...</div>
- </div>
- );
- }
-
- // ============================================
- // DEBUG PANEL
- // ============================================
- const DebugPanel = () => (
- <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 p-4 z-50">
- <div className="max-w-lg mx-auto space-y-4">
- <div className="flex justify-between items-center">
- <span className="text-xs text-zinc-500 font-mono">TEST MODE</span>
- <button onClick={() => setShowDebug(false)} className="text-zinc-500 text-lg">×</button>
- </div>
- 
- {/* Quick load scenarios */}
- <div className="space-y-2">
- <div className="text-xs text-zinc-600">Load Test Scenario:</div>
- <div className="flex flex-wrap gap-2">
- <button onClick={() => loadTestScenario(7, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 7 Normal</button>
- <button onClick={() => loadTestScenario(30, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 30 Normal</button>
- <button onClick={() => loadTestScenario(60, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 60 Normal</button>
- <button onClick={() => loadTestScenario(90, 'normal')} className="bg-zinc-800 px-3 py-1 rounded text-xs">Day 90 Normal</button>
- <button onClick={() => loadTestScenario(14, 'crashing')} className="bg-red-900/50 px-3 py-1 rounded text-xs">Crashing</button>
- <button onClick={() => loadTestScenario(14, 'recovering')} className="bg-green-900/50 px-3 py-1 rounded text-xs">Recovering</button>
- <button onClick={() => loadTestScenario(14, 'volatile')} className="bg-amber-900/50 px-3 py-1 rounded text-xs">Volatile</button>
- </div>
- </div>
-
- {/* Simulate days */}
- <div className="flex items-center gap-2">
- <span className="text-xs text-zinc-600">Simulate Day:</span>
- <input
- type="number"
- value={simulatedDaysOnApp || ''}
- onChange={(e) => setSimulatedDaysOnApp(e.target.value ? parseInt(e.target.value) : null)}
- placeholder="actual"
- className="w-20 bg-zinc-800 rounded px-2 py-1 text-xs"
- />
- <button 
- onClick={() => setSimulatedDaysOnApp(null)}
- className="text-xs text-zinc-500"
- >
- reset
- </button>
- </div>
-
- {/* Current state */}
- <div className="text-xs font-mono text-zinc-600 space-y-1">
- <div>Days: {daysOnApp} | HRV entries: {hrvHistory.length} | Compliance: {complianceLog.length}</div>
- <div>Command: {result?.commandKey || 'none'} | Z: {result?.zScore?.toFixed(2) || 'N/A'}</div>
- <div>Observation type: {observation?.type || 'none'}</div>
- <div>Patterns: trend={patterns?.trend || 'N/A'}, below={patterns?.consecutiveBelowBaseline || 0}, crashes={patterns?.crashesAfterIgnoredRest?.length || 0}</div>
- <div>Feedback: R1={feedbackRound1Complete ? 'done' : 'pending'} ({feedbackRound1Response || '-'}) | R2={feedbackRound2Complete ? 'done' : 'pending'}</div>
- </div>
-
- {/* Actions */}
- <div className="flex flex-wrap gap-2">
- <button onClick={resetAll} className="bg-red-900 px-3 py-1 rounded text-xs">Reset All</button>
- <button 
- onClick={() => setLastObservationType(null)} 
- className="bg-zinc-800 px-3 py-1 rounded text-xs"
- >
- Reset Observation
- </button>
- <button 
- onClick={() => { setFeedbackRound(1); setFeedbackStep(1); setShowFeedback(true); }} 
- className="bg-blue-900/50 px-3 py-1 rounded text-xs"
- >
- Test Feedback R1
- </button>
- <button 
- onClick={() => { setFeedbackRound(2); setFeedbackStep(1); setShowFeedback(true); }} 
- className="bg-blue-900/50 px-3 py-1 rounded text-xs"
- >
- Test Feedback R2
- </button>
- <button 
- onClick={() => { setFeedbackRound1Complete(false); setFeedbackRound1Response(null); setFeedbackRound1DismissedAt(null); setFeedbackRound2Complete(false); }} 
- className="bg-zinc-800 px-3 py-1 rounded text-xs"
- >
- Reset Feedback
- </button>
- </div>
- </div>
- </div>
- );
-
- // ============================================
- // FIRST SCREEN
- // ============================================
- if (!hrvSource) {
- return (
- <div className="min-h-screen text-white p-6 flex flex-col justify-center">
- <div className="mist-overlay"></div>
- <div className="content-layer max-w-sm mx-auto space-y-10">
- 
- {/* Info icon - top right */}
- <button 
- onClick={() => setShowInfoModal(true)}
- className="absolute top-6 right-6 text-white/30 hover:text-white/60 transition-all"
- style={{ position: 'fixed' }}
- >
- <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
- <circle cx="12" cy="12" r="10"/>
- <path d="M12 16v-4M12 8h.01"/>
- </svg>
- </button>
- 
- <div className="space-y-3 text-center fade-in">
- <p className="text-white text-2xl font-light">
- Your body is talking.
- </p>
- <p className="text-white/60 text-lg">
- Now you know what it's asking for.
- </p>
- </div>
-
- <div className="space-y-4 text-center fade-in-delay-1">
- <p className="text-white/50">Give me a week — I'll find your baseline.</p>
- <p className="text-white/50">Give me a month — I'll recognize your rhythms.</p>
- <p className="text-white/40 leading-relaxed">Give me a year — I'll see what even you can't:<br/>what pushes you forward… and what sets you back.</p>
- </div>
-
- <div className="space-y-4 fade-in-delay-2">
- <p className="text-white/40 text-sm text-center">Where does your HRV come from?</p>
- <div className="grid grid-cols-2 gap-2">
- {HRV_SOURCES.map(source => (
- <button
- key={source.id}
- onClick={() => setHrvSource(source)}
- className="glass hover:bg-white/10 rounded-2xl py-3 px-4 text-sm text-white/70 hover:text-white transition-all duration-300"
- >
- {source.label}
- </button>
- ))}
- </div>
- 
- {/* Custom device input */}
- <div className="flex gap-2 mt-3">
- <input
- type="text"
- value={customDevice}
- onChange={(e) => setCustomDevice(e.target.value)}
- placeholder="Other device..."
- className="flex-1 glass rounded-2xl py-3 px-4 text-sm text-white placeholder-white/30 bg-transparent border-0 outline-none focus:ring-1 focus:ring-white/20"
- />
- {customDevice.trim() && (
- <button
- onClick={() => setHrvSource({ id: 'custom', label: customDevice.trim() })}
- className="glass hover:bg-white/10 rounded-2xl py-3 px-4 text-sm text-white/70 hover:text-white transition-all duration-300"
- >
- →
- </button>
- )}
- </div>
- </div>
-
- </div>
-
- {/* Test mode button */}
- <button
- onClick={() => setShowDebug(true)}
- className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
- >
- 🧪 TEST
- </button>
- {showDebug && <DebugPanel />}
- <Tagline />
- 
- {/* Info Modal */}
- {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} hrvSource={hrvSource} />}
- </div>
- );
- }
-
- // ============================================
- // HRV INPUT
- // ============================================
- if (!hasTodayHRV) {
- // Calculate countdown - updates when hrvHistory changes
- const daysRemaining = 4 - hrvHistory.length;
- const countdownText = daysRemaining > 0 
- ? `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands · Add history below to unlock today`
- : hrvHistory.length < 7 ? 'Personalized guidance unlocking...' : null;
- 
- return (
- <div className="min-h-screen text-white p-4 flex flex-col overflow-y-auto">
- <div className="mist-overlay"></div>
- 
- {/* Info icon - top right */}
- <button 
- onClick={() => setShowInfoModal(true)}
- className="fixed top-4 right-4 text-white/30 hover:text-white/60 transition-all z-20"
- >
- <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
- <circle cx="12" cy="12" r="10"/>
- <path d="M12 16v-4M12 8h.01"/>
- </svg>
- </button>
- 
- <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-6 py-12">
- 
- {/* Day counter + countdown */}
- <div className="text-center fade-in space-y-1">
- <div className="text-white/30 text-sm tracking-wide">
- {daysOnApp <= 1 ? "Day 1" : `Day ${daysOnApp}`}
- </div>
- {countdownText && (
- <div className="text-white/20 text-xs">
- {countdownText}
- </div>
- )}
- </div>
-
- {needsYesterdayCompliance && (
- <div className="glass rounded-2xl p-4 space-y-3 fade-in">
- <p className="text-white/60 text-center text-sm">
- Yesterday I said <span style={{ color: COMMAND_STYLES[yesterdayLog.command].color }}>{yesterdayLog.command}</span>
- </p>
- <div className="flex gap-2">
- <button
- onClick={() => recordCompliance('yes')}
- className="flex-1 glass-light hover:bg-white/10 rounded-xl py-2.5 text-sm text-white/80 transition-all duration-300"
- >
- I listened
- </button>
- <button
- onClick={() => recordCompliance('no')}
- className="flex-1 glass-light hover:bg-white/10 rounded-xl py-2.5 text-sm text-white/80 transition-all duration-300"
- >
- I didn't
- </button>
- </div>
- </div>
- )}
-
- <div className="space-y-3 fade-in-delay-1">
- <p className="text-white/60 text-center">
- {daysOnApp <= 1 ? "What's your HRV this morning?" : "What's your HRV?"}
- </p>
- <div className="flex gap-2">
- <input
- type="number"
- value={todayHRV}
- onChange={(e) => setTodayHRV(e.target.value)}
- onKeyDown={(e) => e.key === 'Enter' && handleSubmitHRV()}
- placeholder="HRV"
- className="flex-1 glass rounded-2xl px-4 py-3 text-xl text-center font-light text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
- autoFocus
- />
- <button
- onClick={handleSubmitHRV}
- className="bg-white/90 text-black rounded-2xl px-5 py-3 font-medium hover:bg-white transition-all duration-300"
- >
- Go
- </button>
- </div>
- <p className="text-white/20 text-xs text-center">
- from {hrvSource.label}
- </p>
- </div>
-
- <button
- onClick={() => setShowAddHistory(true)}
- className="text-white/30 text-sm hover:text-white/50 transition-all"
- >
- + Add past days
- </button>
-
- </div>
-
- {/* Test button */}
- <button
- onClick={() => setShowDebug(true)}
- className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
- >
- 🧪 TEST
- </button>
- {showDebug && <DebugPanel />}
-
- {showAddHistory && (
- <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
- <div className="glass-dark rounded-t-3xl p-6 w-full max-w-md space-y-6">
- <div className="flex justify-between items-center">
- <h3 className="text-lg font-medium text-white">Add Past HRV</h3>
- <button 
- onClick={() => setShowAddHistory(false)}
- className="text-white/40 hover:text-white text-2xl transition-colors"
- >×</button>
- </div>
- 
- <p className="text-white/40 text-sm">
- The more history I have, the faster I learn you.
- </p>
- 
- <div className="flex gap-2">
- <input
- type="number"
- value={newEntry}
- onChange={(e) => setNewEntry(e.target.value)}
- onKeyDown={(e) => e.key === 'Enter' && addHistoricalEntry()}
- placeholder="HRV"
- className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
- autoFocus
- />
- <input
- type="date"
- value={newEntryDate}
- onChange={(e) => setNewEntryDate(e.target.value)}
- className="flex-1 glass rounded-xl px-3 py-3 text-white/60 focus:outline-none"
- />
- <button
- onClick={addHistoricalEntry}
- className="glass-light hover:bg-white/10 rounded-xl px-4 py-3 text-white/80 transition-all"
- >
- Add
- </button>
- </div>
-
- {hrvHistory.length > 0 && (
- <div className="space-y-2 max-h-48 overflow-y-auto">
- {[...hrvHistory].reverse().slice(0, 14).map((entry, i) => (
- <div key={entry.date} className="flex justify-between items-center text-sm text-white/40 py-2 border-b border-white/5">
- <span>{entry.date}</span>
- <div className="flex items-center gap-3">
- <span className="font-mono">{entry.value} ms</span>
- <button
- onClick={() => deleteHistoricalEntry(entry.date)}
- className="text-white/20 hover:text-red-400 transition-colors text-lg leading-none"
- title="Delete entry"
- >×</button>
- </div>
- </div>
- ))}
- </div>
- )}
-
- <button
- onClick={() => setShowAddHistory(false)}
- className="w-full glass-light hover:bg-white/10 rounded-xl py-3 text-white/80 transition-all"
- >
- Done — {hrvHistory.length} days logged
- </button>
- </div>
- </div>
- )}
- 
- {/* Info Modal */}
- {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} hrvSource={hrvSource} />}
- 
- <Tagline />
- </div>
- );
- }
-
- // ============================================
- // MAIN VIEW
- // ============================================
- return (
- <div className="min-h-screen text-white p-6 flex flex-col">
- <div className="mist-overlay"></div>
- 
- {/* Info icon - top right */}
- <button 
- onClick={() => setShowInfoModal(true)}
- className="fixed top-6 right-6 text-white/30 hover:text-white/60 transition-all z-20"
- >
- <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
- <circle cx="12" cy="12" r="10"/>
- <path d="M12 16v-4M12 8h.01"/>
- </svg>
- </button>
- 
- <div className="content-layer max-w-sm mx-auto flex-1 flex flex-col justify-center space-y-8">
- 
- {/* Day indicator */}
- <div className="text-center">
- <span className="text-white/30 text-sm tracking-wide">Day {daysOnApp}</span>
- </div>
-
- {/* Pattern Name - if detected */}
- {patterns?.patternName && (
- <div className="text-center fade-in">
- <span className="text-white/40 text-xs uppercase tracking-widest">
- {patterns.patternName === 'recovery_arc' && "You're in a recovery arc"}
- {patterns.patternName === 'back_to_back_crash' && `You crash after back-to-back PERFORMs`}
- </span>
- </div>
- )}
-
- {/* Day-of-week pattern */}
- {patterns?.todayDowPattern && !patterns?.patternName && (
- <div className="text-center fade-in">
- <span className="text-white/40 text-xs uppercase tracking-widest">
- {patterns.todayDowPattern.tendency === 'low' 
- ? `Your ${patterns.todayDowPattern.day}s tend to be low`
- : `${patterns.todayDowPattern.day}s are usually your strong day`}
- </span>
- </div>
- )}
-
- {observation && (
- <div className="text-center fade-in">
- <p className="text-white/60 text-sm leading-snug px-2 line-clamp-2">
- "<Typewriter 
- key={observation.type + observation.text.substring(0, 20)} 
- text={observation.text} 
- speed={60} 
- />"
- </p>
- </div>
- )}
-
- {/* IMPOSSIBLE INSIGHT - when detected */}
- {patterns?.impossibleInsight && (
- <div className="text-center fade-in">
- <p className="text-amber-400/70 text-xs font-medium">
- ⚠ {patterns.impossibleInsight.text}
- </p>
- </div>
- )}
-
- <div 
- className="glass rounded-3xl py-8 px-6 text-center fade-in-delay-1"
- style={{ 
- boxShadow: `0 8px 32px ${styles.glow || 'rgba(0,0,0,0.2)'}`,
- borderColor: styles.border
- }}
- >
- <div 
- className="text-5xl font-bold tracking-tight mb-4"
- style={{ color: styles.color }}
- >
- {result?.commandKey || 'LEARNING'}
- </div>
- 
- {/* Stats - right under command */}
- {patterns && daysOnApp >= 7 && (
- <p className="text-white/25 text-xs mb-5">
- {patterns.performDays} peaks · {patterns.restDays} protected · {patterns.totalDays} days
- </p>
- )}
- 
- {/* Action System inside card */}
- {actions && (
- <div className="space-y-3 text-left border-t border-white/10 pt-4 mt-2">
- <div className="flex items-start gap-2">
- <span className="text-white/30 text-xs font-medium uppercase tracking-wide w-16 shrink-0 mt-0.5">Action</span>
- <p className="text-white/60 text-xs leading-relaxed">{actions.primaryAction}</p>
- </div>
- <div className="flex items-start gap-2">
- <span className="text-white/30 text-xs font-medium uppercase tracking-wide w-16 shrink-0 mt-0.5">Effort</span>
- <p className="text-white/50 text-xs leading-relaxed">{actions.effortBoundary}</p>
- </div>
- <div className="flex items-start gap-2">
- <span className="text-white/30 text-xs font-medium uppercase tracking-wide w-16 shrink-0 mt-0.5">Recovery</span>
- <p className="text-white/50 text-xs leading-relaxed">{actions.recoveryLever}</p>
- </div>
- </div>
- )}
- </div>
-
- {/* Guardrail - below the card */}
- {actions?.guardrail && (
- <div className="text-center fade-in-delay-2">
- <p className="text-amber-400/60 text-xs">
- ⚠️ {actions.guardrail}
- </p>
- </div>
- )}
-
- {result?.isPreview && (
- <div className="text-center space-y-1">
- <p className="text-white/50 text-xs">
- {result.daysUntilFull} day{result.daysUntilFull > 1 ? 's' : ''} until personalized guidance unlocks.
- </p>
- <p className="text-white/30 text-xs">
- We don't guess. We learn you first.
- </p>
- </div>
- )}
-
- </div>
-
- <div className="content-layer max-w-sm mx-auto w-full pt-8 pb-16 flex justify-between text-white/40 text-xs">
- <button 
- onClick={() => setShowAddHistory(true)}
- className="hover:text-white/70 transition-all"
- >
- + Add history
- </button>
- <button 
- onClick={resetAll}
- className="hover:text-white/70 transition-all"
- >
- Reset
- </button>
- </div>
-
- {/* Test button */}
- <button
- onClick={() => setShowDebug(true)}
- className="fixed bottom-4 right-4 bg-amber-600 text-black text-xs font-bold px-3 py-2 rounded-lg z-20"
- >
- 🧪 TEST
- </button>
- {showDebug && <DebugPanel />}
-
- {showAddHistory && (
- <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
- <div className="glass-dark rounded-t-3xl p-6 w-full max-w-md space-y-6">
- <div className="flex justify-between items-center">
- <h3 className="text-lg font-medium text-white">Add Past HRV</h3>
- <div className="flex items-center gap-4">
- <span className="text-white/40 text-sm">{hrvHistory.length} {hrvHistory.length === 1 ? 'entry' : 'entries'}</span>
- <button 
- onClick={() => setShowAddHistory(false)}
- className="text-white/40 hover:text-white text-2xl"
- >×</button>
- </div>
- </div>
- 
- <div className="flex gap-2">
- <input
- type="number"
- value={newEntry}
- onChange={(e) => setNewEntry(e.target.value)}
- onKeyDown={(e) => e.key === 'Enter' && addHistoricalEntry()}
- placeholder="HRV"
- className="w-24 glass rounded-xl px-3 py-3 text-center text-white placeholder-white/30 focus:outline-none"
- autoFocus
- />
- <input
- type="date"
- value={newEntryDate}
- onChange={(e) => setNewEntryDate(e.target.value)}
- className="flex-1 glass rounded-xl px-3 py-3 text-white/60 focus:outline-none"
- />
- <button
- onClick={addHistoricalEntry}
- className="glass-light hover:bg-white/10 rounded-xl px-4 py-3 text-white/80 transition-all"
- >
- Add
- </button>
- </div>
-
- {hrvHistory.length > 0 && (
- <div className="space-y-2 max-h-48 overflow-y-auto">
- {[...hrvHistory].reverse().slice(0, 14).map((entry, i) => (
- <div key={entry.date} className="flex justify-between items-center text-sm text-white/40 py-2 border-b border-white/5">
- <span>{entry.date}</span>
- <div className="flex items-center gap-3">
- <span className="font-mono">{entry.value} ms</span>
- <button
- onClick={() => deleteHistoricalEntry(entry.date)}
- className="text-white/20 hover:text-red-400 transition-colors text-lg leading-none"
- title="Delete entry"
- >×</button>
- </div>
- </div>
- ))}
- </div>
- )}
-
- <button
- onClick={() => setShowAddHistory(false)}
- className="w-full glass-light hover:bg-white/10 rounded-xl py-3 text-white/80 transition-all"
- >
- Done
- </button>
- </div>
- </div>
- )}
-
- {/* Feedback Modal */}
- {showFeedback && (
- <FeedbackModal
- round={feedbackRound}
- daysOnApp={daysOnApp}
- step={feedbackStep}
- setStep={setFeedbackStep}
- response={feedbackResponse}
- setResponse={setFeedbackResponse}
- text={feedbackText}
- setText={setFeedbackText}
- email={feedbackEmail}
- setEmail={setFeedbackEmail}
- onSend={sendFeedback}
- onDismiss={dismissFeedback}
- />
- )}
- 
- {/* Info Modal */}
- {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} hrvSource={hrvSource} />}
- 
- <Tagline />
- </div>
- );
- };
-
- ReactDOM.createRoot(document.getElementById('root')).render(<App />);
- </script>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+    // ============================================
+    // ANALYTICS (Disabled in TEST mode)
+    // ============================================
+    const Analytics = {
+      init() {},
+      setDevice() {},
+      track(event, props) { console.log('[TEST Analytics]', event, props); }
+    };
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+    const getLocalDateString = (date = new Date()) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const getTodayLocal = () => getLocalDateString();
+    
+    const getYesterdayLocal = () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      return getLocalDateString(yesterday);
+    };
+
+    const getDayName = (dateStr) => {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      return days[new Date(dateStr).getDay()];
+    };
+
+    const formatDateAnchor = (dateStr) => {
+      if (!dateStr) return null;
+      const date = new Date(dateStr + 'T12:00:00');
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const day = date.getDate();
+      const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
+      return `${months[date.getMonth()]} ${day}${suffix}`;
+    };
+
+    // ============================================
+    // TEST DATA GENERATORS
+    // ============================================
+    const generateTestData = (days, baseHRV = 50, variance = 10) => {
+      const history = [];
+      const compliance = [];
+      const today = new Date();
+      
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = getLocalDateString(date);
+        
+        // Add some realistic patterns
+        const dayOfWeek = date.getDay();
+        const weekendBonus = (dayOfWeek === 0 || dayOfWeek === 6) ? 5 : 0;
+        const trend = Math.sin(i / 7 * Math.PI) * 5; // weekly cycle
+        const noise = (Math.random() - 0.5) * variance;
+        
+        const value = Math.round(baseHRV + weekendBonus + trend + noise);
+        history.push({ date: dateStr, value: Math.max(20, Math.min(100, value)) });
+        
+        // Add random compliance for REST days
+        if (value < baseHRV - variance/2 && i > 0 && Math.random() > 0.3) {
+          compliance.push({
+            date: dateStr,
+            command: 'REST',
+            followed: Math.random() > 0.4 ? 'yes' : 'no'
+          });
+        }
+      }
+      
+      return { history, compliance };
+    };
+
+    // ============================================
+    // ALGORITHM (unchanged from validated version)
+    // ============================================
+    const THRESHOLDS = { REST: -1.0, PERFORM: 0.5, MIN_DAYS: 7, MIN_PREVIEW_DAYS: 4, MAD_FLOOR: 3.0 };
+
+    const calculateMedian = (arr) => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    };
+
+    const calculateMAD = (arr, median) => {
+      const deviations = arr.map(v => Math.abs(v - median)).sort((a, b) => a - b);
+      return Math.max(calculateMedian(deviations) * 1.4826, THRESHOLDS.MAD_FLOOR);
+    };
+
+    const getCommandKey = (zScore) => {
+      if (zScore === null) return 'LEARNING';
+      if (zScore < THRESHOLDS.REST) return 'REST';
+      if (zScore >= THRESHOLDS.PERFORM) return 'PERFORM';
+      return 'BUILD';
+    };
+
+    // ============================================
+    // PATTERN ENGINE
+    // ============================================
+    const analyzePatterns = (hrvHistory, complianceLog, firstUseDate) => {
+      if (hrvHistory.length < 3) return null;
+
+      const values = hrvHistory.map(h => h.value);
+      const median = calculateMedian(values);
+      const mad = calculateMAD(values, median);
+
+      const withZScores = hrvHistory.map(h => ({
+        ...h,
+        zScore: (h.value - median) / mad,
+        command: getCommandKey((h.value - median) / mad)
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const patterns = {
+        baseline: median,
+        mad,
+        totalDays: hrvHistory.length,
+        restDays: withZScores.filter(h => h.command === 'REST').length,
+        buildDays: withZScores.filter(h => h.command === 'BUILD').length,
+        performDays: withZScores.filter(h => h.command === 'PERFORM').length,
+        crashes: [],
+        crashesAfterIgnoredRest: [],
+        recoveriesAfterRest: [],
+        trend: null,
+        consecutiveBelowBaseline: 0,
+        consecutiveAboveBaseline: 0,
+        nearestMatch: null,
+        lastPerformDate: null,
+        daysSincePerform: null,
+        isVolatile: false,
+        isStable: false,
+      };
+
+      const recent = withZScores.slice(-5);
+      if (recent.length >= 3) {
+        let rising = 0, falling = 0;
+        for (let i = 1; i < recent.length; i++) {
+          if (recent[i].zScore > recent[i-1].zScore) rising++;
+          else if (recent[i].zScore < recent[i-1].zScore) falling++;
+        }
+        if (rising >= 3) patterns.trend = 'rising';
+        else if (falling >= 3) patterns.trend = 'falling';
+        else patterns.trend = 'stable';
+      }
+
+      const reversed = [...withZScores].reverse();
+      for (const h of reversed) {
+        if (h.zScore < 0) patterns.consecutiveBelowBaseline++;
+        else break;
+      }
+      for (const h of reversed) {
+        if (h.zScore > 0) patterns.consecutiveAboveBaseline++;
+        else break;
+      }
+
+      const performDays = withZScores.filter(h => h.command === 'PERFORM');
+      if (performDays.length > 0) {
+        const lastPerform = performDays[performDays.length - 1];
+        patterns.lastPerformDate = lastPerform.date;
+        patterns.daysSincePerform = Math.floor(
+          (new Date(getTodayLocal()) - new Date(lastPerform.date)) / (1000 * 60 * 60 * 24)
+        );
+      }
+
+      const restDaysHistory = withZScores.filter(h => h.command === 'REST');
+      if (restDaysHistory.length > 0) {
+        const lastRest = restDaysHistory[restDaysHistory.length - 1];
+        patterns.lastRestDate = lastRest.date;
+        patterns.daysSinceRest = Math.floor(
+          (new Date(getTodayLocal()) - new Date(lastRest.date)) / (1000 * 60 * 60 * 24)
+        );
+      }
+
+      if (complianceLog && complianceLog.length > 0) {
+        complianceLog.forEach(log => {
+          if (!log.command || !log.followed) return;
+          
+          const nextDate = new Date(log.date);
+          nextDate.setDate(nextDate.getDate() + 1);
+          const nextDateStr = getLocalDateString(nextDate);
+          const nextDay = withZScores.find(h => h.date === nextDateStr);
+          
+          if (!nextDay) return;
+          
+          if (log.command === 'REST' && log.followed === 'no') {
+            if (nextDay.zScore < THRESHOLDS.REST) {
+              patterns.crashesAfterIgnoredRest.push({
+                ignoredDate: log.date,
+                crashDate: nextDateStr,
+                daysLost: 1
+              });
+            }
+          }
+          
+          if (log.command === 'REST' && log.followed === 'yes') {
+            if (nextDay.zScore >= THRESHOLDS.REST) {
+              patterns.recoveriesAfterRest.push({
+                restDate: log.date,
+                readyDate: nextDateStr
+              });
+            }
+          }
+        });
+      }
+
+      const zScoreStd = Math.sqrt(
+        withZScores.reduce((sum, h) => sum + Math.pow(h.zScore, 2), 0) / withZScores.length
+      );
+      patterns.isVolatile = zScoreStd > 1.5;
+      patterns.isStable = zScoreStd < 0.8;
+
+      // Day-of-week pattern detection
+      const dayOfWeekStats = {};
+      withZScores.forEach(h => {
+        const dow = new Date(h.date).getDay();
+        if (!dayOfWeekStats[dow]) dayOfWeekStats[dow] = { sum: 0, count: 0 };
+        dayOfWeekStats[dow].sum += h.zScore;
+        dayOfWeekStats[dow].count++;
+      });
+      
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      let worstDay = null, worstAvg = Infinity;
+      let bestDay = null, bestAvg = -Infinity;
+      
+      Object.entries(dayOfWeekStats).forEach(([dow, stats]) => {
+        if (stats.count >= 3) {
+          const avg = stats.sum / stats.count;
+          if (avg < worstAvg) { worstAvg = avg; worstDay = parseInt(dow); }
+          if (avg > bestAvg) { bestAvg = avg; bestDay = parseInt(dow); }
+        }
+      });
+      
+      if (worstDay !== null && worstAvg < -0.5) {
+        patterns.weakDay = { day: dayNames[worstDay], avgZ: worstAvg };
+      }
+      if (bestDay !== null && bestAvg > 0.5) {
+        patterns.strongDay = { day: dayNames[bestDay], avgZ: bestAvg };
+      }
+
+      // Weekend split analysis
+      const weekdayValues = withZScores.filter(h => {
+        const dow = new Date(h.date).getDay();
+        return dow >= 1 && dow <= 5;
+      }).map(h => h.value);
+      
+      const weekendValues = withZScores.filter(h => {
+        const dow = new Date(h.date).getDay();
+        return dow === 0 || dow === 6;
+      }).map(h => h.value);
+      
+      if (weekdayValues.length >= 5 && weekendValues.length >= 2) {
+        const weekdayMean = weekdayValues.reduce((a, b) => a + b, 0) / weekdayValues.length;
+        const weekendMean = weekendValues.reduce((a, b) => a + b, 0) / weekendValues.length;
+        const spread = weekendMean - weekdayMean;
+        
+        if (Math.abs(spread) >= 5) {
+          patterns.weekendSplit = {
+            weekdayMean: Math.round(weekdayMean),
+            weekendMean: Math.round(weekendMean),
+            spread: Math.round(spread)
+          };
+        }
+      }
+
+      const today = hrvHistory.find(h => h.date === getTodayLocal());
+      if (today) {
+        const todayZ = (today.value - median) / mad;
+        let nearest = null;
+        let nearestDiff = Infinity;
+        
+        withZScores.forEach(h => {
+          if (h.date === getTodayLocal()) return;
+          const diff = Math.abs(h.zScore - todayZ);
+          if (diff < nearestDiff && diff < 0.5) {
+            nearestDiff = diff;
+            nearest = h;
+          }
+        });
+        
+        if (nearest) {
+          const nextDate = new Date(nearest.date);
+          nextDate.setDate(nextDate.getDate() + 1);
+          const nextDateStr = getLocalDateString(nextDate);
+          const compliance = complianceLog?.find(c => c.date === nearest.date);
+          const nextDay = withZScores.find(h => h.date === nextDateStr);
+          
+          patterns.nearestMatch = {
+            date: nearest.date,
+            zScore: nearest.zScore,
+            command: nearest.command,
+            pushed: compliance?.followed === 'no',
+            rested: compliance?.followed === 'yes',
+            nextDayCrashed: nextDay ? nextDay.zScore < THRESHOLDS.REST : null,
+            nextDayRecovered: nextDay ? nextDay.zScore >= 0 : null
+          };
+        }
+      }
+
+      return patterns;
+    };
+
+    // ============================================
+    // CONFIDENCE & MODE SYSTEMS
+    // ============================================
+    const calculateConfidence = (hrvHistory, patterns, complianceLog = []) => {
+      if (!patterns || hrvHistory.length < 14) {
+        return { 
+          level: 'low', 
+          score: 30,
+          reason: hrvHistory.length < 14 ? 'early_onboarding' : 'no_patterns',
+          components: { signal: 15, quality: 10, support: 5 }
+        };
+      }
+      
+      const todayEntry = hrvHistory.find(h => h.date === getTodayLocal());
+      let signalScore = 15;
+      
+      if (todayEntry && patterns.baseline && patterns.mad) {
+        const robustZ = Math.abs((todayEntry.value - patterns.baseline) / patterns.mad);
+        if (robustZ < 0.7) signalScore = 15;
+        else if (robustZ < 1.5) signalScore = 30;
+        else signalScore = 45;
+      }
+      
+      let qualityScore = 10;
+      const totalDays = hrvHistory.length;
+      if (totalDays >= 30) qualityScore = 25;
+      else if (totalDays >= 21) qualityScore = 20;
+      else if (totalDays >= 14) qualityScore = 15;
+      
+      const yesterday = getYesterdayLocal();
+      const hasYesterday = hrvHistory.some(h => h.date === yesterday);
+      if (!hasYesterday) qualityScore = Math.max(10, qualityScore - 10);
+      
+      let supportScore = 5;
+      if (patterns.nearestMatch) {
+        const today = hrvHistory.find(h => h.date === getTodayLocal());
+        if (today) {
+          const todayZ = (today.value - patterns.baseline) / patterns.mad;
+          const todayCommand = getCommandKey(todayZ);
+          
+          const withZScores = hrvHistory.map(h => ({
+            ...h,
+            zScore: (h.value - patterns.baseline) / patterns.mad,
+            command: getCommandKey((h.value - patterns.baseline) / patterns.mad)
+          })).filter(h => h.date !== getTodayLocal());
+          
+          const similarDays = withZScores.filter(h => {
+            const zDiff = Math.abs(h.zScore - todayZ);
+            return h.command === todayCommand && zDiff < 0.8;
+          });
+          
+          if (similarDays.length >= 4) supportScore = 20;
+          else if (similarDays.length >= 2) supportScore = 12;
+        }
+      }
+      
+      const totalScore = signalScore + qualityScore + supportScore;
+      let level = 'low';
+      if (totalScore >= 75) level = 'high';
+      else if (totalScore >= 50) level = 'medium';
+      
+      if (patterns.isVolatile && level === 'high') level = 'medium';
+      
+      return {
+        level,
+        score: totalScore,
+        reason: level === 'low' ? 'insufficient_evidence' : level === 'medium' ? 'moderate_evidence' : 'strong_evidence',
+        components: { signal: signalScore, quality: qualityScore, support: supportScore }
+      };
+    };
+
+    const getMode = (confidence, complianceLog, daysOnApp) => {
+      if (confidence.level === 'low' || daysOnApp < 14) return 'UNCERTAIN';
+      
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const recentOverrides = complianceLog.filter(log => {
+        const logDate = new Date(log.date);
+        return logDate >= sevenDaysAgo && log.followed === 'no';
+      }).length;
+      
+      const yesterday = getYesterdayLocal();
+      const yesterdayLog = complianceLog.find(c => c.date === yesterday);
+      const ignoredYesterdayRest = yesterdayLog?.command === 'REST' && yesterdayLog?.followed === 'no';
+      
+      if (recentOverrides >= 2 || ignoredYesterdayRest) return 'PROTECTIVE';
+      return 'DIRECTIVE';
+    };
+
+    const getContext = (command, patterns, complianceLog, hrvHistory, daysOnApp) => {
+      const confidence = calculateConfidence(hrvHistory, patterns, complianceLog);
+      const mode = getMode(confidence, complianceLog, daysOnApp);
+      
+      const context = {
+        mode,
+        confidence,
+        type: 'default',
+        isWarning: false,
+        isAfterRest: false,
+        isConsecutive: false,
+        isTrending: patterns?.trend || 'stable'
+      };
+      
+      if (command === 'REST') {
+        if (patterns?.trend === 'falling' || confidence.level === 'low') {
+          context.isWarning = true;
+          context.type = 'warning';
+        }
+      }
+      
+      if (command === 'BUILD') {
+        if (patterns?.trend === 'falling' || confidence.level === 'low') {
+          context.isWarning = true;
+          context.type = 'warning';
+        }
+        if (patterns?.trend === 'rising' && patterns?.consecutiveAboveBaseline >= 3) {
+          context.type = 'momentum';
+        }
+        const yesterday = getYesterdayLocal();
+        const yesterdayLog = complianceLog?.find(c => c.date === yesterday);
+        if (yesterdayLog?.command === 'REST' && yesterdayLog?.followed === 'yes') {
+          context.isAfterRest = true;
+          if (context.mode === 'DIRECTIVE') context.type = 'after_rest';
+        }
+      }
+      
+      if (command === 'PERFORM') {
+        const yesterday = getYesterdayLocal();
+        const yesterdayLog = complianceLog?.find(c => c.date === yesterday);
+        if (yesterdayLog?.command === 'PERFORM') {
+          context.isConsecutive = true;
+          context.type = 'consecutive';
+        }
+        if (patterns?.totalDays >= 14 && patterns?.crashesAfterIgnoredRest?.length >= 2) {
+          context.isWarning = true;
+          if (!context.isConsecutive) context.type = 'warning';
+        }
+      }
+      
+      return context;
+    };
+
+    // ============================================
+    // OBSERVATION & ACTION GENERATORS
+    // ============================================
+    const generateObservation = (command, patterns, daysOnApp, hrvHistory, complianceLog = []) => {
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      const pick = (arr) => arr.length > 0 ? arr[seed % arr.length] : null;
+      
+      if (!patterns) {
+        const daysRemaining = 4 - hrvHistory.length;
+        if (daysRemaining > 0) {
+          return { text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands unlock.`, type: 'learning_countdown' };
+        }
+        return { text: "Your baseline is forming.", type: 'learning_forming' };
+      }
+
+      const context = getContext(command, patterns, complianceLog, hrvHistory, daysOnApp);
+      const mode = context.mode;
+      const confidence = context.confidence;
+      const crashCount = patterns.crashesAfterIgnoredRest?.length || 0;
+      const canUsePersonalization = daysOnApp >= 14 && confidence.level !== 'low';
+
+      if (command === 'REST') {
+        if (canUsePersonalization && patterns.nearestMatch?.nextDayCrashed) {
+          const anchor = formatDateAnchor(patterns.nearestMatch.date);
+          if (anchor) return { text: `This looks like ${anchor}. That day cost you.`, type: 'rest_date_anchor' };
+        }
+        
+        if (canUsePersonalization && crashCount >= 2) {
+          return { text: `${crashCount} times you've pushed through REST. ${crashCount} times you paid.`, type: 'rest_proof' };
+        }
+        
+        if (mode === 'DIRECTIVE') {
+          return pick([
+            { text: "The work is done. Now the building happens.", type: 'rest_directive' },
+            { text: "You stressed the system. Now it adapts.", type: 'rest_directive' },
+            { text: "Not a setback. A setup.", type: 'rest_directive' }
+          ]);
+        }
+        
+        if (mode === 'PROTECTIVE') {
+          return pick([
+            { text: "You feel fine. The trend says otherwise.", type: 'rest_protective' },
+            { text: "The body doesn't send alerts. It just keeps sliding until it hands you the bill.", type: 'rest_protective' }
+          ]);
+        }
+        
+        return { text: "Signal is unclear. Default to less.", type: 'rest_uncertain' };
+      }
+
+      if (command === 'BUILD') {
+        if (context.isAfterRest && mode === 'DIRECTIVE') {
+          return pick([
+            { text: "You rested. This is the return.", type: 'build_after_rest' },
+            { text: "Yesterday's patience. Today's capacity.", type: 'build_after_rest' }
+          ]);
+        }
+        
+        if (mode === 'DIRECTIVE') {
+          return pick([
+            { text: "Room to work. Not room to be reckless.", type: 'build_directive' },
+            { text: "Middle of your range. Solid work is available.", type: 'build_directive' },
+            { text: "Enough for quality. Not enough for ego.", type: 'build_directive' }
+          ]);
+        }
+        
+        if (mode === 'PROTECTIVE') {
+          return pick([
+            { text: "Still in range, but the direction matters.", type: 'build_protective' },
+            { text: "The runway is getting shorter. Land smoothly.", type: 'build_protective' }
+          ]);
+        }
+        
+        return { text: "Do what's programmed. Nothing extra.", type: 'build_uncertain' };
+      }
+
+      if (command === 'PERFORM') {
+        if (context.isConsecutive) {
+          return { text: "Second straight day. Rare. Stay disciplined.", type: 'perform_consecutive' };
+        }
+        
+        if (canUsePersonalization && patterns.daysSincePerform >= 7) {
+          return { text: `First green in ${patterns.daysSincePerform} days. The drought is over.`, type: 'perform_rarity' };
+        }
+        
+        if (mode === 'DIRECTIVE') {
+          return pick([
+            { text: "The tank is full. This is what you've been building toward.", type: 'perform_directive' },
+            { text: "Green light. No caveats.", type: 'perform_directive' },
+            { text: "Capacity is peaking. Use it. You can't save it.", type: 'perform_directive' }
+          ]);
+        }
+        
+        if (mode === 'PROTECTIVE') {
+          return { text: "Green light. But the road still has turns.", type: 'perform_protective' };
+        }
+        
+        return { text: "Green, but signal is noisy. Keep it controlled.", type: 'perform_uncertain' };
+      }
+      
+      return { text: "Baseline forming.", type: 'learning' };
+    };
+
+    const generateActions = (command, patterns, hrvHistory, complianceLog = [], daysOnApp = 0) => {
+      if (!patterns || hrvHistory.length < 7) return null;
+      
+      const context = getContext(command, patterns, complianceLog, hrvHistory, daysOnApp);
+
+      if (command === 'REST') {
+        if (context.isWarning) {
+          return {
+            primaryAction: "10-20 minute walk. 10 minutes stretching. That's the whole day.",
+            effortBoundary: "Conversation pace. If you can't speak in full sentences, slow down. RPE 2.",
+            recoveryLever: "In bed 30-60 minutes earlier than usual. This is the lever.",
+            guardrail: "Restlessness is a feeling, not a command."
+          };
+        }
+        return {
+          primaryAction: "20-30 minutes easy movement. Walk, stretch, foam roll. Stop while it still feels easy.",
+          effortBoundary: "Nose-breath only. If you need your mouth, slow down. RPE 2-3.",
+          recoveryLever: "Water before coffee. Protein at every meal. Protect an 8-hour sleep window.",
+          guardrail: "No 'just a quick one.' That's how rest days become debt."
+        };
+      }
+
+      if (command === 'BUILD') {
+        if (context.isWarning) {
+          return {
+            primaryAction: "Same workout. Pull one lever back 20%: lighter load, fewer reps, or shorter time cap. Pick one.",
+            effortBoundary: "RPE 6 ceiling. When form breaks, rack it.",
+            recoveryLever: "In bed 30 minutes earlier than usual. Protein within 60 minutes.",
+            guardrail: "A shortened session is a win. A crash is a week lost."
+          };
+        }
+        if (context.isAfterRest) {
+          return {
+            primaryAction: "Full programmed work. Finish feeling like you could do a little more—but don't.",
+            effortBoundary: "RPE 7. Leave 20% in the tank. That's fuel for the streak.",
+            recoveryLever: "Don't undo yesterday's investment. Another good night tonight.",
+            guardrail: "Feeling good doesn't mean 'go all out.' It means 'execute cleanly.'"
+          };
+        }
+        return {
+          primaryAction: "Programmed work only. Skip the finisher. Leave 10 minutes before you normally would.",
+          effortBoundary: "RPE 7 cap. Finish feeling like you could do a little more. When form breaks, rack it.",
+          recoveryLever: "Protein within 2 hours of training. Protect 7-8 hours sleep.",
+          guardrail: "Don't turn a BUILD day into a PERFORM day. They have different purposes."
+        };
+      }
+
+      if (command === 'PERFORM') {
+        if (context.isConsecutive) {
+          return {
+            primaryAction: "Shorter session than yesterday. 75% of the duration. 85% of the intensity.",
+            effortBoundary: "RPE 7-8 ceiling. Lower than yesterday. If anything feels off in warm-up, convert to BUILD.",
+            recoveryLever: "Tonight is critical. 8+ hours. Extra protein. This is probably the last green for a while.",
+            guardrail: "Three consecutive PERFORMs almost never end well. Stop while you're ahead."
+          };
+        }
+        if (context.isWarning) {
+          return {
+            primaryAction: "One hard effort in the first 15 minutes. Then coast. No encores.",
+            effortBoundary: "RPE 8 once. Then immediately drop to 6.",
+            recoveryLever: "Double down on recovery tonight.",
+            guardrail: "This pattern has cost days before. Keep today clean so tomorrow stays alive."
+          };
+        }
+        return {
+          primaryAction: "Your hard effort goes in the first 20 minutes. Heavy lift, benchmark, key interval—whatever it is, do it first. Then coast.",
+          effortBoundary: "RPE 8-9 for one effort. Leave a rep in reserve. Then drop to 6-7. No second peaks.",
+          recoveryLever: "Refuel within 60 minutes: protein + carbs. Protect an 8-hour sleep window.",
+          guardrail: "Don't turn a great day into a two-day hangover. One peak. Then done."
+        };
+      }
+
+      return null;
+    };
+
+    // ============================================
+    // IMPOSSIBLE INSIGHTS
+    // ============================================
+    const getImpossibleInsight = (daysOnApp, patterns, complianceLog) => {
+      if (daysOnApp === 7 && patterns?.weekendSplit) {
+        const { weekdayMean, weekendMean } = patterns.weekendSplit;
+        return {
+          label: 'YOUR FIRST WEEK',
+          content: [
+            `Monday through Friday: ${weekdayMean}.`,
+            `Saturday and Sunday: ${weekendMean}.`,
+            '',
+            'You are not the same person on weekends.',
+            '',
+            "You've never noticed this.",
+            'How could you?',
+            "You can't feel a weekly average.",
+            '',
+            "But it's been true your whole life.",
+            'Now you know.'
+          ]
+        };
+      }
+      
+      if (daysOnApp === 14 && (patterns?.weakDay || patterns?.strongDay)) {
+        const lines = [];
+        if (patterns.weakDay && patterns.strongDay) {
+          lines.push(`Your worst days: ${patterns.weakDay.day}s.`);
+          lines.push(`Your best days: ${patterns.strongDay.day}s.`);
+        } else if (patterns.weakDay) {
+          lines.push(`Your ${patterns.weakDay.day}s consistently drag.`);
+        } else if (patterns.strongDay) {
+          lines.push(`Your ${patterns.strongDay.day}s consistently peak.`);
+        }
+        lines.push('');
+        lines.push('This is not random.');
+        lines.push('This is your weekly rhythm.');
+        
+        return { label: 'TWO WEEKS', content: lines };
+      }
+      
+      if (daysOnApp === 30) {
+        const restIssued = complianceLog.filter(c => c.command === 'REST').length;
+        const restFollowed = complianceLog.filter(c => c.command === 'REST' && c.followed === 'yes').length;
+        
+        if (restIssued >= 3) {
+          return {
+            label: 'ONE MONTH',
+            content: [
+              `REST commands: ${restIssued}`,
+              `Followed: ${restFollowed}`,
+              '',
+              'The times REST was followed',
+              'all preceded climbs.',
+              '',
+              'The pattern is already clear.'
+            ]
+          };
+        }
+      }
+      
+      if (daysOnApp === 90) {
+        return {
+          label: 'NINETY DAYS',
+          content: [
+            'Rest → rise.',
+            'Push through → fall.',
+            '',
+            'You just never had a translator',
+            'to show you the results.',
+            '',
+            'Now you do.'
+          ]
+        };
+      }
+      
+      return null;
+    };
+
+    // ============================================
+    // UI COMPONENTS
+    // ============================================
+    
+    const CommandWord = ({ command, onClick, isRevealed }) => {
+      const colors = {
+        REST: '#FDA4AF',
+        BUILD: '#C9A962', 
+        PERFORM: '#6EE7B7',
+        LEARNING: '#A1A1AA'
+      };
+      
+      return (
+        <div 
+          className={`text-center cursor-pointer transition-all duration-600 ${isRevealed ? 'pt-8' : 'pt-32'}`}
+          onClick={onClick}
+        >
+          <h1 
+            className={`font-display animate-rise ${isRevealed ? 'text-4xl' : 'text-7xl'}`}
+            style={{ 
+              color: colors[command] || colors.LEARNING,
+              transition: 'font-size 600ms ease-in-out'
+            }}
+          >
+            {command}
+          </h1>
+          {!isRevealed && (
+            <p className="text-sm mt-8 animate-fade delay-500" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>
+              touch to understand
+            </p>
+          )}
+        </div>
+      );
+    };
+
+    const Observation = ({ text }) => (
+      <div className="text-center px-8 animate-rise">
+        <p className="text-base leading-relaxed" style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          {text}
+        </p>
+      </div>
+    );
+
+    const Prescription = ({ actions }) => {
+      if (!actions) return null;
+      
+      return (
+        <div className="px-8 space-y-5 animate-rise delay-200">
+          <div className="divider" />
+          
+          <div className="space-y-4">
+            <PrescriptionItem text={actions.primaryAction} />
+            <PrescriptionItem text={actions.effortBoundary} muted />
+            <PrescriptionItem text={actions.recoveryLever} muted />
+          </div>
+          
+          <div className="divider" />
+          
+          <div className="flex items-start gap-3 animate-rise delay-300">
+            <span style={{ color: 'var(--rose)', fontSize: '14px' }}>⚠</span>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--rose)', opacity: 0.8 }}>
+              {actions.guardrail}
+            </p>
+          </div>
+        </div>
+      );
+    };
+
+    const PrescriptionItem = ({ text, muted }) => (
+      <div className="flex items-start gap-3">
+        <span className="mt-2 block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
+        <p className="text-sm leading-relaxed" style={{ color: muted ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
+          {text}
+        </p>
+      </div>
+    );
+
+    const InsightBlock = ({ insight }) => {
+      if (!insight) return null;
+      
+      return (
+        <div className="insight-block animate-rise delay-400 mt-8">
+          <div className="label">{insight.label}</div>
+          <div className="content">
+            {insight.content.map((line, i) => (
+              <React.Fragment key={i}>
+                {line || <br />}
+                {line && i < insight.content.length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const CompliancePrompt = ({ onSelect }) => (
+      <div className="fixed inset-0 flex items-center justify-center p-10" style={{ background: 'var(--bg-primary)' }}>
+        <div className="text-center space-y-10 animate-rise max-w-sm w-full">
+          <p className="font-display text-xl italic" style={{ color: 'var(--text-secondary)' }}>
+            Yesterday was...
+          </p>
+          
+          <div className="flex gap-4">
+            <button onClick={() => onSelect('yes')} className="btn-primary flex-1">Rested</button>
+            <button onClick={() => onSelect('no')} className="btn-primary flex-1">Trained</button>
+          </div>
+        </div>
+      </div>
+    );
+
+    const HRVInput = ({ value, onChange, onSubmit, hrvSource }) => (
+      <div className="space-y-6 animate-rise">
+        <div className="text-center">
+          <p className="text-sm mb-2" style={{ color: 'var(--text-muted)' }}>
+            {hrvSource?.label || 'Your'} HRV this morning
+          </p>
+        </div>
+        
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
+          placeholder="ms"
+          className="input-minimal text-3xl font-display"
+          autoFocus
+        />
+        
+        <button
+          onClick={onSubmit}
+          disabled={!value}
+          className="btn-primary"
+          style={{ 
+            opacity: value ? 1 : 0.3,
+            borderColor: value ? 'var(--gold)' : 'var(--text-faint)',
+            color: value ? 'var(--gold)' : 'var(--text-muted)'
+          }}
+        >
+          Log
+        </button>
+      </div>
+    );
+
+    // ============================================
+    // TEST PANEL COMPONENT
+    // ============================================
+    const TestPanel = ({ 
+      hrvHistory, 
+      patterns, 
+      daysOnApp, 
+      onLoadTestData, 
+      onSetDaysOnApp,
+      onAddTodayHRV,
+      onClear 
+    }) => {
+      const [testHRV, setTestHRV] = useState('50');
+      
+      return (
+        <div className="test-panel">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs" style={{ color: 'var(--amber)' }}>TEST:</span>
+            
+            <button onClick={() => onLoadTestData(7)} className="btn-test">7d data</button>
+            <button onClick={() => onLoadTestData(14)} className="btn-test">14d data</button>
+            <button onClick={() => onLoadTestData(30)} className="btn-test">30d data</button>
+            <button onClick={() => onLoadTestData(90)} className="btn-test">90d data</button>
+            
+            <span className="text-xs mx-2" style={{ color: 'var(--text-muted)' }}>|</span>
+            
+            <input
+              type="number"
+              value={testHRV}
+              onChange={(e) => setTestHRV(e.target.value)}
+              className="w-16 px-2 py-1 text-xs rounded"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--text-faint)', color: 'var(--text-primary)' }}
+            />
+            <button onClick={() => onAddTodayHRV(parseInt(testHRV))} className="btn-test">Add Today</button>
+            
+            <span className="text-xs mx-2" style={{ color: 'var(--text-muted)' }}>|</span>
+            
+            <button onClick={onClear} className="btn-test">Clear</button>
+            
+            <span className="text-xs ml-auto" style={{ color: 'var(--text-muted)' }}>
+              {hrvHistory.length}d | {patterns?.baseline ? `μ${Math.round(patterns.baseline)}` : '—'} | Day {daysOnApp}
+            </span>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================
+    // MAIN APPLICATION
+    // ============================================
+    const App = () => {
+      const [hrvHistory, setHrvHistory] = useState([]);
+      const [complianceLog, setComplianceLog] = useState([]);
+      const [firstUseDate, setFirstUseDate] = useState(null);
+      const [hrvSource, setHrvSource] = useState({ id: 'test', label: 'TEST' });
+      const [isLoading, setIsLoading] = useState(true);
+      
+      const [todayHRV, setTodayHRV] = useState('');
+      const [isRevealed, setIsRevealed] = useState(false);
+      const [showCompliancePrompt, setShowCompliancePrompt] = useState(false);
+      const [pendingCompliance, setPendingCompliance] = useState(null);
+
+      useEffect(() => {
+        try {
+          const saved = localStorage.getItem('genysys_v2_test_data');
+          if (saved) {
+            const data = JSON.parse(saved);
+            setHrvHistory(data.hrvHistory || []);
+            setComplianceLog(data.complianceLog || []);
+            setFirstUseDate(data.firstUseDate);
+          }
+        } catch (e) {
+          console.error('Error loading data:', e);
+        }
+        setIsLoading(false);
+      }, []);
+
+      const saveData = useCallback((updates = {}) => {
+        const data = {
+          hrvHistory,
+          complianceLog,
+          firstUseDate,
+          hrvSource,
+          ...updates
+        };
+        localStorage.setItem('genysys_v2_test_data', JSON.stringify(data));
+      }, [hrvHistory, complianceLog, firstUseDate, hrvSource]);
+
+      const today = getTodayLocal();
+      const todayEntry = hrvHistory.find(h => h.date === today);
+      const patterns = useMemo(() => analyzePatterns(hrvHistory, complianceLog, firstUseDate), [hrvHistory, complianceLog, firstUseDate]);
+      
+      const daysOnApp = firstUseDate 
+        ? Math.floor((new Date() - new Date(firstUseDate)) / (1000 * 60 * 60 * 24)) + 1
+        : hrvHistory.length || 1;
+
+      const result = useMemo(() => {
+        if (!todayEntry || !patterns) {
+          return { commandKey: 'LEARNING', isPreview: true, daysUntilFull: Math.max(0, 7 - hrvHistory.length) };
+        }
+        const zScore = (todayEntry.value - patterns.baseline) / patterns.mad;
+        const command = getCommandKey(zScore);
+        return { commandKey: command, zScore, isPreview: hrvHistory.length < 7 };
+      }, [todayEntry, patterns, hrvHistory.length]);
+
+      const observation = useMemo(() => 
+        generateObservation(result?.commandKey, patterns, daysOnApp, hrvHistory, complianceLog),
+        [result?.commandKey, patterns, daysOnApp, hrvHistory, complianceLog]
+      );
+
+      const actions = useMemo(() => 
+        generateActions(result?.commandKey, patterns, hrvHistory, complianceLog, daysOnApp),
+        [result?.commandKey, patterns, hrvHistory, complianceLog, daysOnApp]
+      );
+
+      const impossibleInsight = useMemo(() => 
+        getImpossibleInsight(daysOnApp, patterns, complianceLog),
+        [daysOnApp, patterns, complianceLog]
+      );
+
+      // TEST HANDLERS
+      const handleLoadTestData = (days) => {
+        const { history, compliance } = generateTestData(days);
+        const firstDate = history[0]?.date || getTodayLocal();
+        setHrvHistory(history);
+        setComplianceLog(compliance);
+        setFirstUseDate(firstDate);
+        setIsRevealed(false);
+        saveData({ hrvHistory: history, complianceLog: compliance, firstUseDate: firstDate });
+      };
+
+      const handleAddTodayHRV = (value) => {
+        if (isNaN(value) || value < 1) return;
+        const newHistory = [...hrvHistory.filter(h => h.date !== today), { date: today, value }];
+        if (!firstUseDate) setFirstUseDate(today);
+        setHrvHistory(newHistory);
+        setIsRevealed(false);
+        saveData({ hrvHistory: newHistory, firstUseDate: firstUseDate || today });
+      };
+
+      const handleClear = () => {
+        setHrvHistory([]);
+        setComplianceLog([]);
+        setFirstUseDate(null);
+        setIsRevealed(false);
+        localStorage.removeItem('genysys_v2_test_data');
+      };
+
+      const handleLogHRV = () => {
+        const value = parseInt(todayHRV);
+        if (isNaN(value) || value < 1 || value > 300) return;
+        handleAddTodayHRV(value);
+        setTodayHRV('');
+      };
+
+      const handleComplianceSelect = (followed) => {
+        if (!pendingCompliance) return;
+        const newLog = [...complianceLog, { ...pendingCompliance, followed }];
+        setComplianceLog(newLog);
+        saveData({ complianceLog: newLog });
+        setShowCompliancePrompt(false);
+        setPendingCompliance(null);
+      };
+
+      if (isLoading) {
+        return (
+          <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+            <div className="animate-fade" style={{ color: 'var(--text-muted)' }}>...</div>
+          </div>
+        );
+      }
+
+      if (showCompliancePrompt) {
+        return <CompliancePrompt onSelect={handleComplianceSelect} />;
+      }
+
+      return (
+        <div className="min-h-screen pb-16" style={{ background: 'var(--bg-primary)' }}>
+          {/* TEST MODE BADGE */}
+          <div className="test-badge">TEST MODE</div>
+          
+          <div className="max-w-md mx-auto px-10 py-8 min-h-screen flex flex-col">
+            
+            <header className="flex justify-between items-center mb-8">
+              <span className="text-xs tracking-widest" style={{ color: 'var(--gold)', opacity: 0.6 }}>
+                GENYSYS
+              </span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </span>
+            </header>
+
+            <main className="flex-1 flex flex-col">
+              
+              {!todayEntry && (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-xs">
+                    <HRVInput
+                      value={todayHRV}
+                      onChange={setTodayHRV}
+                      onSubmit={handleLogHRV}
+                      hrvSource={hrvSource}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {todayEntry && (
+                <div className="flex-1">
+                  <CommandWord 
+                    command={result?.commandKey || 'LEARNING'} 
+                    onClick={() => setIsRevealed(true)}
+                    isRevealed={isRevealed}
+                  />
+
+                  {isRevealed && (
+                    <div className="mt-8 space-y-6">
+                      {observation && <Observation text={observation.text} />}
+                      <Prescription actions={actions} />
+                      {impossibleInsight && (
+                        <div className="px-8">
+                          <InsightBlock insight={impossibleInsight} />
+                        </div>
+                      )}
+                      {result?.isPreview && (
+                        <div className="text-center mt-8 animate-rise delay-500">
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {result.daysUntilFull > 0 
+                              ? `${result.daysUntilFull} days until personalized guidance unlocks.`
+                              : 'Baseline forming.'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+          </div>
+
+          {/* TEST PANEL */}
+          <TestPanel
+            hrvHistory={hrvHistory}
+            patterns={patterns}
+            daysOnApp={daysOnApp}
+            onLoadTestData={handleLoadTestData}
+            onAddTodayHRV={handleAddTodayHRV}
+            onClear={handleClear}
+          />
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
