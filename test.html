@@ -267,13 +267,24 @@
       const lines = csvText.trim().split('\n');
       const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
       
-      // Find column indices
-      const dateCol = headers.findIndex(h => h.toLowerCase().includes('cycle start') || h.toLowerCase().includes('date'));
-      const hrvCol = headers.findIndex(h => h.toLowerCase().includes('heart rate variability') || h.toLowerCase() === 'hrv');
+      console.log('[CSV] Headers:', headers);
+      
+      // Find column indices - more flexible matching
+      const dateCol = headers.findIndex(h => {
+        const lower = h.toLowerCase();
+        return lower.includes('cycle start') || lower.includes('start time') || lower === 'date';
+      });
+      const hrvCol = headers.findIndex(h => {
+        const lower = h.toLowerCase();
+        return lower.includes('heart rate variability') || lower.includes('hrv');
+      });
       const tzCol = headers.findIndex(h => h.toLowerCase().includes('timezone'));
       
+      console.log('[CSV] Column indices - date:', dateCol, 'hrv:', hrvCol, 'tz:', tzCol);
+      
       if (dateCol === -1 || hrvCol === -1) {
-        console.error('Could not find date or HRV columns', headers);
+        console.error('[CSV] Could not find required columns. Headers:', headers);
+        alert('Could not find date or HRV columns in CSV. Check console for details.');
         return { entries: [], timezones: [] };
       }
       
@@ -287,18 +298,25 @@
         const tz = tzCol !== -1 ? row[tzCol] : null;
         
         if (dateStr && !isNaN(hrvVal) && hrvVal > 0) {
-          // Parse date - handle various formats
+          // Parse date - extract YYYY-MM-DD
           let date;
           if (dateStr.includes(' ')) {
-            date = dateStr.split(' ')[0]; // Take date part only
+            date = dateStr.split(' ')[0]; // Take date part only (before time)
           } else {
             date = dateStr;
           }
-          // Normalize to YYYY-MM-DD
+          
+          // Handle MM/DD/YYYY format
           if (date.includes('/')) {
             const parts = date.split('/');
-            if (parts[2].length === 4) {
-              date = `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+            if (parts.length === 3) {
+              if (parts[2].length === 4) {
+                // MM/DD/YYYY
+                date = `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+              } else if (parts[0].length === 4) {
+                // YYYY/MM/DD
+                date = `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+              }
             }
           }
           
@@ -306,6 +324,8 @@
           if (tz) timezones.push({ date, timezone: tz });
         }
       }
+      
+      console.log('[CSV] Parsed', entries.length, 'entries. First 3:', entries.slice(0, 3), 'Last 3:', entries.slice(-3));
       
       // Sort by date and remove duplicates (keep latest)
       entries.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -317,6 +337,8 @@
           uniqueEntries.unshift(entries[i]);
         }
       }
+      
+      console.log('[CSV] After dedup:', uniqueEntries.length, 'unique entries');
       
       return { entries: uniqueEntries, timezones };
     };
@@ -1730,12 +1752,6 @@
         if (confirm('Reset all data? This cannot be undone.')) {
           localStorage.removeItem('genysys_v2_data');
           localStorage.removeItem('genysys_analytics');
-          setSimulatedDay(null);
-          setCsvLoaded(false);
-          setHrvHistory([]);
-          setComplianceLog([]);
-          setFirstUseDate(null);
-          setHrvSource(null);
           window.location.reload();
         }
       };
@@ -1901,28 +1917,36 @@
                     <div className="test-section-title">Current State</div>
                     <div className="test-grid">
                       <div className="test-stat">
+                        <div className="test-stat-label">Date</div>
+                        <div className="test-stat-value">{today}</div>
+                      </div>
+                      <div className="test-stat">
                         <div className="test-stat-label">Command</div>
                         <div className="test-stat-value" style={{ color: result?.commandKey === 'REST' ? 'var(--rose)' : result?.commandKey === 'PERFORM' ? 'var(--green)' : 'var(--text-primary)' }}>{result?.commandKey}</div>
+                      </div>
+                      <div className="test-stat">
+                        <div className="test-stat-label">Today HRV</div>
+                        <div className="test-stat-value" style={{ color: 'var(--gold)', fontWeight: '600' }}>{todayEntry?.value || 'N/A'} ms</div>
+                      </div>
+                      <div className="test-stat">
+                        <div className="test-stat-label">Baseline</div>
+                        <div className="test-stat-value">{Math.round(patterns.baseline)} ms</div>
+                      </div>
+                      <div className="test-stat">
+                        <div className="test-stat-label">MAD</div>
+                        <div className="test-stat-value">{patterns.mad?.toFixed(1) || 'N/A'}</div>
                       </div>
                       <div className="test-stat">
                         <div className="test-stat-label">Z-Score</div>
                         <div className="test-stat-value">{result?.zScore?.toFixed(2) || 'N/A'}</div>
                       </div>
                       <div className="test-stat">
-                        <div className="test-stat-label">Baseline</div>
-                        <div className="test-stat-value">{Math.round(patterns.baseline)}</div>
-                      </div>
-                      <div className="test-stat">
-                        <div className="test-stat-label">Today HRV</div>
-                        <div className="test-stat-value">{todayEntry?.value || 'N/A'}</div>
-                      </div>
-                      <div className="test-stat">
                         <div className="test-stat-label">Trend</div>
                         <div className="test-stat-value">{patterns.trend || 'stable'}</div>
                       </div>
                       <div className="test-stat">
-                        <div className="test-stat-label">REST Crashes</div>
-                        <div className="test-stat-value">{patterns.crashesAfterIgnoredRest?.length || 0}</div>
+                        <div className="test-stat-label">Days in History</div>
+                        <div className="test-stat-value">{effectiveHistory.length}</div>
                       </div>
                     </div>
                   </div>
