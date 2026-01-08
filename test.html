@@ -269,8 +269,9 @@
       
       console.log('[CSV] Headers:', headers);
       
-      // Find column indices - more flexible matching
-      const dateCol = headers.findIndex(h => {
+      // Find column indices - WHOOP shows HRV on wake day, not sleep day
+      const wakeCol = headers.findIndex(h => h.toLowerCase().includes('wake onset'));
+      const dateCol = wakeCol !== -1 ? wakeCol : headers.findIndex(h => {
         const lower = h.toLowerCase();
         return lower.includes('cycle start') || lower.includes('start time') || lower === 'date';
       });
@@ -280,7 +281,7 @@
       });
       const tzCol = headers.findIndex(h => h.toLowerCase().includes('timezone'));
       
-      console.log('[CSV] Column indices - date:', dateCol, 'hrv:', hrvCol, 'tz:', tzCol);
+      console.log('[CSV] Column indices - date:', dateCol, '(using wake onset:', wakeCol !== -1, '), hrv:', hrvCol, 'tz:', tzCol);
       
       if (dateCol === -1 || hrvCol === -1) {
         console.error('[CSV] Could not find required columns. Headers:', headers);
@@ -1752,7 +1753,21 @@
         if (confirm('Reset all data? This cannot be undone.')) {
           localStorage.removeItem('genysys_v2_data');
           localStorage.removeItem('genysys_analytics');
-          window.location.reload();
+          setHrvHistory([]);
+          setComplianceLog([]);
+          setFirstUseDate(null);
+          setHrvSource(null);
+          setTodayHRV('');
+          setIsRevealed(false);
+          setShowHistory(false);
+          setShowInfo(false);
+          setShowCompliancePrompt(false);
+          setPendingCompliance(null);
+          setShowFeedback(false);
+          setFeedbackState({ round1: false, round2: false });
+          setSimulatedDay(null);
+          setCsvLoaded(false);
+          setShowTestPanel(true);
         }
       };
 
