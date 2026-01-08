@@ -775,7 +775,7 @@
       const pick = (arr) => arr[seed % arr.length];
       
       if (!patterns) {
-        const daysRemaining = 4 - hrvHistory.length;
+        const daysRemaining = 3 - hrvHistory.length;
         if (daysRemaining > 0) return { text: `${daysRemaining} day${daysRemaining > 1 ? 's' : ''} until commands unlock.`, type: 'learning' };
         return { text: "Your baseline is forming.", type: 'learning' };
       }
@@ -989,6 +989,34 @@
     // IMPOSSIBLE INSIGHTS - The Story Arc
     // ============================================
     const getImpossibleInsight = (daysOnApp, patterns, complianceLog, hrvHistory) => {
+      // Day 2: The Difference (no data required - philosophy message)
+      if (daysOnApp === 2) {
+        return {
+          label: 'WHY THIS IS DIFFERENT',
+          lines: [
+            'Every device tells you how you slept.',
+            'How you recovered. Your readiness score.',
+            '',
+            'None of them tell you what to do.',
+            '',
+            'GENYSYS does. One word. Every morning.',
+            "And it's right.",
+            '',
+            'When it says push — push.',
+            'When it says rest — rest.',
+            '',
+            'We tested this. When you listen, you win.',
+            "When you don't, you pay for it.",
+            'Not with some abstract number. With days.',
+            'Days you could have trained.',
+            'Days you lost to injury.',
+            '',
+            "Your body's been sending signals your whole life.",
+            'GENYSYS is the first thing that actually translates them.'
+          ]
+        };
+      }
+
       if (!patterns) return null;
 
       // Day 7: Weekend Split
@@ -1249,7 +1277,7 @@
           <h1 className={`font-display animate-rise ${isRevealed ? 'text-3xl' : 'text-5xl'}`} style={{ color: colors[command], transition: 'font-size 500ms ease' }}>
             {command}
           </h1>
-          {!isRevealed && <p className="text-sm mt-8 animate-fade delay-1000" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>touch to understand</p>}
+          {!isRevealed && <p className="text-sm mt-8 animate-fade delay-1000" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to listen</p>}
         </div>
       );
     };
@@ -1796,7 +1824,8 @@
           return { commandKey: 'LEARNING', isPreview: true, daysUntilFull: Math.max(0, 7 - effectiveHistory.length) };
         }
         const zScore = (todayEntry.value - patterns.baseline) / patterns.mad;
-        return { commandKey: getCommandKey(zScore), zScore, isPreview: effectiveHistory.length < 7 };
+        const isPreview = effectiveHistory.length < 7;
+        return { commandKey: getCommandKey(zScore), zScore, isPreview, daysUntilFull: isPreview ? Math.max(0, 7 - effectiveHistory.length) : 0 };
       }, [todayEntry, patterns, effectiveHistory.length]);
 
       const observation = useMemo(() => generateObservation(result?.commandKey, patterns, daysOnApp, effectiveHistory, complianceLog), [result?.commandKey, patterns, daysOnApp, effectiveHistory, complianceLog]);
@@ -1936,10 +1965,15 @@
                       <Prescription actions={actions} />
                       
                       {result?.isPreview && (
-                        <div className="text-center mt-6 animate-rise delay-500">
+                        <div className="text-center mt-6 animate-rise delay-500 space-y-3">
                           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             {result.daysUntilFull > 0 ? `${result.daysUntilFull} day${result.daysUntilFull > 1 ? 's' : ''} until personalized guidance unlocks.` : 'Baseline forming.'}
                           </p>
+                          {result.daysUntilFull > 0 && (
+                            <p className="text-xs" style={{ color: 'var(--gold)', opacity: 0.8 }}>
+                              Your past data can unlock this now.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
