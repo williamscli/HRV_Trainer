@@ -55,7 +55,7 @@
  // ============================================
  // ANALYTICS CONFIGURATION
  // ============================================
- const ANALYTICS_ENDPOINT = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+ const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/library/d/1tH6wJT61hMFEdVka0Md_fhMPzL060snQkeT930cVytFgseesr2eRPiWH/5';
  
  const ALLOWED_EVENTS = [
  'session_start', 'onboarding_complete', 'first_hrv_logged', 'hrv_logged',
@@ -1410,6 +1410,7 @@
  { id: 'oura', label: 'Oura' },
  { id: 'garmin', label: 'Garmin' },
  { id: 'fitbit', label: 'Fitbit' },
+ { id: 'samsung', label: 'Samsung Watch' },
  ];
 
  // ============================================
@@ -1477,12 +1478,12 @@
  ]
  },
  samsung: {
- title: 'Where to find your HRV (Samsung)',
+ title: 'Where to find your HRV (Samsung Watch)',
  steps: [
- 'Open Samsung Health app',
- 'Go to Home → Stress measurement',
- 'Take a stress reading (includes HRV)',
- 'Use the HRV value in milliseconds'
+ 'Open Samsung Health app on your phone',
+ 'Tap Home → scroll to Heart Rate Variability',
+ 'Or: Tap Stress → view HRV from stress measurement',
+ 'Use the RMSSD value in milliseconds (ms)'
  ]
  },
  custom: {
