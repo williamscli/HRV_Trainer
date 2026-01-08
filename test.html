@@ -90,14 +90,56 @@
     
     .divider { height: 1px; background: var(--text-faint); opacity: 0.3; margin: 24px 0; }
     
+    /* Collapsible Insight Block - Scroll metaphor */
+    .insight-scroll {
+      margin: 0 24px 16px 24px;
+      cursor: pointer;
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .insight-scroll-line {
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold) 0%, transparent 100%);
+      transition: all 300ms ease;
+    }
+    .insight-scroll-content {
+      padding: 16px 0 16px 20px;
+      border-left: 2px solid var(--gold);
+      overflow: hidden;
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .insight-scroll.collapsed .insight-scroll-content {
+      height: 0;
+      padding: 0;
+      opacity: 0;
+      border-left-color: transparent;
+    }
+    .insight-scroll.collapsed .insight-scroll-line:last-child {
+      opacity: 0;
+      height: 0;
+    }
+    .insight-scroll-label { 
+      font-size: 11px; 
+      letter-spacing: 0.15em; 
+      text-transform: uppercase; 
+      color: var(--text-muted); 
+      margin-bottom: 6px; 
+    }
+    .insight-scroll-text { 
+      font-family: var(--font-display); 
+      font-style: italic; 
+      font-size: 16px; 
+      line-height: 1.5; 
+      color: var(--text-secondary); 
+    }
+    
     .insight-block {
       border-left: 2px solid var(--gold);
       padding-left: 24px;
       margin-top: 32px;
       opacity: 0.85;
     }
-    .insight-block .label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
-    .insight-block .content { font-family: var(--font-display); font-style: italic; font-size: 15px; line-height: 1.8; color: var(--text-secondary); }
+    .insight-block .label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .insight-block .content { font-family: var(--font-display); font-style: italic; font-size: 16px; line-height: 1.5; color: var(--text-secondary); }
     
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100; }
     .modal-content { position: fixed; inset: 0; z-index: 101; overflow-y: auto; }
@@ -1203,8 +1245,8 @@
     const CommandWord = ({ command, onClick, isRevealed }) => {
       const colors = { REST: '#FDA4AF', BUILD: '#C9A962', PERFORM: '#6EE7B7', LEARNING: '#A1A1AA' };
       return (
-        <div className={`text-center cursor-pointer transition-all duration-500 ${isRevealed ? 'pt-8' : 'pt-24'}`} onClick={onClick}>
-          <h1 className={`font-display animate-rise ${isRevealed ? 'text-4xl' : 'text-7xl'}`} style={{ color: colors[command], transition: 'font-size 500ms ease' }}>
+        <div className={`text-center cursor-pointer transition-all duration-500 ${isRevealed ? 'py-4' : 'py-16'}`} onClick={onClick}>
+          <h1 className={`font-display animate-rise ${isRevealed ? 'text-3xl' : 'text-5xl'}`} style={{ color: colors[command], transition: 'font-size 500ms ease' }}>
             {command}
           </h1>
           {!isRevealed && <p className="text-sm mt-8 animate-fade delay-1000" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>touch to understand</p>}
@@ -1236,6 +1278,34 @@
             <span style={{ color: 'var(--rose)', fontSize: '14px' }}>⚠</span>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--rose)', opacity: 0.8 }}>{actions.guardrail}</p>
           </div>
+        </div>
+      );
+    };
+
+    // Collapsible Insight Scroll - appears above observation when open
+    const InsightScroll = ({ insight }) => {
+      const [isOpen, setIsOpen] = useState(true);
+      
+      if (!insight) return null;
+      
+      return (
+        <div 
+          className={`insight-scroll animate-rise ${isOpen ? '' : 'collapsed'}`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="insight-scroll-line" />
+          <div className="insight-scroll-content">
+            <div className="insight-scroll-label">{insight.label}</div>
+            <div className="insight-scroll-text">
+              {insight.lines.map((line, i) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i < insight.lines.length - 1 && <br/>}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+          <div className="insight-scroll-line" />
         </div>
       );
     };
@@ -1840,40 +1910,33 @@
                   <CommandWord command={result?.commandKey || 'LEARNING'} onClick={() => setIsRevealed(true)} isRevealed={isRevealed} />
 
                   {isRevealed && (
-                    <div className="mt-8 space-y-6">
-                      {observation && <Observation text={observation.text} />}
-                      <Prescription actions={actions} />
-                      {insight && <InsightBlock insight={insight} />}
+                    <div className="mt-6 space-y-4">
+                      {/* Insight scroll - above observation, collapsible */}
+                      {insight && <InsightScroll insight={insight} />}
                       
                       {/* Day 1-2 Promise Content (disappears after enough data) */}
                       {!insight && effectiveHistory.length < 7 && daysOnApp <= 2 && (
-                        <div className="insight-block animate-rise delay-400 mt-8 mx-8">
-                          <div className="label">{daysOnApp === 1 ? 'THE PROMISE' : 'WHAT YOU\'LL LEARN'}</div>
-                          <div className="content">
-                            {daysOnApp === 1 ? (
-                              <>
-                                Give me a week — I'll find your baseline.<br /><br />
-                                Give me a month — I'll recognize your rhythms.<br /><br />
-                                Give me a year — I'll see what even you can't:<br />
-                                <em>what pushes you forward… and what sets you back.</em>
-                              </>
-                            ) : (
-                              <>
-                                Before you opened this,<br />
-                                you already had a story about how you feel.<br /><br />
-                                Tired. Energized. Ready. Wrecked.<br /><br />
-                                The body doesn't run on stories.<br />
-                                It runs on the night you just had.<br /><br />
-                                For your whole life, you've been guessing.<br />
-                                The body has been keeping score.
-                              </>
-                            )}
-                          </div>
-                        </div>
+                        <InsightScroll insight={{
+                          label: daysOnApp === 1 ? 'THE PROMISE' : 'WHAT YOU\'LL LEARN',
+                          lines: daysOnApp === 1 ? [
+                            'In a week, you\'ll stop guessing.',
+                            'In a month, you\'ll recognize your cycles.',
+                            'In a year, you\'ll understand the version of you that shows up again and again —',
+                            'and how to steer it.'
+                          ] : [
+                            'Before you opened this, you already had a story about how you feel.',
+                            'Tired. Energized. Ready. Wrecked.',
+                            'The body doesn\'t run on stories. It runs on the night you just had.',
+                            'For your whole life, you\'ve been guessing. The body has been keeping score.'
+                          ]
+                        }} />
                       )}
                       
+                      {observation && <Observation text={observation.text} />}
+                      <Prescription actions={actions} />
+                      
                       {result?.isPreview && (
-                        <div className="text-center mt-8 animate-rise delay-500">
+                        <div className="text-center mt-6 animate-rise delay-500">
                           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             {result.daysUntilFull > 0 ? `${result.daysUntilFull} day${result.daysUntilFull > 1 ? 's' : ''} until personalized guidance unlocks.` : 'Baseline forming.'}
                           </p>
@@ -1885,8 +1948,8 @@
               )}
             </main>
 
-            <footer className="pt-8 pb-4 flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
-              <button onClick={() => setShowHistory(true)} className="hover:opacity-70">+ Add history</button>
+            <footer className="pt-4 pb-4 flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
+              <button onClick={() => setShowHistory(true)} className="hover:opacity-70">+ History</button>
               <button onClick={resetAll} className="hover:opacity-70">Reset</button>
             </footer>
           </div>
