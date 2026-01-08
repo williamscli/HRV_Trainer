@@ -325,7 +325,8 @@
             }
           }
           
-          entries.push({ date, value: Math.round(hrvVal) });
+          // Include timezone in entry for travel detection
+          entries.push({ date, value: Math.round(hrvVal), timezone: tz || null });
           if (tz) timezones.push({ date, timezone: tz });
         }
       }
@@ -496,12 +497,39 @@
       patterns.isVolatile = zScoreStd > 1.5;
       patterns.isStable = zScoreStd < 0.8;
 
-      // Travel detection (big swing in last 3 days)
-      const recent3 = withZScores.slice(-3);
-      if (recent3.length >= 3) {
-        const recent3Zs = recent3.map(h => h.zScore);
-        const range = Math.max(...recent3Zs) - Math.min(...recent3Zs);
-        patterns.isTravel = range > 2.5;
+      // Travel detection - check if TODAY's timezone differs from YESTERDAY's
+      // Only triggers on the actual day of timezone change, not throughout a trip
+      if (withZScores.length >= 2) {
+        const today = withZScores[withZScores.length - 1];
+        const yesterday = withZScores[withZScores.length - 2];
+        
+        // Compare timezones if available
+        if (today.timezone && yesterday.timezone) {
+          // Normalize timezone strings for comparison (handle UTC offsets like "UTC-05:00")
+          const normalizeTimezone = (tz) => {
+            if (!tz) return null;
+            // Extract just the offset part if it's a UTC offset format
+            const offsetMatch = tz.match(/UTC([+-]\d{2}:\d{2})/);
+            return offsetMatch ? offsetMatch[1] : tz.trim();
+          };
+          
+          const todayTz = normalizeTimezone(today.timezone);
+          const yesterdayTz = normalizeTimezone(yesterday.timezone);
+          
+          patterns.isTravel = todayTz !== yesterdayTz;
+          
+          if (patterns.isTravel) {
+            console.log(`[Travel] Timezone changed: ${yesterdayTz} → ${todayTz}`);
+          }
+        } else {
+          // Fallback: no timezone data, use HRV volatility as last resort
+          const recent3 = withZScores.slice(-3);
+          if (recent3.length >= 3) {
+            const recent3Zs = recent3.map(h => h.zScore);
+            const range = Math.max(...recent3Zs) - Math.min(...recent3Zs);
+            patterns.isTravel = range > 2.5;
+          }
+        }
       }
 
       // Day-of-week patterns
