@@ -1225,7 +1225,6 @@
     // ONBOARDING - Jobs/Ive Philosophy
     // ============================================
     const Onboarding = ({ onComplete }) => {
-      const [step, setStep] = useState(1);
       const [selectedDevice, setSelectedDevice] = useState(null);
       const [customDevice, setCustomDevice] = useState('');
       
@@ -1250,82 +1249,35 @@
       return (
         <div className="min-h-screen flex flex-col justify-center p-10" style={{ background: 'var(--bg-primary)' }}>
           <div className="max-w-sm mx-auto w-full">
-            
-            {step === 1 && (
-              <div className="text-center space-y-8 animate-rise">
+            <div className="space-y-8 animate-rise">
+              <div className="text-center space-y-3">
                 <p className="font-display text-2xl leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                   Your body is talking.
                 </p>
-                <button onClick={() => setStep(2)} className="btn-ghost">continue →</button>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Where do you track HRV?</p>
               </div>
-            )}
-
-            {step === 2 && (
-              <div className="text-center space-y-6 animate-rise">
-                <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  Now you know what it's asking for.
-                </p>
-                <div className="space-y-4 pt-4" style={{ color: 'var(--text-muted)' }}>
-                  <p className="text-sm">Give me a week — I'll find your baseline.</p>
-                  <p className="text-sm">Give me a month — I'll recognize your rhythms.</p>
-                  <p className="text-sm">Give me a year — I'll see what even you can't:</p>
-                  <p className="text-sm italic">what pushes you forward… and what sets you back.</p>
-                </div>
-                <button onClick={() => setStep(3)} className="btn-ghost">continue →</button>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="text-center space-y-6 animate-rise">
-                <div className="space-y-4">
-                  <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Before you opened this,</p>
-                  <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>you already had a story about how you feel.</p>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Tired. Energized. Ready. Wrecked.</p>
-                </div>
-                <div className="space-y-3 pt-4">
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>The body doesn't run on stories.</p>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>It runs on the night you just had.</p>
-                </div>
-                <button onClick={() => setStep(4)} className="btn-ghost">continue →</button>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="text-center space-y-6 animate-rise">
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>For your whole life, you've been guessing.</p>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>The body has been keeping score.</p>
-                <button onClick={() => setStep(5)} className="btn-ghost">continue →</button>
-              </div>
-            )}
-
-            {step === 5 && (
-              <div className="space-y-8 animate-rise">
-                <div className="text-center">
-                  <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Where do you track HRV?</p>
-                </div>
-                <div className="space-y-2">
-                  {devices.map(device => (
-                    <button key={device.id} onClick={() => setSelectedDevice(device.id)}
-                      className="w-full py-3 px-4 rounded-xl text-left text-sm transition-all"
-                      style={{
-                        background: selectedDevice === device.id ? 'var(--bg-elevated)' : 'transparent',
-                        border: `1px solid ${selectedDevice === device.id ? 'var(--gold)' : 'var(--text-faint)'}`,
-                        color: selectedDevice === device.id ? 'var(--gold)' : 'var(--text-secondary)'
-                      }}>
-                      {device.label}
-                    </button>
-                  ))}
-                </div>
-                {selectedDevice === 'other' && (
-                  <input type="text" value={customDevice} onChange={(e) => setCustomDevice(e.target.value)} placeholder="Device name" className="input-minimal text-sm" />
-                )}
-                {selectedDevice && (
-                  <button onClick={handleComplete} className="btn-primary animate-fade" style={{ borderColor: 'var(--gold)', color: 'var(--gold)' }}>
-                    Let's begin
+              <div className="space-y-2">
+                {devices.map(device => (
+                  <button key={device.id} onClick={() => setSelectedDevice(device.id)}
+                    className="w-full py-3 px-4 rounded-xl text-left text-sm transition-all"
+                    style={{
+                      background: selectedDevice === device.id ? 'var(--bg-elevated)' : 'transparent',
+                      border: `1px solid ${selectedDevice === device.id ? 'var(--gold)' : 'var(--text-faint)'}`,
+                      color: selectedDevice === device.id ? 'var(--gold)' : 'var(--text-secondary)'
+                    }}>
+                    {device.label}
                   </button>
-                )}
+                ))}
               </div>
-            )}
+              {selectedDevice === 'other' && (
+                <input type="text" value={customDevice} onChange={(e) => setCustomDevice(e.target.value)} placeholder="Device name" className="input-minimal text-sm" />
+              )}
+              {selectedDevice && (
+                <button onClick={handleComplete} className="btn-primary animate-fade" style={{ borderColor: 'var(--gold)', color: 'var(--gold)' }}>
+                  Let's begin
+                </button>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -1426,7 +1378,8 @@
         if (newValue && newDate && !hrvHistory.find(h => h.date === newDate)) {
           onAdd(parseInt(newValue), newDate);
           setNewValue('');
-          const prevDay = new Date(newDate);
+          // Fix: Use T12:00:00 to avoid timezone issues
+          const prevDay = new Date(newDate + 'T12:00:00');
           prevDay.setDate(prevDay.getDate() - 1);
           setNewDate(getLocalDateString(prevDay));
         }
@@ -1779,6 +1732,12 @@
         if (confirm('Reset all data? This cannot be undone.')) {
           localStorage.removeItem('genysys_v2_data');
           localStorage.removeItem('genysys_analytics');
+          setSimulatedDay(null);
+          setCsvLoaded(false);
+          setHrvHistory([]);
+          setComplianceLog([]);
+          setFirstUseDate(null);
+          setHrvSource(null);
           window.location.reload();
         }
       };
@@ -1816,6 +1775,34 @@
                       {observation && <Observation text={observation.text} />}
                       <Prescription actions={actions} />
                       {insight && <InsightBlock insight={insight} />}
+                      
+                      {/* Day 1-2 Promise Content (disappears after enough data) */}
+                      {!insight && effectiveHistory.length < 7 && daysOnApp <= 2 && (
+                        <div className="insight-block animate-rise delay-400 mt-8 mx-8">
+                          <div className="label">{daysOnApp === 1 ? 'THE PROMISE' : 'WHAT YOU\'LL LEARN'}</div>
+                          <div className="content">
+                            {daysOnApp === 1 ? (
+                              <>
+                                Give me a week — I'll find your baseline.<br /><br />
+                                Give me a month — I'll recognize your rhythms.<br /><br />
+                                Give me a year — I'll see what even you can't:<br />
+                                <em>what pushes you forward… and what sets you back.</em>
+                              </>
+                            ) : (
+                              <>
+                                Before you opened this,<br />
+                                you already had a story about how you feel.<br /><br />
+                                Tired. Energized. Ready. Wrecked.<br /><br />
+                                The body doesn't run on stories.<br />
+                                It runs on the night you just had.<br /><br />
+                                For your whole life, you've been guessing.<br />
+                                The body has been keeping score.
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
                       {result?.isPreview && (
                         <div className="text-center mt-8 animate-rise delay-500">
                           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
