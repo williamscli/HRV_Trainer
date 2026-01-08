@@ -1604,23 +1604,31 @@
         reader.onload = (e) => {
           const { entries, timezones } = parseWHOOPCSV(e.target.result);
           if (entries.length > 0) {
+            // entries are sorted oldest to newest, so last entry is most recent
+            const oldestDate = entries[0].date;
+            const newestDate = entries[entries.length - 1].date;
+            const lastDayIndex = entries.length - 1;
+            
             const testLog = generateTestComplianceLog(entries, testCompliance);
             
             setHrvHistory(entries);
             setComplianceLog(testLog);
-            setFirstUseDate(entries[0]?.date || getTodayLocal());
-            setHrvSource({ type: 'custom', label: 'WHOOP (CSV)' });
+            setFirstUseDate(oldestDate);
+            setHrvSource({ id: 'whoop', label: 'WHOOP (CSV)' });
             setCsvLoaded(true);
-            setSimulatedDay(entries.length - 1);
+            setSimulatedDay(lastDayIndex); // Start at most recent day
+            setIsRevealed(false);
             
             saveData({
               hrvHistory: entries,
               complianceLog: testLog,
-              firstUseDate: entries[0]?.date,
-              hrvSource: { type: 'custom', label: 'WHOOP (CSV)' }
+              firstUseDate: oldestDate,
+              hrvSource: { id: 'whoop', label: 'WHOOP (CSV)' }
             });
             
-            console.log(`[TEST] Loaded ${entries.length} entries, generated ${testLog.length} compliance records`);
+            console.log(`[TEST] Loaded ${entries.length} days of data`);
+            console.log(`[TEST] Date range: ${oldestDate} to ${newestDate}`);
+            console.log(`[TEST] Starting at Day ${lastDayIndex + 1} (${newestDate}) with HRV ${entries[lastDayIndex].value}ms`);
           }
         };
         reader.readAsText(file);
@@ -1886,6 +1894,9 @@
                 {hrvHistory.length > 0 && (
                   <div className="test-section">
                     <div className="test-section-title">Simulate Day</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      Day {daysOnApp} of {hrvHistory.length} • {today}
+                    </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
                       <input 
                         type="range" 
@@ -1898,7 +1909,13 @@
                       <span style={{ color: 'var(--text-primary)', fontSize: '14px', minWidth: '60px' }}>Day {daysOnApp}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {MILESTONES.filter(m => m <= hrvHistory.length).map(m => (
+                      <button 
+                        className={`btn-test ${daysOnApp === 1 ? 'active' : ''}`}
+                        onClick={() => jumpToDay(0)}
+                      >
+                        Day 1
+                      </button>
+                      {MILESTONES.filter(m => m <= hrvHistory.length && m > 1).map(m => (
                         <button 
                           key={m} 
                           className={`btn-test ${daysOnApp === m ? 'active' : ''}`}
@@ -1907,6 +1924,13 @@
                           Day {m}
                         </button>
                       ))}
+                      <button 
+                        className={`btn-test ${daysOnApp === hrvHistory.length ? 'active' : ''}`}
+                        onClick={() => jumpToDay(hrvHistory.length - 1)}
+                        style={{ marginLeft: 'auto', background: 'var(--gold-dim)', borderColor: 'var(--gold)' }}
+                      >
+                        Latest (Day {hrvHistory.length})
+                      </button>
                     </div>
                   </div>
                 )}
