@@ -906,7 +906,7 @@
       if (isTravel) {
         return {
           primaryAction: "Walk in sunlight for 20-30 minutes. That's your only job today.",
-          effortBoundary: "Walking pace only. Tourist pace.",
+          effortBoundary: "Walking pace only. Tourist pace. Minimal effort.",
           recoveryLever: "Hydrate aggressively. Sleep when tired, even if it's the 'wrong' time.",
           guardrail: "Don't try to shake off jet lag with a workout. The bill comes in 48 hours."
         };
@@ -917,14 +917,14 @@
         if (isWarning) {
           return {
             primaryAction: "10-20 minute walk. 10 minutes stretching. That's the whole day.",
-            effortBoundary: "Conversation pace. If you can't speak in full sentences, slow down. RPE 2.",
+            effortBoundary: "Conversation pace. If you can't speak in full sentences, slow down.",
             recoveryLever: "In bed 30-60 minutes earlier than usual. This is the lever.",
             guardrail: "Restlessness is a feeling, not a command."
           };
         }
         return {
           primaryAction: "20-30 minutes easy movement. Walk, stretch, foam roll. Stop while it still feels easy.",
-          effortBoundary: "Nose-breath only. If you need your mouth, slow down. RPE 2-3.",
+          effortBoundary: "Nose-breath only. If you need your mouth, slow down.",
           recoveryLever: "Water before coffee. Protein at every meal. Protect an 8-hour sleep window.",
           guardrail: "No 'just a quick one.' That's how rest days become debt."
         };
@@ -935,7 +935,7 @@
         if (isWarning) {
           return {
             primaryAction: "Same workout. Pull one lever back 20%: lighter load, fewer reps, or shorter time cap. Pick one.",
-            effortBoundary: "RPE 6 ceiling. When form breaks, rack it.",
+            effortBoundary: "Moderate effort. When form breaks, rack it.",
             recoveryLever: "In bed 30 minutes earlier than usual. Protein within 60 minutes.",
             guardrail: "A shortened session is a win. A crash is a week lost."
           };
@@ -943,14 +943,14 @@
         if (isAfterRest) {
           return {
             primaryAction: "Full programmed work. Finish feeling like you could do a little more—but don't.",
-            effortBoundary: "RPE 7. Leave 20% in the tank. That's fuel for the streak.",
+            effortBoundary: "Hard but controlled. Leave 20% in the tank. That's fuel for the streak.",
             recoveryLever: "Don't undo yesterday's investment. Another good night tonight.",
             guardrail: "Feeling good doesn't mean 'go all out.' It means 'execute cleanly.'"
           };
         }
         return {
           primaryAction: "Programmed work only. Skip the finisher. Leave 10 minutes before you normally would.",
-          effortBoundary: "RPE 7 cap. Finish feeling like you could do a little more. When form breaks, rack it.",
+          effortBoundary: "Hard but controlled. Finish feeling like you could do a little more. When form breaks, rack it.",
           recoveryLever: "Protein within 2 hours of training. Protect 7-8 hours sleep.",
           guardrail: "Don't turn a BUILD day into a PERFORM day. They have different purposes."
         };
@@ -961,7 +961,7 @@
         if (isConsecutive) {
           return {
             primaryAction: "Shorter session than yesterday. 75% duration, 85% intensity.",
-            effortBoundary: "RPE 7-8 ceiling. Lower than yesterday. If warm-up feels off, convert to BUILD.",
+            effortBoundary: "Very hard, but lower than yesterday. If warm-up feels off, convert to BUILD.",
             recoveryLever: "Tonight is critical. 8+ hours. Extra protein. This is probably the last green for a while.",
             guardrail: "Three consecutive PERFORMs almost never end well. Stop while you're ahead."
           };
@@ -969,14 +969,14 @@
         if (isWarning) {
           return {
             primaryAction: "One hard effort in the first 15 minutes. Then coast. No encores.",
-            effortBoundary: "RPE 8 once. Then immediately drop to 6.",
+            effortBoundary: "Push hard once. Then immediately ease off.",
             recoveryLever: "Double down on recovery tonight. What you do in the next 12 hours matters more than what you did in the gym.",
             guardrail: "This pattern has cost days before. Keep today clean so tomorrow stays alive."
           };
         }
         return {
           primaryAction: "Your hard effort goes in the first 20 minutes. Heavy lift, benchmark, key interval—whatever it is, do it first. Then coast.",
-          effortBoundary: "RPE 8-9 for one effort. Leave a rep in reserve. Then drop to 6-7. No second peaks.",
+          effortBoundary: "Near-max for one effort. Leave a rep in reserve. Then ease off. No second peaks.",
           recoveryLever: "Refuel within 60 minutes: protein + carbs. Protect an 8-hour sleep window. This is where gains lock in.",
           guardrail: "Don't turn a great day into a two-day hangover. One peak. Then done."
         };
@@ -988,238 +988,287 @@
     // ============================================
     // IMPOSSIBLE INSIGHTS - The Story Arc
     // ============================================
-    const getImpossibleInsight = (daysOnApp, patterns, complianceLog, hrvHistory) => {
+    const getImpossibleInsight = (daysOnApp, patterns, complianceLog, hrvHistory, currentCommand) => {
       // Day 2: The Difference (no data required - philosophy message)
       if (daysOnApp === 2) {
         return {
           label: 'WHY THIS IS DIFFERENT',
+          isMilestone: false,
           lines: [
             'Every device tells you how you slept.',
             'How you recovered. Your readiness score.',
             '',
-            'None of them tell you what to do.',
+            '**None of them tell you what to do.**',
             '',
             'GENYSYS does. One word. Every morning.',
             "And it's right.",
             '',
-            'When it says push — push.',
-            'When it says rest — rest.',
+            'When it says **push** — push.',
+            'When it says **rest** — rest.',
             '',
-            'We tested this. When you listen, you win.',
-            "When you don't, you pay for it.",
-            'Not with some abstract number. With days.',
+            'We tested this. When you **listen**, you win.',
+            "When you don't, you **pay for it**.",
+            'Not with some abstract number. With **days**.',
             'Days you could have trained.',
             'Days you lost to injury.',
             '',
             "Your body's been sending signals your whole life.",
-            'GENYSYS is the first thing that actually translates them.'
+            'GENYSYS is the first thing that actually **translates** them.'
           ]
         };
       }
 
       if (!patterns) return null;
 
-      // Day 7: Weekend Split
+      // Day 7: Weekend Split - MILESTONE
       if (daysOnApp === 7 && patterns.weekendSplit) {
+        const spread = Math.abs(patterns.weekendSplit.spread || 0);
+        if (spread < 2) return null;
+        
         return {
-          label: 'YOUR FIRST WEEK',
+          label: 'ONE WEEK RECAP',
+          isMilestone: true,
           lines: [
-            `Monday through Friday: ${patterns.weekendSplit.weekdayMean}.`,
-            `Saturday and Sunday: ${patterns.weekendSplit.weekendMean}.`,
+            `Monday through Friday: **${patterns.weekendSplit.weekdayMean}**.`,
+            `Saturday and Sunday: **${patterns.weekendSplit.weekendMean}**.`,
             '',
-            'You are not the same person on weekends.',
+            'You are **not the same person** on weekends.',
             '',
             "You've never noticed this.",
             'How could you?',
             "You can't feel a weekly average.",
             '',
             "But it's been true your whole life.",
-            'Now you know.'
+            '**Now you know.**'
           ]
         };
       }
 
-      // Day 10+: Declining Trend Truth
+      // Day 10+: Declining Trend Truth (context-independent)
       if (daysOnApp >= 10 && daysOnApp <= 12 && patterns.declineTrend) {
         const { values } = patterns.declineTrend;
         return {
-          label: 'WHAT YOU CAN\'T FEEL',
+          label: "WHAT YOU CAN'T FEEL",
+          isMilestone: false,
           lines: [
-            ...values.map((v, i) => `Day ${daysOnApp - values.length + i + 1}: ${v}`),
+            ...values.map((v, i) => `Day ${daysOnApp - values.length + i + 1}: **${v}**`),
             '',
             'You felt fine on each of those days.',
             '',
             "The body doesn't argue.",
             "It doesn't complain.",
-            'It just keeps score.',
+            'It just **keeps score**.',
             '',
-            'And then one morning it hands you the bill.'
+            'And then one morning it **hands you the bill**.'
           ]
         };
       }
 
-      // Day 14: Day-of-Week Pattern
+      // Day 14: Day-of-Week Pattern - MILESTONE
       if (daysOnApp === 14 && (patterns.weakDay || patterns.strongDay)) {
         const lines = [];
         if (patterns.weakDay && patterns.strongDay) {
-          lines.push(`Your lowest days: ${patterns.weakDay.day}s.`);
-          lines.push(`Your highest days: ${patterns.strongDay.day}s.`);
+          lines.push(`Your lowest days: **${patterns.weakDay.day}s**.`);
+          lines.push(`Your highest days: **${patterns.strongDay.day}s**.`);
         } else if (patterns.weakDay) {
-          lines.push(`Your ${patterns.weakDay.day}s consistently drag.`);
+          lines.push(`Your **${patterns.weakDay.day}s** consistently drag.`);
         } else {
-          lines.push(`Your ${patterns.strongDay.day}s consistently peak.`);
+          lines.push(`Your **${patterns.strongDay.day}s** consistently peak.`);
         }
         return {
-          label: 'YOUR SECOND SECRET',
+          label: 'TWO WEEK RECAP',
+          isMilestone: true,
           lines: [
             ...lines,
             '',
-            'This is not random.',
+            '**This is not random.**',
             'This is your weekly rhythm.',
             '',
             'It was there before I started watching.',
             "It's been there your whole life.",
             '',
-            'You just never saw it.'
+            'You just **never saw it**.'
           ]
         };
       }
 
-      // Day 21: First Crash Timing
-      if (daysOnApp >= 21 && daysOnApp <= 25 && patterns.crashesAfterIgnoredRest?.length >= 1) {
+      // Day 21: First Crash Timing - ONLY ON REST DAYS - MILESTONE
+      if (daysOnApp >= 21 && daysOnApp <= 25 && currentCommand === 'REST' && patterns.crashesAfterIgnoredRest?.length >= 1) {
         return {
-          label: 'HOW CRASHES WORK',
+          label: 'THREE WEEK RECAP',
+          isMilestone: true,
           lines: [
-            'The crash did not happen today.',
-            'It happened three days ago.',
+            'The **crash** did not happen today.',
+            'It happened **three days ago**.',
             '',
             'Today is when your body',
-            'stopped hiding it from you.',
+            '**stopped hiding it** from you.',
             '',
             'The cause is always days before the symptom.',
             '',
-            "Now you've seen it once.",
+            "Now you've **seen it once**.",
             "You'll recognize the setup next time."
           ]
         };
       }
 
-      // Day 30: The Mirror
+      // Day 30: The Mirror - MILESTONE - with validation
       if (daysOnApp === 30) {
-        const restIssued = complianceLog.filter(c => c.command === 'REST').length;
-        const restFollowed = complianceLog.filter(c => c.command === 'REST' && c.followed === 'yes').length;
-        const daysAbove = hrvHistory.filter(h => (h.value - patterns.baseline) / patterns.mad >= 0).length;
-        const daysBelow = hrvHistory.length - daysAbove;
+        const restCommands = complianceLog.filter(c => c.command === 'REST');
+        const restIssued = restCommands.length;
+        const restFollowed = restCommands.filter(c => c.followed === 'yes').length;
+        const restSkipped = restCommands.filter(c => c.followed === 'no').length;
         
-        return {
-          label: 'ONE MONTH',
-          lines: [
-            `REST commands: ${restIssued}`,
-            `Followed: ${restFollowed}`,
-            '',
-            `Days above baseline: ${daysAbove}`,
-            `Days below baseline: ${daysBelow}`,
-            '',
-            patterns.crashesAfterIgnoredRest?.length > 0 
-              ? 'The times REST was skipped all preceded your lowest stretches.'
-              : '',
-            patterns.recoveriesAfterRest?.length > 0
-              ? 'The times REST was followed all preceded climbs.'
-              : '',
-            '',
-            'The pattern is already clear.'
-          ].filter(l => l !== '')
-        };
+        const crashes = patterns.crashesAfterIgnoredRest?.length || 0;
+        const recoveries = patterns.recoveriesAfterRest?.length || 0;
+        
+        const lines = [
+          `REST commands issued: **${restIssued}**`,
+          `Times you **listened**: ${restFollowed}`,
+          `Times you **pushed through**: ${restSkipped}`,
+          ''
+        ];
+        
+        // Only add correlation claims if we have data
+        if (restSkipped > 0 && crashes > 0) {
+          const skipCrashRate = Math.round((crashes / restSkipped) * 100);
+          if (skipCrashRate >= 30) {
+            lines.push(`When REST was **skipped**: ${skipCrashRate}% led to crashes.`);
+          }
+        }
+        
+        if (restFollowed > 0 && recoveries > 0) {
+          const followRate = Math.round((recoveries / restFollowed) * 100);
+          if (followRate >= 30) {
+            lines.push(`When REST was **followed**: ${followRate}% led to climbs.`);
+          }
+        }
+        
+        if (lines.length > 4) {
+          lines.push('', '**The pattern is already clear.**');
+        } else {
+          lines.push('The patterns are still forming.', '', 'Keep listening. The proof builds.');
+        }
+
+        return { label: 'ONE MONTH RECAP', isMilestone: true, lines };
       }
 
-      // Day 45+: Pattern Vindication (same setup, different outcome)
-      if (daysOnApp >= 45 && daysOnApp <= 50 && patterns.recoveriesAfterRest?.length >= 2 && patterns.crashesAfterIgnoredRest?.length >= 1) {
+      // Day 45+: Pattern Vindication - ONLY ON REST DAYS
+      if (daysOnApp >= 45 && daysOnApp <= 50 && currentCommand === 'REST' && patterns.recoveriesAfterRest?.length >= 2 && patterns.crashesAfterIgnoredRest?.length >= 1) {
         const recovery = patterns.recoveriesAfterRest[patterns.recoveriesAfterRest.length - 1];
         const crash = patterns.crashesAfterIgnoredRest[0];
         return {
           label: 'SAME PATTERN. DIFFERENT ENDING.',
+          isMilestone: false,
           lines: [
             `This looked like ${formatDateAnchor(crash.ignoredDate)}.`,
             'Same slope. Same setup.',
             '',
-            'Last time, rest was skipped.',
-            `${formatDateAnchor(crash.crashDate)}: crashed.`,
+            'Last time, rest was **skipped**.',
+            `${formatDateAnchor(crash.crashDate)}: **crashed**.`,
             '',
-            'This time, rest happened.',
-            `${formatDateAnchor(recovery.readyDate)}: climbing.`,
+            'This time, rest **happened**.',
+            `${formatDateAnchor(recovery.readyDate)}: **climbing**.`,
             '',
-            'Same film. Different ending.',
+            '**Same film. Different ending.**',
             '',
             'The ending was always a choice.'
           ]
         };
       }
 
-      // Day 60: Baseline Shift
+      // Day 60: Baseline Shift - MILESTONE - with validation
       if (daysOnApp === 60 && patterns.baselineShift) {
         const { from, to, percent } = patterns.baselineShift;
+        if (Math.abs(percent) < 5) return null; // Not significant enough
+        
         const direction = percent > 0 ? 'more' : 'less';
         return {
-          label: 'TWO MONTHS',
+          label: 'TWO MONTH RECAP',
+          isMilestone: true,
           lines: [
-            `Your baseline when you started: ${from}.`,
-            `Your baseline now: ${to}.`,
+            `Your baseline when you started: **${from}**.`,
+            `Your baseline now: **${to}**.`,
             '',
-            `That's ${Math.abs(percent)}% ${direction} capacity`,
+            `That's **${Math.abs(percent)}% ${direction} capacity**`,
             'than the person who walked in.',
             '',
-            percent > 0 ? 'Not from training more.' : '',
-            percent > 0 ? 'From resting better.' : '',
+            percent > 0 ? 'Not from training more.' : 'Something needs attention.',
+            percent > 0 ? '**From resting better.**' : "The data doesn't lie.",
             '',
             'The capacity was never gone.',
-            'It was buried under fatigue',
+            'It was **buried under fatigue**',
             "you didn't know you were carrying."
-          ].filter(l => l !== '')
-        };
-      }
-
-      // Day 90: The Switch
-      if (daysOnApp === 90) {
-        const restFollowed = complianceLog.filter(c => c.command === 'REST' && c.followed === 'yes').length;
-        const restSkipped = complianceLog.filter(c => c.command === 'REST' && c.followed === 'no').length;
-        const recoveries = patterns.recoveriesAfterRest?.length || 0;
-        const crashes = patterns.crashesAfterIgnoredRest?.length || 0;
-        
-        const followedRate = restFollowed > 0 ? Math.round(recoveries / restFollowed * 100) : 0;
-        const skippedRate = restSkipped > 0 ? Math.round(crashes / restSkipped * 100) : 0;
-        
-        return {
-          label: 'NINETY DAYS',
-          lines: [
-            `When REST is followed: ${followedRate}% climb the next day.`,
-            `When REST is skipped: ${skippedRate}% crash within 72 hours.`,
-            '',
-            "That's not a correlation.",
-            "That's a switch.",
-            '',
-            'The body has been running this experiment',
-            'your whole life.',
-            '',
-            'Rest → rise.',
-            'Push through → fall.',
-            '',
-            'You just never had a translator',
-            'to show you the results.',
-            '',
-            'Now you do.'
           ]
         };
       }
 
-      // Day 180: Identity Shift
+      // Day 90: The Switch - MILESTONE - with validation
+      if (daysOnApp === 90) {
+        const restFollowed = complianceLog.filter(c => c.command === 'REST' && c.followed === 'yes').length;
+        const restSkipped = complianceLog.filter(c => c.command === 'REST' && c.followed === 'no').length;
+        
+        // Need at least 3 in each category
+        if (restSkipped < 3 || restFollowed < 3) {
+          return {
+            label: 'NINETY DAY RECAP',
+            isMilestone: true,
+            lines: [
+              "You've been **listening**.",
+              '',
+              'Not enough REST days were skipped',
+              'to show you the cost.',
+              '',
+              "That's not a missing data point.",
+              "**That's the whole point.**",
+              '',
+              'The goal was never to prove the crash.',
+              'The goal was to **avoid it**.',
+              '',
+              '**You did.**'
+            ]
+          };
+        }
+        
+        const recoveries = patterns.recoveriesAfterRest?.length || 0;
+        const crashes = patterns.crashesAfterIgnoredRest?.length || 0;
+        const followedRate = Math.round(recoveries / restFollowed * 100);
+        const skippedRate = Math.round(crashes / restSkipped * 100);
+        
+        return {
+          label: 'NINETY DAY RECAP',
+          isMilestone: true,
+          lines: [
+            `When REST is **followed**: ${followedRate}% climb rate.`,
+            `When REST is **skipped**: ${skippedRate}% crash rate.`,
+            '',
+            "That's not a correlation.",
+            "**That's a switch.**",
+            '',
+            'The body has been running this experiment',
+            'your whole life.',
+            '',
+            '**Rest → rise.**',
+            '**Push through → fall.**',
+            '',
+            'You just never had a translator',
+            'to show you the results.',
+            '',
+            '**Now you do.**'
+          ]
+        };
+      }
+
+      // Day 180: Identity Shift - MILESTONE
       if (daysOnApp === 180) {
         return {
-          label: 'SIX MONTHS',
+          label: 'SIX MONTH RECAP',
+          isMilestone: true,
           lines: [
-            'You have outlasted most people',
+            'You have **outlasted** most people',
             'who start tracking recovery.',
             '',
-            "Most quit because they couldn't rest",
+            "Most quit because they couldn't **rest**",
             'when the number said rest.',
             '',
             'The story was too loud.',
@@ -1227,40 +1276,40 @@
             '"Rest is weakness."',
             '',
             'You heard the same story.',
-            'You just stopped letting it decide.',
+            'You just **stopped letting it decide**.',
             '',
-            "That's the only difference."
+            "**That's the only difference.**"
           ]
         };
       }
 
-      // Day 365: The Full Translation
+      // Day 365: The Full Translation - MILESTONE
       if (daysOnApp === 365) {
         const lines = [
           'Here is what I learned about you:',
           ''
         ];
         
-        if (patterns.recoveriesAfterRest?.length > patterns.crashesAfterIgnoredRest?.length) {
-          lines.push('When you rest, you rise.');
+        if (patterns.recoveriesAfterRest?.length > (patterns.crashesAfterIgnoredRest?.length || 0)) {
+          lines.push('When you **rest**, you **rise**.');
         }
-        if (patterns.weakDay) lines.push(`Your ${patterns.weakDay.day}s need protecting.`);
-        if (patterns.strongDay) lines.push(`Your ${patterns.strongDay.day}s are your peak.`);
-        if (patterns.weekendSplit?.spread > 5) lines.push('Weekends restore you.');
+        if (patterns.weakDay) lines.push(`Your **${patterns.weakDay.day}s** need protecting.`);
+        if (patterns.strongDay) lines.push(`Your **${patterns.strongDay.day}s** are your peak.`);
+        if (patterns.weekendSplit?.spread > 5) lines.push('**Weekends restore you.**');
         
         lines.push('');
         lines.push('None of this was hidden.');
-        lines.push('It was all there, every day, for your entire life.');
+        lines.push('It was all there, every day, for your **entire life**.');
         lines.push('');
         lines.push('You just needed someone to read it to you');
-        lines.push('until you learned to read it yourself.');
+        lines.push('until you learned to **read it yourself**.');
         lines.push('');
-        lines.push('You can read it now.');
+        lines.push('**You can read it now.**');
         lines.push('');
         lines.push('The signal was never the treasure.');
-        lines.push('The treasure was learning to hear it.');
+        lines.push('The treasure was **learning to hear it**.');
         
-        return { label: 'ONE YEAR', lines };
+        return { label: 'ONE YEAR RECAP', isMilestone: true, lines };
       }
 
       return null;
@@ -1277,7 +1326,7 @@
           <h1 className={`font-display animate-rise ${isRevealed ? 'text-3xl' : 'text-5xl'}`} style={{ color: colors[command], transition: 'font-size 500ms ease' }}>
             {command}
           </h1>
-          {!isRevealed && <p className="text-sm mt-8 animate-fade delay-1000" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to listen</p>}
+          {!isRevealed && <p className="text-sm mt-8 animate-fade delay-1000" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap for today</p>}
         </div>
       );
     };
@@ -1311,10 +1360,35 @@
     };
 
     // Collapsible Insight Scroll - appears above observation when open
+    // Render text with **bold** markers
+    const renderBoldText = (text) => {
+      if (!text) return null;
+      const parts = text.split(/(\*\*[^*]+\*\*)/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      });
+    };
+
     const InsightScroll = ({ insight }) => {
       const [isOpen, setIsOpen] = useState(true);
+      const [showTapHint, setShowTapHint] = useState(false);
+      
+      // Show "tap to open" hint after 3s when collapsed
+      useEffect(() => {
+        if (!isOpen) {
+          const timer = setTimeout(() => setShowTapHint(true), 3000);
+          return () => clearTimeout(timer);
+        } else {
+          setShowTapHint(false);
+        }
+      }, [isOpen]);
       
       if (!insight) return null;
+      
+      const isMilestone = insight.isMilestone;
       
       return (
         <div 
@@ -1323,17 +1397,30 @@
         >
           <div className="insight-scroll-line" />
           <div className="insight-scroll-content">
-            <div className="insight-scroll-label">{insight.label}</div>
+            <div 
+              className="insight-scroll-label"
+              style={isMilestone ? { color: 'var(--gold)' } : {}}
+            >
+              {insight.label}
+            </div>
             <div className="insight-scroll-text">
               {insight.lines.map((line, i) => (
                 <React.Fragment key={i}>
-                  {line}
+                  {renderBoldText(line)}
                   {i < insight.lines.length - 1 && <br/>}
                 </React.Fragment>
               ))}
             </div>
+            <div className="text-center mt-4">
+              <span className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>tap to close</span>
+            </div>
           </div>
           <div className="insight-scroll-line" />
+          {!isOpen && showTapHint && (
+            <div className="text-center mt-2 animate-fade">
+              <span className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to open</span>
+            </div>
+          )}
         </div>
       );
     };
@@ -1830,7 +1917,7 @@
 
       const observation = useMemo(() => generateObservation(result?.commandKey, patterns, daysOnApp, effectiveHistory, complianceLog), [result?.commandKey, patterns, daysOnApp, effectiveHistory, complianceLog]);
       const actions = useMemo(() => generateActions(result?.commandKey, patterns, effectiveHistory, complianceLog, daysOnApp), [result?.commandKey, patterns, effectiveHistory, complianceLog, daysOnApp]);
-      const insight = useMemo(() => getImpossibleInsight(daysOnApp, patterns, complianceLog, effectiveHistory), [daysOnApp, patterns, complianceLog, effectiveHistory]);
+      const insight = useMemo(() => getImpossibleInsight(daysOnApp, patterns, complianceLog, effectiveHistory, result?.commandKey), [daysOnApp, patterns, complianceLog, effectiveHistory, result?.commandKey]);
 
       // Handlers
       const handleOnboardingComplete = (source) => {
