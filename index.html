@@ -1105,6 +1105,54 @@
       return null;
     };
 
+    // Helper to find twin days for visualization
+    const findTwinDays = (hrvHistory, compliance, patterns) => {
+      if (!patterns || compliance.length < 4) return null;
+      
+      // Get all REST compliance entries with outcomes
+      const restEntries = compliance.filter(c => c.command === 'REST').map(c => {
+        const entry = hrvHistory.find(h => h.date === c.date);
+        if (!entry) return null;
+        
+        // Find next day's HRV
+        const nextDate = new Date(c.date);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const nextEntry = hrvHistory.find(h => h.date === getLocalDateString(nextDate));
+        if (!nextEntry) return null;
+        
+        return {
+          date: c.date,
+          hrv: entry.value,
+          followed: c.followed === 'yes',
+          outcome: nextEntry.value - entry.value
+        };
+      }).filter(Boolean);
+      
+      // Find a pair: one followed (positive outcome), one skipped (negative outcome)
+      const followed = restEntries.filter(e => e.followed && e.outcome > 5);
+      const skipped = restEntries.filter(e => !e.followed && e.outcome < -5);
+      
+      if (!followed.length || !skipped.length) return null;
+      
+      // Find best pair with similar HRV (within 5ms) and at least 14 days apart
+      let bestPair = null;
+      let smallestDiff = Infinity;
+      
+      for (const f of followed) {
+        for (const s of skipped) {
+          const hrvDiff = Math.abs(f.hrv - s.hrv);
+          const daysDiff = Math.abs(daysBetween(f.date, s.date));
+          
+          if (hrvDiff <= 5 && daysDiff >= 14 && hrvDiff < smallestDiff) {
+            smallestDiff = hrvDiff;
+            bestPair = { followed: f, skipped: s };
+          }
+        }
+      }
+      
+      return bestPair;
+    };
+
     // ════════════════════════════════════════════════════════════════════════════
     // IMPOSSIBLE INSIGHTS (Milestones)
     // ════════════════════════════════════════════════════════════════════════════
@@ -1801,54 +1849,6 @@
           </div>
         </div>
       );
-    };
-
-    // Helper to find twin days for visualization
-    const findTwinDays = (hrvHistory, compliance, patterns) => {
-      if (!patterns || compliance.length < 4) return null;
-      
-      // Get all REST compliance entries with outcomes
-      const restEntries = compliance.filter(c => c.command === 'REST').map(c => {
-        const entry = hrvHistory.find(h => h.date === c.date);
-        if (!entry) return null;
-        
-        // Find next day's HRV
-        const nextDate = new Date(c.date);
-        nextDate.setDate(nextDate.getDate() + 1);
-        const nextEntry = hrvHistory.find(h => h.date === getLocalDateString(nextDate));
-        if (!nextEntry) return null;
-        
-        return {
-          date: c.date,
-          hrv: entry.value,
-          followed: c.followed === 'yes',
-          outcome: nextEntry.value - entry.value
-        };
-      }).filter(Boolean);
-      
-      // Find a pair: one followed (positive outcome), one skipped (negative outcome)
-      const followed = restEntries.filter(e => e.followed && e.outcome > 5);
-      const skipped = restEntries.filter(e => !e.followed && e.outcome < -5);
-      
-      if (!followed.length || !skipped.length) return null;
-      
-      // Find best pair with similar HRV (within 5ms) and at least 14 days apart
-      let bestPair = null;
-      let smallestDiff = Infinity;
-      
-      for (const f of followed) {
-        for (const s of skipped) {
-          const hrvDiff = Math.abs(f.hrv - s.hrv);
-          const daysDiff = Math.abs(daysBetween(f.date, s.date));
-          
-          if (hrvDiff <= 5 && daysDiff >= 14 && hrvDiff < smallestDiff) {
-            smallestDiff = hrvDiff;
-            bestPair = { followed: f, skipped: s };
-          }
-        }
-      }
-      
-      return bestPair;
     };
 
     // Collapsible Insight Scroll - appears above observation when open
