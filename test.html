@@ -596,6 +596,7 @@
       });
       if (worst.avg < -0.3) p.weakDay = worst;
       if (best.avg > 0.3) p.strongDay = best;
+      p.dowStats = dowStats;
 
       // Today's day-of-week tendency
       const todayDow = new Date().getDay();
@@ -1196,8 +1197,14 @@
         } else {
           lines.push(`Your **${patterns.strongDay.day}s** consistently peak.`);
         }
-        lines.push('', '**This is not random.**', 'This is your weekly rhythm.', '', 'It was there before I started watching.', "It's been there your whole life.", '', 'You just **never saw it**.');
-        return { label: 'TWO WEEK MILESTONE', isMilestone: true, lines };
+        lines.push('', '**This is not random.**', 'This is your weekly rhythm.');
+        return { 
+          label: 'TWO WEEK MILESTONE', 
+          isMilestone: true, 
+          lines,
+          visualization: 'heatmap',
+          patterns
+        };
       }
 
       // Day 21-25: First crash lesson - ONLY ON REST DAYS, requires crash data - MILESTONE
@@ -1262,28 +1269,57 @@
         return { label: 'ONE MONTH MILESTONE', isMilestone: true, lines };
       }
 
-      // Day 45-50: Vindication - SAME PATTERN, DIFFERENT ENDING
-      if (daysOnApp >= 45 && daysOnApp <= 50 && currentCommand === 'REST' && patterns.recoveriesAfterRest?.length >= 2 && patterns.crashesAfterSkip?.length >= 1) {
-        const recovery = patterns.recoveriesAfterRest[patterns.recoveriesAfterRest.length - 1];
-        const crash = patterns.crashesAfterSkip[0];
+      // Day 45-50: THE TWIN DAYS - Visual comparison
+      if (daysOnApp >= 45 && daysOnApp <= 50) {
+        // Try to find twin days for the powerful visualization
+        const twinData = findTwinDays(hrvHistory, compliance, patterns);
         
-        return {
-          label: 'SAME PATTERN. DIFFERENT ENDING.',
-          isMilestone: false,
-          lines: [
-            `**${crash.skippedDate}**: REST ignored.`,
-            `**${crash.crashDate}**: Crashed.`,
-            '',
-            `**${recovery.restDate}**: REST followed.`,
-            `**${recovery.readyDate}**: Ready to train.`,
-            '',
-            'Same setup.',
-            'Different choice.',
-            'Different outcome.',
-            '',
-            '**This is what control looks like.**'
-          ]
-        };
+        if (twinData) {
+          const formatDateShort = (d) => {
+            const date = new Date(d + 'T12:00:00');
+            return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+          };
+          
+          return {
+            label: 'THE TWIN DAYS',
+            isMilestone: true,
+            lines: [
+              `${formatDateShort(twinData.followed.date)} and ${formatDateShort(twinData.skipped.date)}.`,
+              '',
+              'Same HRV. Same command. Same crossroads.',
+              '',
+              'One decision. Two different weeks.',
+              '',
+              '**The signal was the same. The choice wasn\\'t.**'
+            ],
+            visualization: 'twins',
+            twinData
+          };
+        }
+        
+        // Fallback to original if no twin days found
+        if (currentCommand === 'REST' && patterns.recoveriesAfterRest?.length >= 2 && patterns.crashesAfterSkip?.length >= 1) {
+          const recovery = patterns.recoveriesAfterRest[patterns.recoveriesAfterRest.length - 1];
+          const crash = patterns.crashesAfterSkip[0];
+          
+          return {
+            label: 'SAME PATTERN. DIFFERENT ENDING.',
+            isMilestone: false,
+            lines: [
+              `**${crash.skippedDate}**: REST ignored.`,
+              `**${crash.crashDate}**: Crashed.`,
+              '',
+              `**${recovery.restDate}**: REST followed.`,
+              `**${recovery.readyDate}**: Ready to train.`,
+              '',
+              'Same setup.',
+              'Different choice.',
+              'Different outcome.',
+              '',
+              '**This is what control looks like.**'
+            ]
+          };
+        }
       }
 
       // Day 60: Capacity truth - MILESTONE
@@ -1542,6 +1578,279 @@
       });
     };
 
+    // ════════════════════════════════════════════════════════════════════════════
+    // WEEK HEATMAP - Day 14 Visualization
+    // ════════════════════════════════════════════════════════════════════════════
+    const WeekHeatmap = ({ patterns }) => {
+      const [animate, setAnimate] = useState(false);
+      
+      useEffect(() => {
+        const timer = setTimeout(() => setAnimate(true), 100);
+        return () => clearTimeout(timer);
+      }, []);
+      
+      if (!patterns?.dowStats) return null;
+      
+      const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      
+      const getOpacity = (dow) => {
+        if (!animate) return 0.1;
+        const stats = patterns.dowStats?.[dow];
+        if (!stats || !stats.count) return 0.2;
+        const avg = stats.sum / stats.count;
+        // Normalize: negative z-scores = lower opacity, positive = higher
+        return Math.max(0.2, Math.min(1.0, 0.5 + avg * 0.25));
+      };
+      
+      const isWeak = (dow) => patterns.weakDay && fullDays[dow] === patterns.weakDay.day;
+      const isStrong = (dow) => patterns.strongDay && fullDays[dow] === patterns.strongDay.day;
+      
+      const getColor = (dow) => {
+        if (isWeak(dow)) return 'var(--rose)';
+        if (isStrong(dow)) return 'var(--green)';
+        return 'var(--gold)';
+      };
+      
+      return (
+        <div className="mt-6 mb-4">
+          <div className="flex justify-center gap-2 mb-4">
+            {days.map((day, i) => (
+              <div 
+                key={i}
+                className="flex flex-col items-center gap-2"
+                style={{
+                  transition: 'all 500ms ease-out',
+                  transitionDelay: `${i * 80}ms`
+                }}
+              >
+                <div 
+                  className="w-9 h-9 rounded-lg"
+                  style={{
+                    background: getColor(i),
+                    opacity: getOpacity(i),
+                    transition: 'opacity 600ms ease-out',
+                    transitionDelay: `${i * 80}ms`
+                  }}
+                />
+                <span 
+                  className="text-xs"
+                  style={{ 
+                    color: isWeak(i) || isStrong(i) ? getColor(i) : 'var(--text-muted)',
+                    fontWeight: isWeak(i) || isStrong(i) ? 500 : 400
+                  }}
+                >
+                  {day}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Legend */}
+          <div className="flex justify-center gap-6 pt-3 border-t" style={{ borderColor: 'var(--text-faint)' }}>
+            {patterns.weakDay && (
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded" style={{ background: 'var(--rose)' }} />
+                <span className="text-xs" style={{ color: 'var(--rose)' }}>{patterns.weakDay.day}s drag</span>
+              </div>
+            )}
+            {patterns.strongDay && (
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded" style={{ background: 'var(--green)' }} />
+                <span className="text-xs" style={{ color: 'var(--green)' }}>{patterns.strongDay.day}s peak</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="text-center pt-3">
+            <p className="text-xs italic" style={{ color: 'var(--text-muted)' }}>
+              This pattern was there before I started watching.<br/>
+              Now you can plan around it.
+            </p>
+          </div>
+        </div>
+      );
+    };
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // TWIN DAYS - Day 45-60 Visualization
+    // ════════════════════════════════════════════════════════════════════════════
+    const TwinDays = ({ twinData }) => {
+      const [animate, setAnimate] = useState(false);
+      
+      useEffect(() => {
+        const timer = setTimeout(() => setAnimate(true), 200);
+        return () => clearTimeout(timer);
+      }, []);
+      
+      if (!twinData) return null;
+      
+      const { followed, skipped } = twinData;
+      
+      const formatDate = (dateStr) => {
+        const d = new Date(dateStr + 'T12:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      };
+      
+      return (
+        <div className="mt-6 mb-4">
+          <div className="grid grid-cols-2 gap-3">
+            {/* Left: The day they listened */}
+            <div 
+              className="p-4 rounded-xl border"
+              style={{ 
+                borderColor: 'var(--green)',
+                opacity: animate ? 1 : 0,
+                transform: animate ? 'translateY(0)' : 'translateY(10px)',
+                transition: 'all 500ms ease-out'
+              }}
+            >
+              <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+                {formatDate(followed.date)}
+              </div>
+              <div className="text-xs mb-3" style={{ color: 'var(--text-faint)' }}>
+                HRV: {followed.hrv} ms
+              </div>
+              
+              <div className="text-center mb-3">
+                <span className="text-xl" style={{ color: 'var(--green)' }}>✓</span>
+                <div className="text-xs mt-1" style={{ color: 'var(--green)' }}>Rested</div>
+              </div>
+              
+              {/* Mini outcome chart - rising */}
+              <div className="flex items-end justify-center gap-2 h-12 mb-2">
+                <div 
+                  className="w-6 rounded-t"
+                  style={{ 
+                    background: 'var(--text-faint)',
+                    height: animate ? '50%' : '20%',
+                    transition: 'height 600ms ease-out 300ms'
+                  }}
+                />
+                <div 
+                  className="w-6 rounded-t"
+                  style={{ 
+                    background: 'var(--green)',
+                    height: animate ? '100%' : '20%',
+                    transition: 'height 600ms ease-out 500ms'
+                  }}
+                />
+              </div>
+              
+              <div className="text-center">
+                <span className="text-base font-medium" style={{ color: 'var(--green)' }}>
+                  +{followed.outcome} ms
+                </span>
+                <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                  Back to BUILD
+                </div>
+              </div>
+            </div>
+            
+            {/* Right: The day they pushed */}
+            <div 
+              className="p-4 rounded-xl border"
+              style={{ 
+                borderColor: 'var(--rose)',
+                opacity: animate ? 1 : 0,
+                transform: animate ? 'translateY(0)' : 'translateY(10px)',
+                transition: 'all 500ms ease-out 150ms'
+              }}
+            >
+              <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+                {formatDate(skipped.date)}
+              </div>
+              <div className="text-xs mb-3" style={{ color: 'var(--text-faint)' }}>
+                HRV: {skipped.hrv} ms
+              </div>
+              
+              <div className="text-center mb-3">
+                <span className="text-xl" style={{ color: 'var(--rose)' }}>✕</span>
+                <div className="text-xs mt-1" style={{ color: 'var(--rose)' }}>Pushed</div>
+              </div>
+              
+              {/* Mini outcome chart - declining */}
+              <div className="flex items-end justify-center gap-2 h-12 mb-2">
+                <div 
+                  className="w-6 rounded-t"
+                  style={{ 
+                    background: 'var(--text-faint)',
+                    height: animate ? '80%' : '20%',
+                    transition: 'height 600ms ease-out 300ms'
+                  }}
+                />
+                <div 
+                  className="w-6 rounded-t"
+                  style={{ 
+                    background: 'var(--rose)',
+                    height: animate ? '25%' : '20%',
+                    transition: 'height 600ms ease-out 500ms'
+                  }}
+                />
+              </div>
+              
+              <div className="text-center">
+                <span className="text-base font-medium" style={{ color: 'var(--rose)' }}>
+                  {skipped.outcome} ms
+                </span>
+                <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                  Days lost
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // Helper to find twin days for visualization
+    const findTwinDays = (hrvHistory, compliance, patterns) => {
+      if (!patterns || compliance.length < 4) return null;
+      
+      // Get all REST compliance entries with outcomes
+      const restEntries = compliance.filter(c => c.command === 'REST').map(c => {
+        const entry = hrvHistory.find(h => h.date === c.date);
+        if (!entry) return null;
+        
+        // Find next day's HRV
+        const nextDate = new Date(c.date);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const nextEntry = hrvHistory.find(h => h.date === getLocalDateString(nextDate));
+        if (!nextEntry) return null;
+        
+        return {
+          date: c.date,
+          hrv: entry.value,
+          followed: c.followed === 'yes',
+          outcome: nextEntry.value - entry.value
+        };
+      }).filter(Boolean);
+      
+      // Find a pair: one followed (positive outcome), one skipped (negative outcome)
+      const followed = restEntries.filter(e => e.followed && e.outcome > 5);
+      const skipped = restEntries.filter(e => !e.followed && e.outcome < -5);
+      
+      if (!followed.length || !skipped.length) return null;
+      
+      // Find best pair with similar HRV (within 5ms) and at least 14 days apart
+      let bestPair = null;
+      let smallestDiff = Infinity;
+      
+      for (const f of followed) {
+        for (const s of skipped) {
+          const hrvDiff = Math.abs(f.hrv - s.hrv);
+          const daysDiff = Math.abs(daysBetween(f.date, s.date));
+          
+          if (hrvDiff <= 5 && daysDiff >= 14 && hrvDiff < smallestDiff) {
+            smallestDiff = hrvDiff;
+            bestPair = { followed: f, skipped: s };
+          }
+        }
+      }
+      
+      return bestPair;
+    };
+
     // Collapsible Insight Scroll - appears above observation when open
     const InsightScroll = ({ insight }) => {
       const [isOpen, setIsOpen] = useState(false);
@@ -1593,6 +1902,15 @@
                     </React.Fragment>
                   ))}
                 </div>
+                
+                {/* Visualizations */}
+                {insight.visualization === 'heatmap' && insight.patterns && (
+                  <WeekHeatmap patterns={insight.patterns} />
+                )}
+                {insight.visualization === 'twins' && insight.twinData && (
+                  <TwinDays twinData={insight.twinData} />
+                )}
+                
                 <div className="text-center mt-4">
                   <span className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>tap to close</span>
                 </div>
