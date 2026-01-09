@@ -1432,22 +1432,13 @@
     
     const CommandWord = ({ command, onClick, isRevealed }) => {
       const colors = { REST: '#FDA4AF', BUILD: '#C9A962', PERFORM: '#6EE7B7', LEARNING: '#A1A1AA' };
-      const [showTapHint, setShowTapHint] = useState(true);
-      
-      // Hide tap hint after 3 seconds
-      useEffect(() => {
-        if (!isRevealed) {
-          const timer = setTimeout(() => setShowTapHint(false), 3000);
-          return () => clearTimeout(timer);
-        }
-      }, [isRevealed]);
       
       return (
         <div className={`text-center cursor-pointer transition-all duration-500 ${isRevealed ? 'py-4' : 'py-16'}`} onClick={onClick}>
           <h1 className={`font-display animate-rise ${isRevealed ? 'text-3xl' : 'text-5xl'}`} style={{ color: colors[command], transition: 'font-size 500ms ease' }}>
             {command}
           </h1>
-          {!isRevealed && showTapHint && <p className="text-sm mt-8 animate-fade" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to open</p>}
+          {!isRevealed && <p className="text-sm mt-8 animate-fade" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to open</p>}
         </div>
       );
     };
@@ -1495,12 +1486,13 @@
 
     const InsightScroll = ({ insight }) => {
       const [isOpen, setIsOpen] = useState(true);
-      const [showTapHint, setShowTapHint] = useState(false);
+      const [showTapHint, setShowTapHint] = useState(true);
       
-      // Show "tap to open" hint after 3s when collapsed
+      // Show "tap to open" immediately when collapsed, fade after 3s
       useEffect(() => {
         if (!isOpen) {
-          const timer = setTimeout(() => setShowTapHint(true), 3000);
+          setShowTapHint(true);
+          const timer = setTimeout(() => setShowTapHint(false), 3000);
           return () => clearTimeout(timer);
         } else {
           setShowTapHint(false);
@@ -1538,7 +1530,7 @@
           </div>
           <div className="insight-scroll-line" />
           {!isOpen && showTapHint && (
-            <div className="text-center mt-2 animate-fade">
+            <div className="text-center mt-2">
               <span className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to open</span>
             </div>
           )}
@@ -1559,6 +1551,7 @@
     };
 
     // Event Log - collapsible section for logging life events
+    // Event Log - collapsible section for logging life events
     const EventLog = ({ onLog }) => {
       const [isOpen, setIsOpen] = useState(false);
       const [showTapHint, setShowTapHint] = useState(true);
@@ -1566,10 +1559,11 @@
       const [otherText, setOtherText] = useState('');
       const [showSuccess, setShowSuccess] = useState(false);
       
-      // Show tap hint after 3s when collapsed
+      // Show tap hint immediately when collapsed, fade after 3s
       useEffect(() => {
         if (!isOpen) {
-          const timer = setTimeout(() => setShowTapHint(true), 3000);
+          setShowTapHint(true);
+          const timer = setTimeout(() => setShowTapHint(false), 3000);
           return () => clearTimeout(timer);
         } else {
           setShowTapHint(false);
