@@ -141,6 +141,114 @@
     .insight-block .label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
     .insight-block .content { font-family: var(--font-display); font-style: italic; font-size: 16px; line-height: 1.5; color: var(--text-secondary); }
     
+    /* Event Log - collapsible section */
+    .event-log {
+      margin: 24px 24px 16px 24px;
+      cursor: pointer;
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .event-log-header {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .event-log-label {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .event-log-line {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold) 0%, transparent 100%);
+      transition: all 300ms ease;
+    }
+    .event-log-content {
+      padding: 20px 0 16px 20px;
+      border-left: 2px solid var(--gold);
+      overflow: hidden;
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .event-log.collapsed .event-log-content {
+      height: 0;
+      padding: 0;
+      opacity: 0;
+      border-left-color: transparent;
+    }
+    .event-log-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .event-log-btn {
+      padding: 10px 18px;
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 200ms ease;
+    }
+    .event-log-btn:hover {
+      background: var(--gold);
+      color: var(--bg-primary);
+    }
+    .event-log-btn.selected {
+      background: var(--gold);
+      color: var(--bg-primary);
+    }
+    .event-log-other {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--text-faint);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      transition: border-color 200ms ease;
+    }
+    .event-log-other:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+    .event-log-other::placeholder {
+      color: var(--text-faint);
+    }
+    .event-log-confirm {
+      margin-top: 16px;
+      padding: 10px 24px;
+      background: var(--gold);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: opacity 200ms ease;
+    }
+    .event-log-confirm.active {
+      opacity: 1;
+    }
+    .event-log-confirm.active:hover {
+      opacity: 0.85;
+    }
+    .event-log-success {
+      color: var(--green);
+      font-size: 13px;
+      margin-top: 12px;
+      opacity: 0;
+      transition: opacity 300ms ease;
+    }
+    .event-log-success.show {
+      opacity: 1;
+    }
+    
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100; }
     .modal-content { position: fixed; inset: 0; z-index: 101; overflow-y: auto; }
     
@@ -1450,6 +1558,129 @@
       );
     };
 
+    // Event Log - collapsible section for logging life events
+    const EventLog = ({ onLog }) => {
+      const [isOpen, setIsOpen] = useState(false);
+      const [showTapHint, setShowTapHint] = useState(true);
+      const [selected, setSelected] = useState(null);
+      const [otherText, setOtherText] = useState('');
+      const [showSuccess, setShowSuccess] = useState(false);
+      
+      // Show tap hint after 3s when collapsed
+      useEffect(() => {
+        if (!isOpen) {
+          const timer = setTimeout(() => setShowTapHint(true), 3000);
+          return () => clearTimeout(timer);
+        } else {
+          setShowTapHint(false);
+        }
+      }, [isOpen]);
+      
+      const handleToggle = (e) => {
+        // Don't toggle if clicking on buttons or input
+        if (e.target.closest('.event-log-btn') || e.target.closest('.event-log-other') || e.target.closest('.event-log-confirm')) {
+          return;
+        }
+        setIsOpen(!isOpen);
+      };
+      
+      const handleSelect = (type) => {
+        setSelected(type === selected ? null : type);
+        if (type !== 'other') {
+          setOtherText('');
+        }
+      };
+      
+      const handleConfirm = () => {
+        const eventType = selected === 'other' ? otherText.trim() : selected;
+        if (!eventType) return;
+        
+        onLog(eventType);
+        setShowSuccess(true);
+        
+        // Reset after confirmation
+        setTimeout(() => {
+          setSelected(null);
+          setOtherText('');
+          setShowSuccess(false);
+          setIsOpen(false);
+        }, 1500);
+      };
+      
+      const canConfirm = selected && (selected !== 'other' || otherText.trim().length > 0);
+      
+      return (
+        <div 
+          className={`event-log animate-rise delay-300 ${isOpen ? '' : 'collapsed'}`}
+          onClick={handleToggle}
+        >
+          <div className="event-log-header">
+            <div className="event-log-label">Log an event</div>
+            <div className="event-log-line" />
+          </div>
+          
+          <div className="event-log-content">
+            <div className="event-log-buttons">
+              <button 
+                className={`event-log-btn ${selected === 'alcohol' ? 'selected' : ''}`}
+                onClick={() => handleSelect('alcohol')}
+              >
+                Alcohol
+              </button>
+              <button 
+                className={`event-log-btn ${selected === 'illness' ? 'selected' : ''}`}
+                onClick={() => handleSelect('illness')}
+              >
+                Illness
+              </button>
+              <button 
+                className={`event-log-btn ${selected === 'injury' ? 'selected' : ''}`}
+                onClick={() => handleSelect('injury')}
+              >
+                Injury
+              </button>
+            </div>
+            
+            <input
+              type="text"
+              className="event-log-other"
+              placeholder="Other..."
+              value={otherText}
+              onChange={(e) => {
+                setOtherText(e.target.value);
+                if (e.target.value.trim()) {
+                  setSelected('other');
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            <button 
+              className={`event-log-confirm ${canConfirm ? 'active' : ''}`}
+              onClick={canConfirm ? handleConfirm : undefined}
+              disabled={!canConfirm}
+            >
+              Log Event
+            </button>
+            
+            <p className={`event-log-success ${showSuccess ? 'show' : ''}`}>
+              ✓ Event logged
+            </p>
+            
+            <div className="text-center mt-4">
+              <span className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>tap to close</span>
+            </div>
+          </div>
+          
+          {!isOpen && showTapHint && (
+            <div className="text-center mt-2 animate-fade">
+              <span className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to open</span>
+            </div>
+          )}
+        </div>
+      );
+    };
+
     const CompliancePrompt = ({ onSelect }) => (
       <div className="modal-overlay" />
       ,
@@ -1788,6 +2019,7 @@
       const [showFeedback, setShowFeedback] = useState(false);
       const [feedbackRound, setFeedbackRound] = useState(1);
       const [feedbackState, setFeedbackState] = useState({ round1: false, round2: false });
+      const [eventLog, setEventLog] = useState([]);
 
       // TEST MODE STATE
       const [testMode, setTestMode] = useState(true);
@@ -1810,6 +2042,7 @@
             setFirstUseDate(data.firstUseDate);
             setHrvSource(data.hrvSource);
             setFeedbackState(data.feedbackState || { round1: false, round2: false });
+            setEventLog(data.eventLog || []);
             if (data.hrvSource?.label) Analytics.setDevice(data.hrvSource.label);
           }
         } catch (e) { console.error(e); }
@@ -1817,9 +2050,9 @@
       }, []);
 
       const saveData = useCallback((updates = {}) => {
-        const data = { hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState, ...updates };
+        const data = { hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState, eventLog, ...updates };
         localStorage.setItem('genysys_v2_data', JSON.stringify(data));
-      }, [hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState]);
+      }, [hrvHistory, complianceLog, firstUseDate, hrvSource, feedbackState, eventLog]);
 
       // Handle CSV upload (defined after saveData)
       const handleCSVUpload = (event) => {
@@ -1975,6 +2208,15 @@
         saveData({ hrvHistory: newHistory });
       };
 
+      const handleEventLog = (eventType) => {
+        const today = getTodayLocal();
+        const newEvent = { date: today, type: eventType, timestamp: new Date().toISOString() };
+        const newEventLog = [...eventLog, newEvent];
+        setEventLog(newEventLog);
+        saveData({ eventLog: newEventLog });
+        Analytics.track('event_logged', { type: eventType, date: today });
+      };
+
       const handleFeedbackSubmit = (data) => {
         const newState = { ...feedbackState, [`round${data.round}`]: true };
         setFeedbackState(newState);
@@ -2063,6 +2305,9 @@
                       
                       {observation && <Observation text={observation.text} />}
                       <Prescription actions={actions} />
+                      
+                      {/* Event Log - collapsible section */}
+                      <EventLog onLog={handleEventLog} />
                       
                       {result?.isPreview && (
                         <div className="text-center mt-6 animate-rise delay-500 space-y-3">
