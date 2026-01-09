@@ -612,16 +612,19 @@
         }
       }
 
-      // Baseline shift (compare first 14 days to last 14 days if 60+ days)
-      if (hrvHistory.length >= 60) {
-        const first14 = withZScores.slice(0, 14).map(h => h.value);
-        const last14 = withZScores.slice(-14).map(h => h.value);
-        const firstBaseline = first14.reduce((a, b) => a + b, 0) / first14.length;
-        const lastBaseline = last14.reduce((a, b) => a + b, 0) / last14.length;
-        const shift = lastBaseline - firstBaseline;
-        const shiftPercent = Math.round((shift / firstBaseline) * 100);
-        if (Math.abs(shiftPercent) >= 5) {
-          patterns.baselineShift = { from: Math.round(firstBaseline), to: Math.round(lastBaseline), percent: shiftPercent };
+      // Baseline shift (compare FULL MONTH medians for robust comparison)
+      if (hrvHistory.length >= 55) {
+        const month1 = withZScores.slice(0, 30).map(h => h.value);
+        const month2 = withZScores.slice(30, 60).map(h => h.value);
+        
+        if (month1.length >= 25 && month2.length >= 25) {
+          const month1Median = calculateMedian(month1);
+          const month2Median = calculateMedian(month2);
+          const shift = month2Median - month1Median;
+          const shiftPercent = Math.round((shift / month1Median) * 100);
+          if (Math.abs(shiftPercent) >= 5) {
+            patterns.baselineShift = { from: Math.round(month1Median), to: Math.round(month2Median), percent: shiftPercent };
+          }
         }
       }
 
@@ -858,7 +861,7 @@
             { text: "Solid work available. Not a day to dig deep.", type: 'build_protective' }
           ]);
         }
-        return { text: "Do what's programmed. Nothing extra.", type: 'build_uncertain' };
+        return { text: "Do what you planned. Nothing more, nothing less.", type: 'build_uncertain' };
       }
 
       // PERFORM
@@ -1000,10 +1003,13 @@
             '',
             '**None of them tell you what to do.**',
             '',
-            'GENYSYS does. One word. Every morning.',
+            'GENYSYS does. One signal. Every morning.',
             "And it's right.",
             '',
-            'When it says **push** — push.',
+            "Your body's been sending signals your whole life.",
+            'GENYSYS is the first thing that actually **translates** them.',
+            '',
+            'When it says **perform** — perform.',
             'When it says **rest** — rest.',
             '',
             'We tested this. When you **listen**, you win.',
@@ -1012,8 +1018,7 @@
             'Days you could have trained.',
             'Days you lost to injury.',
             '',
-            "Your body's been sending signals your whole life.",
-            'GENYSYS is the first thing that actually **translates** them.'
+            "**You're no longer guessing.**"
           ]
         };
       }
@@ -1026,7 +1031,7 @@
         if (spread < 2) return null;
         
         return {
-          label: 'ONE WEEK RECAP',
+          label: 'ONE WEEK MILESTONE',
           isMilestone: true,
           lines: [
             `Monday through Friday: **${patterns.weekendSplit.weekdayMean}**.`,
@@ -1076,7 +1081,7 @@
           lines.push(`Your **${patterns.strongDay.day}s** consistently peak.`);
         }
         return {
-          label: 'TWO WEEK RECAP',
+          label: 'TWO WEEK MILESTONE',
           isMilestone: true,
           lines: [
             ...lines,
@@ -1095,7 +1100,7 @@
       // Day 21: First Crash Timing - ONLY ON REST DAYS - MILESTONE
       if (daysOnApp >= 21 && daysOnApp <= 25 && currentCommand === 'REST' && patterns.crashesAfterIgnoredRest?.length >= 1) {
         return {
-          label: 'THREE WEEK RECAP',
+          label: 'THREE WEEK MILESTONE',
           isMilestone: true,
           lines: [
             'The **crash** did not happen today.',
@@ -1150,7 +1155,7 @@
           lines.push('The patterns are still forming.', '', 'Keep listening. The proof builds.');
         }
 
-        return { label: 'ONE MONTH RECAP', isMilestone: true, lines };
+        return { label: 'ONE MONTH MILESTONE', isMilestone: true, lines };
       }
 
       // Day 45+: Pattern Vindication - ONLY ON REST DAYS
@@ -1178,23 +1183,23 @@
       }
 
       // Day 60: Baseline Shift - MILESTONE - with validation
+      // Uses full month medians for robust comparison
       if (daysOnApp === 60 && patterns.baselineShift) {
         const { from, to, percent } = patterns.baselineShift;
         if (Math.abs(percent) < 5) return null; // Not significant enough
         
-        const direction = percent > 0 ? 'more' : 'less';
         return {
-          label: 'TWO MONTH RECAP',
+          label: 'TWO MONTH MILESTONE',
           isMilestone: true,
           lines: [
-            `Your baseline when you started: **${from}**.`,
-            `Your baseline now: **${to}**.`,
+            `Month one baseline: **${from} ms**.`,
+            `Month two baseline: **${to} ms**.`,
             '',
-            `That's **${Math.abs(percent)}% ${direction} capacity**`,
-            'than the person who walked in.',
+            percent > 0 ? `**${Math.abs(percent)}% more capacity**` : `**${Math.abs(percent)}% less capacity**`,
+            'than 2 months ago.',
             '',
-            percent > 0 ? 'Not from training more.' : 'Something needs attention.',
-            percent > 0 ? '**From resting better.**' : "The data doesn't lie.",
+            percent > 0 ? 'Not from training more.' : 'Something changed.',
+            percent > 0 ? '**From resting better.**' : 'Worth investigating.',
             '',
             'The capacity was never gone.',
             'It was **buried under fatigue**',
@@ -1211,7 +1216,7 @@
         // Need at least 3 in each category
         if (restSkipped < 3 || restFollowed < 3) {
           return {
-            label: 'NINETY DAY RECAP',
+            label: 'NINETY DAY MILESTONE',
             isMilestone: true,
             lines: [
               "You've been **listening**.",
@@ -1236,7 +1241,7 @@
         const skippedRate = Math.round(crashes / restSkipped * 100);
         
         return {
-          label: 'NINETY DAY RECAP',
+          label: 'NINETY DAY MILESTONE',
           isMilestone: true,
           lines: [
             `When REST is **followed**: ${followedRate}% climb rate.`,
@@ -1262,7 +1267,7 @@
       // Day 180: Identity Shift - MILESTONE
       if (daysOnApp === 180) {
         return {
-          label: 'SIX MONTH RECAP',
+          label: 'SIX MONTH MILESTONE',
           isMilestone: true,
           lines: [
             'You have **outlasted** most people',
@@ -1276,9 +1281,7 @@
             '"Rest is weakness."',
             '',
             'You heard the same story.',
-            'You just **stopped letting it decide**.',
-            '',
-            "**That's the only difference.**"
+            '**But, now you are tuned into the signal.**'
           ]
         };
       }
@@ -1299,17 +1302,17 @@
         
         lines.push('');
         lines.push('None of this was hidden.');
-        lines.push('It was all there, every day, for your **entire life**.');
+        lines.push('Your rhythm was all there, every day, for your **entire life**.');
         lines.push('');
         lines.push('You just needed someone to read it to you');
         lines.push('until you learned to **read it yourself**.');
         lines.push('');
         lines.push('**You can read it now.**');
         lines.push('');
-        lines.push('The signal was never the treasure.');
-        lines.push('The treasure was **learning to hear it**.');
+        lines.push('The numbers were never the treasure.');
+        lines.push('The treasure was **learning how to use it**.');
         
-        return { label: 'ONE YEAR RECAP', isMilestone: true, lines };
+        return { label: 'ONE YEAR MILESTONE', isMilestone: true, lines };
       }
 
       return null;
@@ -1321,12 +1324,22 @@
     
     const CommandWord = ({ command, onClick, isRevealed }) => {
       const colors = { REST: '#FDA4AF', BUILD: '#C9A962', PERFORM: '#6EE7B7', LEARNING: '#A1A1AA' };
+      const [showTapHint, setShowTapHint] = useState(true);
+      
+      // Hide tap hint after 3 seconds
+      useEffect(() => {
+        if (!isRevealed) {
+          const timer = setTimeout(() => setShowTapHint(false), 3000);
+          return () => clearTimeout(timer);
+        }
+      }, [isRevealed]);
+      
       return (
         <div className={`text-center cursor-pointer transition-all duration-500 ${isRevealed ? 'py-4' : 'py-16'}`} onClick={onClick}>
           <h1 className={`font-display animate-rise ${isRevealed ? 'text-3xl' : 'text-5xl'}`} style={{ color: colors[command], transition: 'font-size 500ms ease' }}>
             {command}
           </h1>
-          {!isRevealed && <p className="text-sm mt-8 animate-fade delay-1000" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap for today</p>}
+          {!isRevealed && showTapHint && <p className="text-sm mt-8 animate-fade" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>tap to open</p>}
         </div>
       );
     };
@@ -2036,7 +2049,7 @@
                           label: daysOnApp === 1 ? 'THE PROMISE' : 'WHAT YOU\'LL LEARN',
                           lines: daysOnApp === 1 ? [
                             'In a week, you\'ll stop guessing.',
-                            'In a month, you\'ll recognize your cycles.',
+                            'In a month, you\'ll recognize your rhythms.',
                             'In a year, you\'ll understand the version of you that shows up again and again —',
                             'and how to steer it.'
                           ] : [
