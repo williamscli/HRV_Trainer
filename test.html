@@ -370,7 +370,7 @@
           ...props
         };
         console.log('[Analytics]', event, payload);
-        if (ANALYTICS_ENDPOINT !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+        if (ANALYTICS_ENDPOINT && !ANALYTICS_ENDPOINT.includes('YOUR_GOOGLE')) {
           fetch(ANALYTICS_ENDPOINT, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
         }
       }
@@ -2689,4 +2689,4 @@
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
-</html>
+</html>Fendp
