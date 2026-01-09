@@ -2490,7 +2490,7 @@
 
           {/* Modals */}
           <InfoModal isOpen={showInfo} onClose={() => setShowInfo(false)} hrvSource={hrvSource} />
-          <HistoryModal isOpen={showHistory} onClose={() => setShowHistory(false)} history={hrvHistory} onAdd={handleAddHistory} onDelete={handleDeleteHistory} />
+          <HistoryModal isOpen={showHistory} onClose={() => setShowHistory(false)} hrvHistory={hrvHistory} onAdd={handleAddHistory} onDelete={handleDeleteHistory} />
           <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} daysOnApp={daysOnApp} onSubmit={handleFeedback} />
         </div>
       );
