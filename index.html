@@ -322,7 +322,7 @@
     // ════════════════════════════════════════════════════════════════════════════
     // ANALYTICS
     // ════════════════════════════════════════════════════════════════════════════
-    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxP8OImAXDl8fwUG1ksGSTvlFID9wZQ90es4f4Ry1FWQAVqcDa27rXeeyd19JBH_eBG/exec';
+    const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/library/d/1nQSCZLmbWLEkhqAvy96OkqcQv6IMPBkow3eQiJR6nKXBnh55x5zGDIj2/8';
     const ALLOWED_EVENTS = [
       'session_start', 'onboarding_complete', 'first_hrv_logged', 'hrv_logged',
       'hrv_backfilled', 'command_generated', 'compliance_recorded', 'event_logged',
@@ -1982,12 +1982,13 @@
 
       if (!isOpen) return null;
       
-      const isDay14 = daysOnApp >= 14 && daysOnApp < 30;
-      const isDay30 = daysOnApp >= 30;
+      // Round 1: days 7-14, Round 2: days 35-45
+      const isRound1 = daysOnApp >= 7 && daysOnApp <= 14;
+      const isRound2 = daysOnApp >= 35 && daysOnApp <= 45;
 
       const handleSubmit = () => {
         onSubmit({ 
-          round: isDay14 ? 1 : 2,
+          round: isRound1 ? 1 : 2,
           goal, 
           goalText, 
           feedback, 
@@ -1998,12 +1999,12 @@
       };
 
       const handleSkip = () => {
-        onSubmit({ round: isDay14 ? 1 : 2, skipped: true, daysOnApp });
+        onSubmit({ round: isRound1 ? 1 : 2, skipped: true, daysOnApp });
         onClose();
       };
 
-      // Day 14 Survey: Understanding your goals
-      if (isDay14) {
+      // Round 1 Survey: Understanding your goals
+      if (isRound1) {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
             <div className="absolute inset-0 bg-black/85" />
@@ -2138,7 +2139,7 @@
         );
       }
 
-      // Day 30 Survey: Product feedback
+      // Round 2 Survey: Product feedback (days 35-45)
       return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/85" />
@@ -2408,10 +2409,14 @@
         }
       }, [hrvHistory, compliance, patterns]);
 
-      // Feedback trigger (Day 14, 30)
+      // Feedback trigger (Round 1: day 7-14, Round 2: day 35-45)
       useEffect(() => {
-        const triggers = [14, 30];
-        if (triggers.includes(daysOnApp) && !feedbackShownAt.includes(daysOnApp)) {
+        const round1Range = daysOnApp >= 7 && daysOnApp <= 14;
+        const round2Range = daysOnApp >= 35 && daysOnApp <= 45;
+        
+        if (round1Range && !feedbackShownAt.includes(1) && !feedbackShownAt.some(d => d >= 7 && d <= 14)) {
+          setTimeout(() => setShowFeedback(true), 2000);
+        } else if (round2Range && !feedbackShownAt.includes(2) && !feedbackShownAt.some(d => d >= 35 && d <= 45)) {
           setTimeout(() => setShowFeedback(true), 2000);
         }
       }, [daysOnApp, feedbackShownAt]);
@@ -2493,7 +2498,11 @@
         const newShown = [...feedbackShownAt, daysOnApp];
         setFeedbackShownAt(newShown);
         save({ feedbackShownAt: newShown });
-        Analytics.track('feedback_submitted', feedback);
+        if (feedback.skipped) {
+          Analytics.track(`feedback_round${feedback.round}_dismissed`);
+        } else {
+          Analytics.track(`feedback_round${feedback.round}_submitted`, feedback);
+        }
       };
 
       const resetAll = () => {
