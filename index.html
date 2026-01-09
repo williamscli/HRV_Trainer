@@ -1338,7 +1338,7 @@
               '',
               'One decision. Two different weeks.',
               '',
-              '**The signal was the same. The choice wasn\\'t.**'
+              `**The signal was the same. The choice wasn't.**`
             ],
             visualization: 'twins',
             twinData
@@ -2962,6 +2962,7 @@
                       {!insight && hrvHistory.length < 7 && daysOnApp <= 2 && (
                         <InsightScroll insight={{
                           label: daysOnApp === 1 ? 'THE PROMISE' : 'WHAT YOU\'LL LEARN',
+                          isMilestone: false,
                           lines: daysOnApp === 1 ? [
                             'In a week, you\'ll stop guessing.',
                             'In a month, you\'ll recognize your rhythms.',
