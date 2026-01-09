@@ -303,6 +303,23 @@
     const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
     // ════════════════════════════════════════════════════════════════════════════
+    // UTILITIES (must be before Analytics)
+    // ════════════════════════════════════════════════════════════════════════════
+    const getLocalDateString = (date = new Date()) => {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    const getTodayLocal = () => getLocalDateString();
+    const getYesterdayLocal = () => {
+      const d = new Date(); d.setDate(d.getDate() - 1);
+      return getLocalDateString(d);
+    };
+
+    const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+
+    // ════════════════════════════════════════════════════════════════════════════
     // ANALYTICS
     // ════════════════════════════════════════════════════════════════════════════
     const ANALYTICS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxP8OImAXDl8fwUG1ksGSTvlFID9wZQ90es4f4Ry1FWQAVqcDa27rXeeyd19JBH_eBG/exec';
@@ -318,40 +335,58 @@
 
     const Analytics = {
       userId: null,
+      timezone: null,
+      device: null,
+      firstUseDate: null,
+
       init() {
-        let stored = localStorage.getItem('genysys_analytics');
+        const stored = localStorage.getItem('genysys_analytics');
         if (stored) {
-          this.userId = JSON.parse(stored).userId;
+          const data = JSON.parse(stored);
+          Object.assign(this, data);
         } else {
-          this.userId = crypto.randomUUID?.() || Math.random().toString(36).substr(2, 9);
-          localStorage.setItem('genysys_analytics', JSON.stringify({ userId: this.userId }));
+          this.userId = generateUUID();
+          this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          this.firstUseDate = getTodayLocal();
+          this.save();
         }
       },
+
+      save() {
+        localStorage.setItem('genysys_analytics', JSON.stringify({
+          userId: this.userId, timezone: this.timezone, firstUseDate: this.firstUseDate
+        }));
+      },
+
+      setDevice(device) { this.device = device; },
+      
+      getDaysActive() {
+        if (!this.firstUseDate) return 0;
+        return Math.floor((new Date() - new Date(this.firstUseDate)) / (1000 * 60 * 60 * 24));
+      },
+
       track(event, props = {}) {
         if (!ALLOWED_EVENTS.includes(event)) return;
-        console.log('[Analytics]', event, props);
+        const payload = {
+          timestamp: new Date().toISOString(),
+          userId: this.userId,
+          event,
+          device: this.device || props.device || 'unknown',
+          daysActive: this.getDaysActive(),
+          region: this.timezone,
+          ...props
+        };
+        console.log('[Analytics]', event, payload);
         if (ANALYTICS_ENDPOINT && !ANALYTICS_ENDPOINT.includes('YOUR_GOOGLE')) {
-          fetch(ANALYTICS_ENDPOINT, {
-            method: 'POST', mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ event, userId: this.userId, ...props, timestamp: new Date().toISOString() })
-          }).catch(() => {});
+          fetch(ANALYTICS_ENDPOINT, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
         }
       }
     };
     Analytics.init();
 
     // ════════════════════════════════════════════════════════════════════════════
-    // UTILITIES
+    // MORE UTILITIES
     // ════════════════════════════════════════════════════════════════════════════
-    const getLocalDateString = (date = new Date()) => {
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    };
-    const getTodayLocal = () => getLocalDateString();
-    const getYesterdayLocal = () => {
-      const d = new Date(); d.setDate(d.getDate() - 1);
-      return getLocalDateString(d);
-    };
     const getDayName = (dateStr) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(dateStr + 'T12:00:00').getDay()];
     const formatDateAnchor = (dateStr) => {
       if (!dateStr) return null;
@@ -413,6 +448,7 @@
         consecutiveAbove: 0,
         crashesAfterSkip: [],
         risesAfterRest: [],
+        recoveriesAfterRest: [],
         nearestMatch: null,
         daysSincePerform: null,
         daysSinceRest: null,
@@ -422,7 +458,9 @@
         todayDowPattern: null,
         isVolatile: false,
         travelDetected: false,
-        lastTimezone: null
+        lastTimezone: null,
+        declineTrend: null,
+        baselineShift: null
       };
 
       // Trend analysis (last 5 days)
@@ -434,6 +472,21 @@
           else if (recent[i].z < recent[i-1].z) down++;
         }
         p.trend = up >= 3 ? 'rising' : down >= 3 ? 'falling' : 'stable';
+      }
+
+      // Declining trend detection (4+ consecutive days declining)
+      if (recent.length >= 4) {
+        let declining = true;
+        for (let i = 1; i < recent.length && declining; i++) {
+          if (recent[i].value >= recent[i-1].value) declining = false;
+        }
+        if (declining) {
+          p.declineTrend = {
+            days: recent.length,
+            values: recent.map(r => r.value),
+            drop: recent[0].value - recent[recent.length - 1].value
+          };
+        }
       }
 
       // Consecutive tracking
@@ -459,6 +512,7 @@
         }
         if (c.command === 'REST' && c.followed === 'yes' && nextDay.z >= -0.5) {
           p.risesAfterRest.push({ restDate: c.date, riseDate: nextDay.date });
+          p.recoveriesAfterRest.push({ restDate: c.date, readyDate: nextDay.date });
         }
       });
 
@@ -560,6 +614,21 @@
           }
         });
         p.nearestMatch = nearest;
+      }
+
+      // Baseline shift (month-over-month comparison for Day 60 milestone)
+      if (hrvHistory.length >= 55) {
+        const month1 = hrvHistory.slice(0, 30).map(h => h.value);
+        const month2 = hrvHistory.slice(30, 60).map(h => h.value);
+        if (month1.length >= 25 && month2.length >= 25) {
+          const month1Median = calculateMedian(month1);
+          const month2Median = calculateMedian(month2);
+          const shift = month2Median - month1Median;
+          const shiftPercent = Math.round((shift / month1Median) * 100);
+          if (Math.abs(shiftPercent) >= 5) {
+            p.baselineShift = { from: Math.round(month1Median), to: Math.round(month2Median), percent: shiftPercent };
+          }
+        }
       }
 
       return p;
@@ -1040,6 +1109,26 @@
         };
       }
 
+      // Day 10-12: Declining Trend Truth (context-independent)
+      if (daysOnApp >= 10 && daysOnApp <= 12 && patterns.declineTrend) {
+        const { values } = patterns.declineTrend;
+        return {
+          label: "WHAT YOU CAN'T FEEL",
+          isMilestone: false,
+          lines: [
+            ...values.map((v, i) => `Day ${daysOnApp - values.length + i + 1}: **${v}**`),
+            '',
+            'You felt fine on each of those days.',
+            '',
+            "The body doesn't argue.",
+            "It doesn't complain.",
+            'It just **keeps score**.',
+            '',
+            'And then one morning it **hands you the bill**.'
+          ]
+        };
+      }
+
       // Day 14: Day-of-week pattern - MILESTONE
       if (daysOnApp === 14 && (patterns.weakDay || patterns.strongDay)) {
         const lines = [];
@@ -1055,8 +1144,8 @@
         return { label: 'TWO WEEK MILESTONE', isMilestone: true, lines };
       }
 
-      // Day 21: First crash lesson - ONLY ON REST DAYS, requires crash data - MILESTONE
-      if (daysOnApp === 21 && currentCommand === 'REST' && patterns.crashesAfterSkip?.length >= 1) {
+      // Day 21-25: First crash lesson - ONLY ON REST DAYS, requires crash data - MILESTONE
+      if (daysOnApp >= 21 && daysOnApp <= 25 && currentCommand === 'REST' && patterns.crashesAfterSkip?.length >= 1) {
         return {
           label: 'THREE WEEK MILESTONE',
           isMilestone: true,
@@ -1117,38 +1206,52 @@
         return { label: 'ONE MONTH MILESTONE', isMilestone: true, lines };
       }
 
-      // Day 60: Capacity truth - MILESTONE
-      // Compare FULL MONTH medians (30 days each) for robust comparison
-      if (daysOnApp === 60 && hrvHistory.length >= 55) {
-        const month1 = hrvHistory.slice(0, 30).map(h => h.value);
-        const month2 = hrvHistory.slice(30, 60).map(h => h.value);
+      // Day 45-50: Vindication - SAME PATTERN, DIFFERENT ENDING
+      if (daysOnApp >= 45 && daysOnApp <= 50 && currentCommand === 'REST' && patterns.recoveriesAfterRest?.length >= 2 && patterns.crashesAfterSkip?.length >= 1) {
+        const recovery = patterns.recoveriesAfterRest[patterns.recoveriesAfterRest.length - 1];
+        const crash = patterns.crashesAfterSkip[0];
         
-        if (month1.length < 25 || month2.length < 25) return null; // Need enough data
-        
-        const month1Median = calculateMedian(month1);
-        const month2Median = calculateMedian(month2);
-        const change = ((month2Median - month1Median) / month1Median * 100).toFixed(0);
+        return {
+          label: 'SAME PATTERN. DIFFERENT ENDING.',
+          isMilestone: false,
+          lines: [
+            `**${crash.skippedDate}**: REST ignored.`,
+            `**${crash.crashDate}**: Crashed.`,
+            '',
+            `**${recovery.restDate}**: REST followed.`,
+            `**${recovery.readyDate}**: Ready to train.`,
+            '',
+            'Same setup.',
+            'Different choice.',
+            'Different outcome.',
+            '',
+            '**This is what control looks like.**'
+          ]
+        };
+      }
 
-        if (Math.abs(change) >= 5) {
-          return {
-            label: 'TWO MONTH MILESTONE',
-            isMilestone: true,
-            lines: [
-              `Month one baseline: **${Math.round(month1Median)} ms**.`,
-              `Month two baseline: **${Math.round(month2Median)} ms**.`,
-              '',
-              change > 0 ? `**${change}% more capacity**` : `**${Math.abs(change)}% less capacity**`,
-              'than 2 months ago.',
-              '',
-              change > 0 ? 'Not from training more.' : 'Something changed.',
-              change > 0 ? '**From resting better.**' : 'Worth investigating.',
-              '',
-              'The capacity was never gone.',
-              'It was **buried under fatigue**',
-              "you didn't know you were carrying."
-            ]
-          };
-        }
+      // Day 60: Capacity truth - MILESTONE
+      if (daysOnApp === 60 && patterns.baselineShift) {
+        const { from, to, percent } = patterns.baselineShift;
+        
+        return {
+          label: 'TWO MONTH MILESTONE',
+          isMilestone: true,
+          lines: [
+            `Month one baseline: **${from} ms**.`,
+            `Month two baseline: **${to} ms**.`,
+            '',
+            percent > 0 ? `**${Math.abs(percent)}% more capacity**` : `**${Math.abs(percent)}% less capacity**`,
+            'than 2 months ago.',
+            '',
+            percent > 0 ? 'Not from training more.' : 'Something changed.',
+            percent > 0 ? '**From resting better.**' : 'Worth investigating.',
+            '',
+            'The capacity was never gone.',
+            'It was **buried under fatigue**',
+            "you didn't know you were carrying."
+          ]
+        };
       }
 
       // Day 90: The Switch - MILESTONE - with data validation
@@ -1231,10 +1334,12 @@
       if (daysOnApp === 365) {
         const lines = ['Here is what I learned about you:', ''];
         
-        if (patterns.risesAfterRest?.length > 0) lines.push('When you **rest**, you **rise**.');
+        if (patterns.recoveriesAfterRest?.length > (patterns.crashesAfterSkip?.length || 0)) {
+          lines.push('When you **rest**, you **rise**.');
+        }
         if (patterns.weakDay) lines.push(`Your **${patterns.weakDay.day}s** need protecting.`);
         if (patterns.strongDay) lines.push(`Your **${patterns.strongDay.day}s** are your peak.`);
-        if (patterns.weekendSplit?.spread > 0) lines.push('You **recover** on weekends.');
+        if (patterns.weekendSplit?.spread > 5) lines.push('**Weekends restore you.**');
         lines.push('');
         lines.push('None of this was hidden.');
         lines.push('Your rhythm was all there, every day, for your **entire life**.');
@@ -2457,6 +2562,24 @@
                     <>
                       {/* Insight scroll - above observation, collapsible */}
                       {insight && <InsightScroll insight={insight} />}
+                      
+                      {/* Day 1-2 Promise Content (disappears after enough data) */}
+                      {!insight && hrvHistory.length < 7 && daysOnApp <= 2 && (
+                        <InsightScroll insight={{
+                          label: daysOnApp === 1 ? 'THE PROMISE' : 'WHAT YOU\'LL LEARN',
+                          lines: daysOnApp === 1 ? [
+                            'In a week, you\'ll stop guessing.',
+                            'In a month, you\'ll recognize your rhythms.',
+                            'In a year, you\'ll understand the version of you that shows up again and again —',
+                            'and how to steer it.'
+                          ] : [
+                            'Before you opened this, you already had a story about how you feel.',
+                            'Tired. Energized. Ready. Wrecked.',
+                            'The body doesn\'t run on stories. It runs on the night you just had.',
+                            'For your whole life, you\'ve been guessing. The body has been keeping score.'
+                          ]
+                        }} />
+                      )}
                       
                       {observation && <Observation text={observation.text} />}
                       <Prescription actions={actions} />
